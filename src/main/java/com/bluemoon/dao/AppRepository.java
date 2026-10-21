@@ -24,23 +24,145 @@ public final class AppRepository {
         this.database = database;
     }
 
-    public AppUser findUser(String username) throws SQLException {
-        String sql = "SELECT id, username, display_name, role FROM app_users WHERE username = ? AND active = TRUE";
+    public LoginCredential findLoginCredential(String username) throws SQLException {
+        String sql = """
+                SELECT u.id, u.username, u.display_name, u.role, u.password_hash,
+                       COALESCE(s.locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked
+                FROM app_users u LEFT JOIN account_login_state s ON s.user_id = u.id
+                WHERE u.username = ? AND u.active = TRUE
+                """;
         try (Connection connection = database.openConnection(); PreparedStatement query = connection.prepareStatement(sql)) {
             query.setString(1, username);
             try (ResultSet result = query.executeQuery()) {
                 if (!result.next()) return null;
-                return new AppUser(result.getLong("id"), result.getString("username"),
+                AppUser user = new AppUser(result.getLong("id"), result.getString("username"),
                         result.getString("display_name"), Role.valueOf(result.getString("role")));
+                return new LoginCredential(user, result.getString("password_hash"), result.getBoolean("login_locked"));
             }
         }
     }
 
-    public String findPasswordHash(String username) throws SQLException {
+    public List<UserAccount> listUserAccounts() throws SQLException {
+        String sql = """
+                SELECT u.id, u.username, u.display_name, u.role, u.active,
+                       COALESCE(s.locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked
+                FROM app_users u LEFT JOIN account_login_state s ON s.user_id = u.id
+                ORDER BY u.display_name, u.username
+                """;
+        List<UserAccount> users = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) users.add(new UserAccount(result.getLong("id"), result.getString("username"),
+                    result.getString("display_name"), Role.valueOf(result.getString("role")),
+                    result.getBoolean("active"), result.getBoolean("login_locked")));
+        }
+        return users;
+    }
+
+    public void createUser(String username, String passwordHash, String displayName, Role role) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try (PreparedStatement insert = connection.prepareStatement(
+                    "INSERT INTO app_users(username, password_hash, display_name, role) VALUES (?, ?, ?, ?)",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                insert.setString(1, username);
+                insert.setString(2, passwordHash);
+                insert.setString(3, displayName);
+                insert.setString(4, role.name());
+                insert.executeUpdate();
+                try (ResultSet keys = insert.getGeneratedKeys()) {
+                    if (!keys.next()) throw new SQLException("Không tạo được tài khoản.");
+                    try (PreparedStatement state = connection.prepareStatement(
+                            "INSERT INTO account_login_state(user_id) VALUES (?)")) {
+                        state.setLong(1, keys.getLong(1));
+                        state.executeUpdate();
+                    }
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    public void updatePassword(long userId, String passwordHash) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try (PreparedStatement update = connection.prepareStatement(
+                    "UPDATE app_users SET password_hash = ? WHERE id = ? AND active = TRUE")) {
+                update.setString(1, passwordHash);
+                update.setLong(2, userId);
+                if (update.executeUpdate() != 1) throw new SQLException("Tài khoản không còn hoạt động.");
+                try (PreparedStatement reset = connection.prepareStatement(
+                        "UPDATE account_login_state SET failed_attempts = 0, locked_until = NULL WHERE user_id = ?")) {
+                    reset.setLong(1, userId);
+                    reset.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    public boolean recordLoginFailure(long userId) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement ensure = connection.prepareStatement(
+                        "INSERT IGNORE INTO account_login_state(user_id) VALUES (?)")) {
+                    ensure.setLong(1, userId);
+                    ensure.executeUpdate();
+                }
+                int failures;
+                boolean locked;
+                try (PreparedStatement query = connection.prepareStatement(
+                        "SELECT failed_attempts, COALESCE(locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked "
+                                + "FROM account_login_state WHERE user_id = ? FOR UPDATE")) {
+                    query.setLong(1, userId);
+                    try (ResultSet result = query.executeQuery()) {
+                        if (!result.next()) throw new SQLException("Không tải được trạng thái đăng nhập.");
+                        failures = result.getInt("failed_attempts");
+                        locked = result.getBoolean("login_locked");
+                    }
+                }
+                if (locked) {
+                    connection.commit();
+                    return true;
+                }
+                boolean lockAccount = failures + 1 >= 5;
+                String updateSql = lockAccount
+                        ? "UPDATE account_login_state SET failed_attempts = 0, locked_until = DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 5 MINUTE) WHERE user_id = ?"
+                        : "UPDATE account_login_state SET failed_attempts = failed_attempts + 1 WHERE user_id = ?";
+                try (PreparedStatement update = connection.prepareStatement(updateSql)) {
+                    update.setLong(1, userId);
+                    update.executeUpdate();
+                }
+                connection.commit();
+                return lockAccount;
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    public void resetLoginFailures(long userId) throws SQLException {
+        try (Connection connection = database.openConnection();
+             PreparedStatement update = connection.prepareStatement(
+                     "UPDATE account_login_state SET failed_attempts = 0, locked_until = NULL WHERE user_id = ?")) {
+            update.setLong(1, userId);
+            update.executeUpdate();
+        }
+    }
+
+    public String findPasswordHash(long userId) throws SQLException {
         try (Connection connection = database.openConnection();
              PreparedStatement query = connection.prepareStatement(
-                     "SELECT password_hash FROM app_users WHERE username = ? AND active = TRUE")) {
-            query.setString(1, username);
+                     "SELECT password_hash FROM app_users WHERE id = ? AND active = TRUE")) {
+            query.setLong(1, userId);
             try (ResultSet result = query.executeQuery()) {
                 return result.next() ? result.getString(1) : null;
             }

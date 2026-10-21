@@ -38,6 +38,7 @@ public final class DatabaseBootstrap {
         connection.setAutoCommit(false);
         try {
             seedUsers(connection);
+            seedLoginState(connection);
             seedApartments(connection);
             seedFees(connection);
             connection.commit();
@@ -55,6 +56,12 @@ public final class DatabaseBootstrap {
                 "INSERT INTO app_users(username, password_hash, display_name, role) VALUES (?, ?, ?, ?)")) {
             addUser(insert, "admin", "admin123", "Quản trị BlueMoon", "ADMIN");
             addUser(insert, "accountant", "accountant123", "Kế toán BlueMoon", "ACCOUNTANT");
+        }
+    }
+
+    private static void seedLoginState(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.executeUpdate("INSERT IGNORE INTO account_login_state(user_id) SELECT id FROM app_users");
         }
     }
 

@@ -5,6 +5,9 @@ import com.bluemoon.config.DatabaseBootstrap;
 import com.bluemoon.model.Domain.AppUser;
 import com.bluemoon.model.Domain.ChargeSummary;
 import com.bluemoon.model.Domain.PaymentMethod;
+import com.bluemoon.model.Domain.Role;
+import com.bluemoon.service.AccountLockedException;
+import com.bluemoon.service.AccountService;
 import com.bluemoon.service.AuthService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
@@ -18,6 +21,7 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MySqlBillingFlowTest {
@@ -37,8 +41,11 @@ class MySqlBillingFlowTest {
         addRate(database, serviceFeeId, new BigDecimal("9999"), laterRateDate, adminId);
 
         try {
-            assertEquals("ADMIN", new AuthService(repository).login("admin", "admin123").role().name());
-            assertNull(new AuthService(repository).login("admin", "wrong-password"));
+            AuthService auth = new AuthService(repository);
+            AppUser admin = auth.login("admin", "admin123");
+            assertEquals("ADMIN", admin.role().name());
+            assertNull(auth.login("admin", "wrong-password"));
+            verifyAccountManagement(database, repository, auth, admin);
             var period = repository.issuePeriod(2098, 1, LocalDate.of(2098, 1, 20),
                     LocalDate.of(2098, 1, 31), adminId);
             assertEquals(6, period.chargeCount());
@@ -67,6 +74,31 @@ class MySqlBillingFlowTest {
         } finally {
             removePeriod(database, 2098, 1);
             removeRate(database, serviceFeeId, laterRateDate);
+        }
+    }
+
+    private static void verifyAccountManagement(Database database, AppRepository repository,
+                                                AuthService auth, AppUser admin) throws Exception {
+        String username = "account-check-" + System.currentTimeMillis();
+        AccountService accounts = new AccountService(repository);
+        try {
+            assertThrows(IllegalArgumentException.class, () -> accounts.create(admin, username,
+                    "Tài khoản kiểm tra", Role.ACCOUNTANT, "x".repeat(73), "x".repeat(73)));
+            accounts.create(admin, username, "Tài khoản kiểm tra", Role.ACCOUNTANT,
+                    "BlueMoon123", "BlueMoon123");
+            AppUser account = auth.login(username, "BlueMoon123");
+            assertNotNull(account);
+            accounts.changePassword(account, "BlueMoon123", "NewMoon123", "NewMoon123");
+            assertNotNull(auth.login(username, "NewMoon123"));
+            for (int attempt = 0; attempt < 4; attempt++) assertNull(auth.login(username, "wrong-password"));
+            assertThrows(AccountLockedException.class, () -> auth.login(username, "wrong-password"));
+            assertThrows(AccountLockedException.class, () -> auth.login(username, "NewMoon123"));
+        } finally {
+            try (Connection connection = database.openConnection();
+                 PreparedStatement delete = connection.prepareStatement("DELETE FROM app_users WHERE username = ?")) {
+                delete.setString(1, username);
+                delete.executeUpdate();
+            }
         }
     }
 
