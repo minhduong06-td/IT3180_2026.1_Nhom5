@@ -1,0 +1,8 @@
+target/
+.idea/
+.vscode/
+.env
+db.properties
+.tools/
+*.log
+TECH_STACK.md

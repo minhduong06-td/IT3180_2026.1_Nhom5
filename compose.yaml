@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: bluemoon-se05-mysql
+    environment:
+      MYSQL_DATABASE: bluemoon
+      MYSQL_USER: bluemoon_app
+      MYSQL_PASSWORD: bluemoon_dev
+      MYSQL_ROOT_PASSWORD: bluemoon_root_dev
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - bluemoon-se05-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  bluemoon-se05-data:
