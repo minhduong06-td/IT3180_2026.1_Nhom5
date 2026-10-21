@@ -5,3 +5,4 @@ target/
 db.properties
 .tools/
 *.log
+TECH_STACK.md
