@@ -15,8 +15,14 @@ public final class AuthService {
 
     public AppUser login(String username, String password) throws SQLException {
         if (username == null || username.isBlank() || password == null || password.isEmpty()) return null;
-        String hash = repository.findPasswordHash(username.trim());
-        if (hash == null || !BCrypt.checkpw(password, hash)) return null;
-        return repository.findUser(username.trim());
+        var credential = repository.findLoginCredential(username.trim());
+        if (credential == null) return null;
+        if (credential.loginLocked()) throw new AccountLockedException();
+        if (!BCrypt.checkpw(password, credential.passwordHash())) {
+            if (repository.recordLoginFailure(credential.user().id())) throw new AccountLockedException();
+            return null;
+        }
+        repository.resetLoginFailures(credential.user().id());
+        return credential.user();
     }
 }

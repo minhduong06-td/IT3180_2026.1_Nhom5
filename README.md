@@ -10,6 +10,7 @@
 - Ghi nhận thanh toán một phần hoặc toàn bộ bằng tiền mặt hay chuyển khoản.
 - Theo dõi số phải thu, số đã thu, công nợ và lịch sử giao dịch.
 - Phân quyền thao tác giữa ban quản trị và kế toán.
+- Quản lý tài khoản, đổi mật khẩu và khóa đăng nhập tạm thời khi nhập sai nhiều lần.
 
 ## Công nghệ
 
