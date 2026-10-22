@@ -6,7 +6,7 @@ Tài liệu mô tả cách ban quản trị và kế toán quản lý khoản th
 
 | Vai trò | Quyền sử dụng |
 |---|---|
-| Ban quản trị | Quản lý căn hộ, khoản thu, đơn giá và phát hành kỳ thu; xem bảng kê và báo cáo tổng quan. |
+| Ban quản trị | Quản lý tài khoản, căn hộ, khoản thu, đơn giá và phát hành kỳ thu; xem bảng kê và báo cáo tổng quan. |
 | Kế toán | Xem bảng kê, ghi nhận thanh toán và tra cứu lịch sử thu. |
 
 Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dựa vào việc ẩn nút trên màn hình.
@@ -20,6 +20,7 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 | Kỳ thu | Tháng, ngày phát hành, hạn nộp | Mỗi tháng chỉ phát hành một lần; hạn nộp không trước ngày phát hành. |
 | Bảng kê | Căn hộ, khoản thu, diện tích, đơn giá, số tiền, số đã thu | Thông tin tính phí được lưu tại thời điểm phát hành và không đổi theo các lần cập nhật sau. |
 | Giao dịch | Thời gian, số tiền, hình thức, mã tham chiếu, ghi chú, người ghi nhận | Số tiền phải là số nguyên VND dương; từng lần thu được lưu riêng trong lịch sử. |
+| Tài khoản | Tên đăng nhập, tên hiển thị, vai trò, mật khẩu | Ban quản trị tạo tài khoản; mật khẩu được lưu dưới dạng băm và người dùng có thể tự đổi mật khẩu. |
 
 ## Quy tắc tính phí và thanh toán
 
@@ -34,12 +35,13 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 ## Quy trình sử dụng
 
 1. Đăng nhập bằng tài khoản thuộc vai trò phù hợp.
-2. Ban quản trị thêm căn hộ và nhập diện tích, chủ hộ cùng thông tin liên hệ.
-3. Tạo khoản thu bắt buộc theo diện tích và khai báo đơn giá, ngày bắt đầu áp dụng.
-4. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
-5. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
-6. Kế toán ghi nhận số tiền nhận được, phương thức thanh toán và thông tin đối chiếu nếu có.
-7. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
+2. Ban quản trị tạo tài khoản cho người sử dụng và chọn vai trò phù hợp.
+3. Ban quản trị thêm căn hộ và nhập diện tích, chủ hộ cùng thông tin liên hệ.
+4. Tạo khoản thu bắt buộc theo diện tích và khai báo đơn giá, ngày bắt đầu áp dụng.
+5. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
+6. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
+7. Kế toán ghi nhận số tiền nhận được, phương thức thanh toán và thông tin đối chiếu nếu có.
+8. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
 
 ## Tiêu chí chấp nhận
 
@@ -60,3 +62,9 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 - **Khi bắt đầu:** Người dùng đăng nhập bằng tài khoản thuộc một vai trò.
 - **Khi thực hiện:** Người dùng gọi thao tác không thuộc quyền hạn của vai trò đó.
 - **Kết quả:** Hệ thống từ chối thao tác và giữ nguyên dữ liệu.
+
+### Đăng nhập và mật khẩu
+
+- **Khi bắt đầu:** Người dùng có tài khoản đang hoạt động.
+- **Khi thực hiện:** Người dùng nhập sai mật khẩu liên tiếp 5 lần hoặc đổi mật khẩu từ phiên đăng nhập của mình.
+- **Kết quả:** Tài khoản bị khóa đăng nhập trong 5 phút; mật khẩu mới chỉ được lưu khi mật khẩu hiện tại hợp lệ và thông tin xác nhận khớp.
