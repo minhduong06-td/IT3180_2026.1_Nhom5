@@ -6,8 +6,8 @@ Tài liệu mô tả cách ban quản trị và kế toán quản lý khoản th
 
 | Vai trò | Quyền sử dụng |
 |---|---|
-| Ban quản trị | Quản lý tài khoản, căn hộ, khoản thu, đơn giá và phát hành kỳ thu; xem bảng kê và báo cáo tổng quan. |
-| Kế toán | Xem bảng kê, ghi nhận thanh toán và tra cứu lịch sử thu. |
+| Ban quản trị | Quản lý tài khoản, căn hộ, nhân khẩu, khoản thu, đơn giá và phát hành kỳ thu; xem bảng kê và báo cáo tổng quan. |
+| Kế toán | Xem hồ sơ căn hộ và nhân khẩu, bảng kê; ghi nhận thanh toán và tra cứu lịch sử thu. |
 
 Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dựa vào việc ẩn nút trên màn hình.
 
@@ -15,7 +15,8 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 
 | Nhóm thông tin | Trường chính | Quy tắc |
 |---|---|---|
-| Căn hộ | Mã căn, diện tích, chủ hộ, số điện thoại, trạng thái | Mã căn là duy nhất; diện tích phải lớn hơn 0 và có tối đa hai chữ số thập phân. |
+| Căn hộ | Mã căn, tầng, mã hộ khẩu, diện tích, chủ hộ, số điện thoại, ngày nhận nhà, tình trạng | Mã căn và mã hộ khẩu là duy nhất; tầng từ 1 đến 30; diện tích lớn hơn 0 và có tối đa hai chữ số thập phân; ngày nhận nhà không ở tương lai. |
+| Nhân khẩu | Họ tên, ngày sinh, giới tính, CCCD/CMND, quan hệ, ngày chuyển đến | Họ tên dài 2 đến 50 ký tự chữ; người từ 14 tuổi cần CCCD/CMND 9 hoặc 12 chữ số; mỗi hộ có một chủ hộ. |
 | Khoản thu | Mã, tên, cách tính, đơn giá, ngày hiệu lực | Mã không trùng; đơn giá lớn hơn 0; đơn giá mới được lưu thành bản ghi riêng. |
 | Kỳ thu | Tháng, ngày phát hành, hạn nộp | Mỗi tháng chỉ phát hành một lần; hạn nộp không trước ngày phát hành. |
 | Bảng kê | Căn hộ, khoản thu, diện tích, đơn giá, số tiền, số đã thu | Thông tin tính phí được lưu tại thời điểm phát hành và không đổi theo các lần cập nhật sau. |
@@ -36,12 +37,14 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 
 1. Đăng nhập bằng tài khoản thuộc vai trò phù hợp.
 2. Ban quản trị tạo tài khoản cho người sử dụng và chọn vai trò phù hợp.
-3. Ban quản trị thêm căn hộ và nhập diện tích, chủ hộ cùng thông tin liên hệ.
-4. Tạo khoản thu bắt buộc theo diện tích và khai báo đơn giá, ngày bắt đầu áp dụng.
-5. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
-6. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
-7. Kế toán ghi nhận số tiền nhận được, phương thức thanh toán và thông tin đối chiếu nếu có.
-8. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
+3. Ban quản trị thêm hồ sơ căn hộ, mã hộ khẩu, diện tích, ngày nhận nhà và tình trạng.
+4. Thêm nhân khẩu, xác định một chủ hộ, cập nhật ngày sinh, giấy tờ và quan hệ với chủ hộ.
+5. Tìm hồ sơ theo mã căn, tầng, họ tên có dấu hoặc không dấu, CCCD/CMND và số điện thoại.
+6. Tạo khoản thu bắt buộc theo diện tích và khai báo đơn giá, ngày bắt đầu áp dụng.
+7. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
+8. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
+9. Kế toán ghi nhận số tiền nhận được, phương thức thanh toán và thông tin đối chiếu nếu có.
+10. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
 
 ## Tiêu chí chấp nhận
 

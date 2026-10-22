@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -170,42 +171,174 @@ public final class AppRepository {
     }
 
     public List<Apartment> listApartments() throws SQLException {
-        String sql = "SELECT id, code, area_m2, household_name, contact_phone, active FROM apartments ORDER BY code";
+        String sql = "SELECT id, code, household_code, area_m2, household_name, contact_phone, "
+                + "move_in_date, occupancy_status, active FROM apartments ORDER BY code";
         List<Apartment> apartments = new ArrayList<>();
         try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
              ResultSet result = query.executeQuery(sql)) {
-            while (result.next()) {
-                apartments.add(new Apartment(result.getLong("id"), result.getString("code"),
-                        result.getBigDecimal("area_m2"), result.getString("household_name"),
-                        result.getString("contact_phone"), result.getBoolean("active")));
-            }
+            while (result.next()) apartments.add(readApartment(result));
         }
         return apartments;
     }
 
     public void saveApartment(Apartment apartment) throws SQLException {
         if (apartment.id() == null) {
-            String sql = "INSERT INTO apartments(code, area_m2, household_name, contact_phone, active) VALUES (?, ?, ?, ?, ?)";
+            String sql = "INSERT INTO apartments(code, household_code, area_m2, household_name, contact_phone, "
+                    + "move_in_date, occupancy_status, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             try (Connection connection = database.openConnection(); PreparedStatement insert = connection.prepareStatement(sql)) {
                 bindApartment(insert, apartment);
                 insert.executeUpdate();
             }
             return;
         }
-        String sql = "UPDATE apartments SET code = ?, area_m2 = ?, household_name = ?, contact_phone = ?, active = ? WHERE id = ?";
+        String sql = "UPDATE apartments SET code = ?, household_code = ?, area_m2 = ?, household_name = ?, "
+                + "contact_phone = ?, move_in_date = ?, occupancy_status = ?, active = ? WHERE id = ?";
         try (Connection connection = database.openConnection(); PreparedStatement update = connection.prepareStatement(sql)) {
             bindApartment(update, apartment);
-            update.setLong(6, apartment.id());
+            update.setLong(9, apartment.id());
             if (update.executeUpdate() != 1) throw new SQLException("Không tìm thấy căn hộ cần cập nhật.");
         }
     }
 
     private static void bindApartment(PreparedStatement statement, Apartment apartment) throws SQLException {
         statement.setString(1, apartment.code());
-        statement.setBigDecimal(2, apartment.areaM2());
-        statement.setString(3, apartment.householdName());
-        statement.setString(4, apartment.contactPhone());
-        statement.setBoolean(5, apartment.active());
+        statement.setString(2, apartment.householdCode());
+        statement.setBigDecimal(3, apartment.areaM2());
+        statement.setString(4, apartment.householdName());
+        statement.setString(5, apartment.contactPhone());
+        statement.setDate(6, Date.valueOf(apartment.moveInDate()));
+        statement.setString(7, apartment.occupancyStatus().name());
+        statement.setBoolean(8, apartment.active());
+    }
+
+    private static Apartment readApartment(ResultSet result) throws SQLException {
+        return new Apartment(result.getLong("id"), result.getString("code"), result.getString("household_code"),
+                result.getBigDecimal("area_m2"), result.getString("household_name"), result.getString("contact_phone"),
+                result.getDate("move_in_date").toLocalDate(), OccupancyStatus.valueOf(result.getString("occupancy_status")),
+                result.getBoolean("active"));
+    }
+
+    public List<Resident> listResidents(long apartmentId) throws SQLException {
+        String sql = "SELECT id, apartment_id, full_name, date_of_birth, gender, national_id, relationship, move_in_date "
+                + "FROM residents WHERE apartment_id = ? ORDER BY relationship = 'HEAD' DESC, full_name";
+        List<Resident> residents = new ArrayList<>();
+        try (Connection connection = database.openConnection(); PreparedStatement query = connection.prepareStatement(sql)) {
+            query.setLong(1, apartmentId);
+            try (ResultSet result = query.executeQuery()) {
+                while (result.next()) residents.add(readResident(result));
+            }
+        }
+        return residents;
+    }
+
+    public List<ResidentDirectoryEntry> listResidentDirectory() throws SQLException {
+        String sql = """
+                SELECT a.id AS apartment_id, a.code, a.household_code, a.area_m2, a.household_name,
+                       a.contact_phone, a.move_in_date AS apartment_move_in, a.occupancy_status, a.active,
+                       r.id AS resident_id, r.full_name, r.date_of_birth, r.gender, r.national_id,
+                       r.relationship, r.move_in_date AS resident_move_in
+                FROM apartments a LEFT JOIN residents r ON r.apartment_id = a.id
+                ORDER BY a.code, r.relationship = 'HEAD' DESC, r.full_name
+                """;
+        List<ResidentDirectoryEntry> entries = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) {
+                Apartment apartment = new Apartment(result.getLong("apartment_id"), result.getString("code"),
+                        result.getString("household_code"), result.getBigDecimal("area_m2"),
+                        result.getString("household_name"), result.getString("contact_phone"),
+                        result.getDate("apartment_move_in").toLocalDate(),
+                        OccupancyStatus.valueOf(result.getString("occupancy_status")), result.getBoolean("active"));
+                long residentId = result.getLong("resident_id");
+                Resident resident = result.wasNull() ? null : new Resident(residentId, apartment.id(),
+                        result.getString("full_name"), result.getDate("date_of_birth").toLocalDate(),
+                        Gender.valueOf(result.getString("gender")), result.getString("national_id"),
+                        HouseholdRelationship.valueOf(result.getString("relationship")),
+                        result.getDate("resident_move_in").toLocalDate());
+                entries.add(new ResidentDirectoryEntry(apartment, resident));
+            }
+        }
+        return entries;
+    }
+
+    public void saveResident(Resident resident, boolean replaceHead) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                try (PreparedStatement lock = connection.prepareStatement("SELECT id FROM apartments WHERE id = ? FOR UPDATE")) {
+                    lock.setLong(1, resident.apartmentId());
+                    try (ResultSet result = lock.executeQuery()) {
+                        if (!result.next()) throw new SQLException("Không tìm thấy căn hộ cần cập nhật.");
+                    }
+                }
+                if (replaceHead && resident.relationship() == HouseholdRelationship.HEAD) {
+                    try (PreparedStatement replace = connection.prepareStatement(
+                            "UPDATE residents SET relationship = 'OTHER' WHERE apartment_id = ? "
+                                    + "AND relationship = 'HEAD' AND id <> ?")) {
+                        replace.setLong(1, resident.apartmentId());
+                        replace.setLong(2, resident.id() == null ? -1 : resident.id());
+                        replace.executeUpdate();
+                    }
+                }
+                if (resident.id() == null) {
+                    try (PreparedStatement insert = connection.prepareStatement(
+                            "INSERT INTO residents(apartment_id, full_name, date_of_birth, gender, national_id, relationship, move_in_date) "
+                                    + "VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+                        bindResident(insert, resident);
+                        insert.executeUpdate();
+                    }
+                } else {
+                    try (PreparedStatement update = connection.prepareStatement(
+                            "UPDATE residents SET full_name = ?, date_of_birth = ?, gender = ?, national_id = ?, "
+                                    + "relationship = ?, move_in_date = ? WHERE id = ? AND apartment_id = ?")) {
+                        update.setString(1, resident.fullName());
+                        update.setDate(2, Date.valueOf(resident.dateOfBirth()));
+                        update.setString(3, resident.gender().name());
+                        setNullableString(update, 4, resident.nationalId());
+                        update.setString(5, resident.relationship().name());
+                        update.setDate(6, Date.valueOf(resident.moveInDate()));
+                        update.setLong(7, resident.id());
+                        update.setLong(8, resident.apartmentId());
+                        if (update.executeUpdate() != 1) throw new SQLException("Không tìm thấy nhân khẩu cần cập nhật.");
+                    }
+                }
+                if (resident.relationship() == HouseholdRelationship.HEAD) {
+                    try (PreparedStatement updateHousehold = connection.prepareStatement(
+                            "UPDATE apartments SET household_name = ? WHERE id = ?")) {
+                        updateHousehold.setString(1, resident.fullName());
+                        updateHousehold.setLong(2, resident.apartmentId());
+                        updateHousehold.executeUpdate();
+                    }
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    private static Resident readResident(ResultSet result) throws SQLException {
+        Date birthDate = result.getDate("date_of_birth");
+        Date moveInDate = result.getDate("move_in_date");
+        return new Resident(result.getLong("id"), result.getLong("apartment_id"), result.getString("full_name"),
+                birthDate.toLocalDate(), Gender.valueOf(result.getString("gender")), result.getString("national_id"),
+                HouseholdRelationship.valueOf(result.getString("relationship")), moveInDate.toLocalDate());
+    }
+
+    private static void bindResident(PreparedStatement statement, Resident resident) throws SQLException {
+        statement.setLong(1, resident.apartmentId());
+        statement.setString(2, resident.fullName());
+        statement.setDate(3, Date.valueOf(resident.dateOfBirth()));
+        statement.setString(4, resident.gender().name());
+        setNullableString(statement, 5, resident.nationalId());
+        statement.setString(6, resident.relationship().name());
+        statement.setDate(7, Date.valueOf(resident.moveInDate()));
+    }
+
+    private static void setNullableString(PreparedStatement statement, int index, String value) throws SQLException {
+        if (value == null) statement.setNull(index, Types.VARCHAR);
+        else statement.setString(index, value);
     }
 
     public List<FeeType> listFeeTypes() throws SQLException {
