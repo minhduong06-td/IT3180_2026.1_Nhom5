@@ -9,6 +9,9 @@ public final class Domain {
 
     public enum Role { ADMIN, ACCOUNTANT }
     public enum CalculationBasis { PER_M2, FIXED }
+    public enum OccupancyStatus { OCCUPIED, VACANT, RENTED }
+    public enum Gender { MALE, FEMALE }
+    public enum HouseholdRelationship { HEAD, WIFE, HUSBAND, CHILD, PARENT, TENANT, OTHER }
     public enum PaymentMethod { CASH, BANK_TRANSFER }
     public enum ChargeStatus { UNPAID, PARTIALLY_PAID, PAID }
 
@@ -19,8 +22,21 @@ public final class Domain {
 
     public record LoginCredential(AppUser user, String passwordHash, boolean loginLocked) {}
 
-    public record Apartment(Long id, String code, BigDecimal areaM2, String householdName,
-                            String contactPhone, boolean active) {}
+    public record Apartment(Long id, String code, String householdCode, BigDecimal areaM2,
+                            String householdName, String contactPhone, LocalDate moveInDate,
+                            OccupancyStatus occupancyStatus, boolean active) {
+        public int floor() {
+            if (code == null || !code.matches("[A-Z][0-9]{3,4}")) return 0;
+            String digits = code.substring(1);
+            return Integer.parseInt(digits.substring(0, digits.length() - 2));
+        }
+    }
+
+    public record Resident(Long id, long apartmentId, String fullName, LocalDate dateOfBirth,
+                           Gender gender, String nationalId, HouseholdRelationship relationship,
+                           LocalDate moveInDate) {}
+
+    public record ResidentDirectoryEntry(Apartment apartment, Resident resident) {}
 
     public record FeeType(long id, String code, String name, boolean required,
                           CalculationBasis basis, BigDecimal unitPrice,
