@@ -228,10 +228,12 @@ final class ChargesView extends VBox {
     }
 
     private static String formula(ChargeSummary charge) {
-        if (charge.basis() == CalculationBasis.PER_M2) {
-            return charge.quantity().stripTrailingZeros().toPlainString() + " m² × " + Ui.money(charge.unitPrice());
-        }
-        return "Mức cố định " + Ui.money(charge.unitPrice());
+        return switch (charge.basis()) {
+            case PER_M2 -> charge.quantity().stripTrailingZeros().toPlainString() + " m² × " + Ui.money(charge.unitPrice());
+            case PER_RESIDENT -> charge.quantity().stripTrailingZeros().toPlainString() + " người × " + Ui.money(charge.unitPrice());
+            case FIXED -> "Mức cố định " + Ui.money(charge.unitPrice());
+            case VOLUNTARY -> "Đóng góp tự nguyện";
+        };
     }
 
     private static String status(ChargeStatus status) {
