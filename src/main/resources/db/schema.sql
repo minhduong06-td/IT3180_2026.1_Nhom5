@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS fee_types (
     code VARCHAR(32) NOT NULL UNIQUE,
     name VARCHAR(120) NOT NULL,
     required BOOLEAN NOT NULL DEFAULT TRUE,
-    calculation_basis ENUM('PER_M2', 'FIXED') NOT NULL,
+    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'FIXED', 'VOLUNTARY') NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS charges (
     billing_period_id BIGINT NOT NULL,
     apartment_id BIGINT NOT NULL,
     fee_type_id BIGINT NOT NULL,
-    calculation_basis_snapshot ENUM('PER_M2', 'FIXED') NOT NULL,
+    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'FIXED') NOT NULL,
     quantity_snapshot DECIMAL(10, 2) NOT NULL,
     unit_price_snapshot DECIMAL(15, 2) NOT NULL,
     amount DECIMAL(15, 0) NOT NULL,
@@ -119,4 +119,22 @@ CREATE TABLE IF NOT EXISTS payments (
     CONSTRAINT chk_payment_positive CHECK (amount > 0),
     CONSTRAINT fk_payment_charge FOREIGN KEY (charge_id) REFERENCES charges(id) ON DELETE RESTRICT,
     CONSTRAINT fk_payment_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS contributions (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    fee_type_id BIGINT NOT NULL,
+    apartment_id BIGINT NOT NULL,
+    received_on DATE NOT NULL,
+    amount DECIMAL(15, 0) NOT NULL,
+    method ENUM('CASH', 'BANK_TRANSFER') NOT NULL,
+    reference VARCHAR(120) NULL,
+    note VARCHAR(500) NULL,
+    recorded_by BIGINT NOT NULL,
+    KEY ix_contribution_received_on (received_on),
+    KEY ix_contribution_apartment (apartment_id),
+    CONSTRAINT chk_contribution_positive CHECK (amount > 0),
+    CONSTRAINT fk_contribution_fee FOREIGN KEY (fee_type_id) REFERENCES fee_types(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_contribution_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_contribution_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
 );
