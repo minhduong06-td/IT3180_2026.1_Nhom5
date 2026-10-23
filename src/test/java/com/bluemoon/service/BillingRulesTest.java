@@ -23,6 +23,17 @@ class BillingRulesTest {
     }
 
     @Test
+    void calculatesPerResidentFeesAndAllowsAnEmptyHousehold() {
+        assertEquals(new BigDecimal("24000"), BillingRules.calculate(
+                CalculationBasis.PER_RESIDENT, new BigDecimal("80"), new BigDecimal("6000"), 4));
+        assertEquals(BigDecimal.ZERO, BillingRules.calculate(
+                CalculationBasis.PER_RESIDENT, new BigDecimal("80"), new BigDecimal("6000"), 0));
+        assertEquals(ChargeStatus.PAID, BillingRules.status(BigDecimal.ZERO, BigDecimal.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> BillingRules.calculate(
+                CalculationBasis.VOLUNTARY, BigDecimal.ONE, BigDecimal.ONE, 1));
+    }
+
+    @Test
     void rejectsZeroAreaAndOverpayment() {
         assertThrows(IllegalArgumentException.class, () -> BillingRules.calculate(
                 CalculationBasis.PER_M2, BigDecimal.ZERO, BigDecimal.ONE));

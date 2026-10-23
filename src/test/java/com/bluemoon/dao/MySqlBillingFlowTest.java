@@ -4,6 +4,8 @@ import com.bluemoon.config.Database;
 import com.bluemoon.config.DatabaseBootstrap;
 import com.bluemoon.model.Domain.AppUser;
 import com.bluemoon.model.Domain.ChargeSummary;
+import com.bluemoon.model.Domain.CalculationBasis;
+import com.bluemoon.model.Domain.Contribution;
 import com.bluemoon.model.Domain.Gender;
 import com.bluemoon.model.Domain.HouseholdRelationship;
 import com.bluemoon.model.Domain.Apartment;
@@ -15,6 +17,8 @@ import com.bluemoon.service.AccountLockedException;
 import com.bluemoon.service.AccountService;
 import com.bluemoon.service.ApartmentService;
 import com.bluemoon.service.AuthService;
+import com.bluemoon.service.ContributionService;
+import com.bluemoon.service.FeeService;
 import com.bluemoon.service.HouseholdHeadExistsException;
 import com.bluemoon.service.ResidentService;
 import org.junit.jupiter.api.Assumptions;
@@ -51,6 +55,8 @@ class MySqlBillingFlowTest {
         long adminId = userId(database, "admin");
         long accountantId = userId(database, "accountant");
         long serviceFeeId = feeId(database, "SERVICE");
+        String contributionCode = "FUND_IT_CHECK";
+        removeFee(database, contributionCode);
         LocalDate laterRateDate = LocalDate.of(2098, 1, 15);
         removePeriod(database, 2098, 1);
         removeRate(database, serviceFeeId, laterRateDate);
@@ -64,26 +70,44 @@ class MySqlBillingFlowTest {
             verifyAccountManagement(database, repository, auth, admin);
             verifyApartmentManagement(database, repository, admin);
             verifyResidentManagement(database, repository, admin);
+            FeeService fees = new FeeService(repository);
+            fees.create(admin, contributionCode, "Quỹ kiểm tra", false,
+                    CalculationBasis.VOLUNTARY, null, null);
+            long contributionFeeId = feeId(database, contributionCode);
+            var apartment = repository.listApartments().getFirst();
+            ContributionService contributions = new ContributionService(repository);
+            Contribution contribution = new Contribution(contributionFeeId, apartment.id(),
+                    new BigDecimal("50000"), LocalDate.now(), PaymentMethod.CASH, "FUND-001", null);
+            fees.setActive(admin, contributionFeeId, false);
+            assertThrows(IllegalArgumentException.class, () -> contributions.record(admin, contribution));
+            fees.setActive(admin, contributionFeeId, true);
+            contributions.record(admin, contribution);
+            assertTrue(repository.listContributions().stream().anyMatch(row -> row.feeName().equals("Quỹ kiểm tra")
+                    && row.amount().compareTo(new BigDecimal("50000")) == 0));
             var period = repository.issuePeriod(2098, 1, LocalDate.of(2098, 1, 20),
                     LocalDate.of(2098, 1, 31), adminId);
-            assertEquals(6, period.chargeCount());
-            assertEquals(new BigDecimal("1177500"), period.totalAmount());
+            assertEquals(9, period.chargeCount());
+            assertEquals(new BigDecimal("4003500"), period.totalAmount());
             assertThrows(SQLException.class, () -> repository.issuePeriod(2098, 1,
                     LocalDate.of(2098, 1, 1), LocalDate.of(2098, 1, 31), adminId));
 
             ChargeSummary serviceCharge = repository.listCharges(period.id(), "A101").stream()
                     .filter(charge -> "Phí dịch vụ".equals(charge.feeName())).findFirst().orElseThrow();
-            assertEquals(new BigDecimal("195000"), serviceCharge.amount());
+            assertEquals(new BigDecimal("650000"), serviceCharge.amount());
+            ChargeSummary sanitationCharge = repository.listCharges(period.id(), "A102").stream()
+                    .filter(charge -> "Phí vệ sinh".equals(charge.feeName())).findFirst().orElseThrow();
+            assertEquals(BigDecimal.ZERO, sanitationCharge.amount());
+            assertEquals("PAID", sanitationCharge.status().name());
             repository.recordPayment(serviceCharge.id(), new BigDecimal("100000"), PaymentMethod.CASH,
                     null, "Kiểm tra thu một phần", accountantId);
             ChargeSummary updated = repository.listCharges(period.id(), "A101").stream()
                     .filter(charge -> charge.id() == serviceCharge.id()).findFirst().orElseThrow();
-            assertEquals(new BigDecimal("95000"), updated.balance());
+            assertEquals(new BigDecimal("550000"), updated.balance());
             assertEquals("PARTIALLY_PAID", updated.status().name());
             assertThrows(IllegalArgumentException.class, () -> repository.recordPayment(serviceCharge.id(),
-                    new BigDecimal("95001"), PaymentMethod.CASH, null, null, accountantId));
+                    new BigDecimal("550001"), PaymentMethod.CASH, null, null, accountantId));
 
-            repository.recordPayment(serviceCharge.id(), new BigDecimal("95000"), PaymentMethod.BANK_TRANSFER,
+            repository.recordPayment(serviceCharge.id(), new BigDecimal("550000"), PaymentMethod.BANK_TRANSFER,
                     "BM-2098-A101", null, accountantId);
             ChargeSummary paid = repository.listCharges(period.id(), "A101").stream()
                     .filter(charge -> charge.id() == serviceCharge.id()).findFirst().orElseThrow();
@@ -92,6 +116,7 @@ class MySqlBillingFlowTest {
         } finally {
             removePeriod(database, 2098, 1);
             removeRate(database, serviceFeeId, laterRateDate);
+            removeFee(database, contributionCode);
         }
     }
 
@@ -214,6 +239,21 @@ class MySqlBillingFlowTest {
             try (ResultSet result = query.executeQuery()) {
                 if (!result.next()) throw new SQLException("Không tìm thấy khoản thu: " + code);
                 return result.getLong(1);
+            }
+        }
+    }
+
+    private static void removeFee(Database database, String code) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            try (PreparedStatement deleteContributions = connection.prepareStatement(
+                    "DELETE c FROM contributions c JOIN fee_types f ON f.id = c.fee_type_id WHERE f.code = ?")) {
+                deleteContributions.setString(1, code);
+                deleteContributions.executeUpdate();
+            }
+            try (PreparedStatement deleteFee = connection.prepareStatement(
+                    "DELETE FROM fee_types WHERE code = ? AND id NOT IN (SELECT fee_type_id FROM charges)")) {
+                deleteFee.setString(1, code);
+                deleteFee.executeUpdate();
             }
         }
     }
