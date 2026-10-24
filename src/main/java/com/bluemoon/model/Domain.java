@@ -61,7 +61,7 @@ public final class Domain {
                                 String note, String recordedBy) {}
 
     public record ContributionRecord(long id, String apartmentCode, String householdName,
-                                    String feeName, LocalDateTime receivedAt, BigDecimal amount,
+                                    String feeName, LocalDate receivedOn, BigDecimal amount,
                                     PaymentMethod method, String reference, String note,
                                     String recordedBy) {}
 

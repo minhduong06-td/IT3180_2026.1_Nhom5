@@ -54,13 +54,14 @@ final class ContributionView extends VBox {
 
     private void configureTable() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.getColumns().add(column("Thời gian", row -> row.receivedAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+        table.getColumns().add(column("Ngày nhận", row -> row.receivedOn().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
         table.getColumns().add(column("Căn hộ", ContributionRecord::apartmentCode));
         table.getColumns().add(column("Chủ hộ", ContributionRecord::householdName));
         table.getColumns().add(column("Khoản đóng góp", ContributionRecord::feeName));
         table.getColumns().add(column("Số tiền", row -> Ui.money(row.amount())));
         table.getColumns().add(column("Hình thức", row -> method(row.method())));
         table.getColumns().add(column("Mã giao dịch", row -> empty(row.reference())));
+        table.getColumns().add(column("Ghi chú", row -> empty(row.note())));
     }
 
     private void load() {
