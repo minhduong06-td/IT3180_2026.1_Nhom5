@@ -90,12 +90,13 @@ final class BillingView extends VBox {
         ButtonType publish = new ButtonType("Phát hành", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().setAll(publish, ButtonType.CANCEL);
 
-        var month = new Spinner<Integer>(1, 12, 10);
-        var year = new Spinner<Integer>(2000, 2200, 2026);
+        LocalDate today = LocalDate.now();
+        var month = new Spinner<Integer>(1, 12, today.getMonthValue());
+        var year = new Spinner<Integer>(2000, 2200, today.getYear());
         month.setEditable(true);
         year.setEditable(true);
-        var issueDate = new DatePicker(LocalDate.of(2026, 10, 1));
-        var dueDate = new DatePicker(LocalDate.of(2026, 10, 31));
+        var issueDate = new DatePicker(today);
+        var dueDate = new DatePicker(today.withDayOfMonth(1).plusMonths(1).withDayOfMonth(15));
         month.valueProperty().addListener((observable, oldValue, newValue) -> datesFor(newValue, year.getValue(), issueDate, dueDate));
         year.valueProperty().addListener((observable, oldValue, newValue) -> datesFor(month.getValue(), newValue, issueDate, dueDate));
         GridPane form = new GridPane();
@@ -138,7 +139,7 @@ final class BillingView extends VBox {
     private static void datesFor(int month, int year, DatePicker issue, DatePicker due) {
         LocalDate first = LocalDate.of(year, month, 1);
         issue.setValue(first);
-        due.setValue(first.withDayOfMonth(first.lengthOfMonth()));
+        due.setValue(first.plusMonths(1).withDayOfMonth(15));
     }
 
     private static void addRow(GridPane grid, int row, String title, javafx.scene.Node field) {
