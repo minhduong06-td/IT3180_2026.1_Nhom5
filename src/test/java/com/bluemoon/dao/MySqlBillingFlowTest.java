@@ -18,6 +18,7 @@ import com.bluemoon.service.AccountService;
 import com.bluemoon.service.ApartmentService;
 import com.bluemoon.service.AuthService;
 import com.bluemoon.service.ContributionService;
+import com.bluemoon.service.CollectionService;
 import com.bluemoon.service.FeeService;
 import com.bluemoon.service.HouseholdHeadExistsException;
 import com.bluemoon.service.ResidentService;
@@ -88,6 +89,18 @@ class MySqlBillingFlowTest {
                     LocalDate.of(2098, 1, 31), adminId);
             assertEquals(9, period.chargeCount());
             assertEquals(new BigDecimal("4003500"), period.totalAmount());
+            var initialDebts = repository.listHouseholdDebts(period.id());
+            assertEquals(3, initialDebts.size());
+            var firstDebt = initialDebts.stream().filter(debt -> debt.apartmentCode().equals("A101"))
+                    .findFirst().orElseThrow();
+            assertEquals(1, firstDebt.floor());
+            assertEquals(0, firstDebt.residentCount());
+            assertEquals(new BigDecimal("1105000"), firstDebt.totalDue());
+            assertEquals("UNPAID", firstDebt.status().name());
+            CollectionService collections = new CollectionService(repository);
+            assertEquals(3, collections.debts(admin, period.id(), 1, 1, null).size());
+            assertTrue(collections.debts(admin, period.id(), 2, 3, null).isEmpty());
+            assertThrows(IllegalArgumentException.class, () -> collections.debts(admin, period.id(), 10, 5, null));
             assertThrows(SQLException.class, () -> repository.issuePeriod(2098, 1,
                     LocalDate.of(2098, 1, 1), LocalDate.of(2098, 1, 31), adminId));
 
@@ -104,6 +117,12 @@ class MySqlBillingFlowTest {
                     .filter(charge -> charge.id() == serviceCharge.id()).findFirst().orElseThrow();
             assertEquals(new BigDecimal("550000"), updated.balance());
             assertEquals("PARTIALLY_PAID", updated.status().name());
+            var updatedDebt = repository.listHouseholdDebts(period.id()).stream()
+                    .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
+            assertEquals(new BigDecimal("100000"), updatedDebt.paid());
+            assertEquals(new BigDecimal("1005000"), updatedDebt.balance());
+            assertEquals("PARTIALLY_PAID", updatedDebt.status().name());
+            assertNotNull(updatedDebt.lastPaidAt());
             assertThrows(IllegalArgumentException.class, () -> repository.recordPayment(serviceCharge.id(),
                     new BigDecimal("550001"), PaymentMethod.CASH, null, null, accountantId));
 
