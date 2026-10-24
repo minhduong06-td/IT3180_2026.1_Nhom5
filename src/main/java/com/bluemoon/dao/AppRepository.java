@@ -379,7 +379,7 @@ public final class AppRepository {
                 insert.executeUpdate();
                 try (ResultSet keys = insert.getGeneratedKeys()) {
                     if (!keys.next()) throw new SQLException("Không tạo được loại khoản thu.");
-                    insertRate(connection, keys.getLong(1), unitPrice, effectiveFrom, userId);
+                    if (required) insertRate(connection, keys.getLong(1), unitPrice, effectiveFrom, userId);
                 }
                 connection.commit();
             } catch (SQLException | RuntimeException exception) {
@@ -392,6 +392,15 @@ public final class AppRepository {
     public void addFeeRate(long feeId, BigDecimal unitPrice, LocalDate effectiveFrom, long userId) throws SQLException {
         try (Connection connection = database.openConnection()) {
             insertRate(connection, feeId, unitPrice, effectiveFrom, userId);
+        }
+    }
+
+    public void setFeeActive(long feeId, boolean active) throws SQLException {
+        try (Connection connection = database.openConnection(); PreparedStatement update = connection.prepareStatement(
+                "UPDATE fee_types SET active = ? WHERE id = ?")) {
+            update.setBoolean(1, active);
+            update.setLong(2, feeId);
+            if (update.executeUpdate() != 1) throw new SQLException("Không tìm thấy khoản thu.");
         }
     }
 
@@ -426,12 +435,14 @@ public final class AppRepository {
                                      LocalDate dueDate, long userId) throws SQLException {
         String addPeriod = "INSERT INTO billing_periods(period_year, period_month, issue_date, due_date, created_by) VALUES (?, ?, ?, ?, ?)";
         String loadInputs = """
-                SELECT a.id AS apartment_id, a.area_m2, f.id AS fee_id, f.calculation_basis,
-                       r.unit_price
+                SELECT a.id AS apartment_id, a.area_m2, COALESCE(rc.resident_count, 0) AS resident_count,
+                       f.id AS fee_id, f.calculation_basis, r.unit_price
                 FROM apartments a CROSS JOIN fee_types f
                 JOIN fee_rates r ON r.fee_type_id = f.id
                   AND r.effective_from = (SELECT MAX(r2.effective_from) FROM fee_rates r2
                                           WHERE r2.fee_type_id = f.id AND r2.effective_from <= ?)
+                LEFT JOIN (SELECT apartment_id, COUNT(*) AS resident_count FROM residents GROUP BY apartment_id) rc
+                  ON rc.apartment_id = a.id
                 WHERE a.active = TRUE AND f.active = TRUE AND f.required = TRUE
                 ORDER BY a.code, f.name
                 """;
@@ -463,7 +474,8 @@ public final class AppRepository {
                     try (ResultSet result = query.executeQuery()) {
                         while (result.next()) {
                             inputs.add(new ChargeInput(result.getLong("apartment_id"), result.getBigDecimal("area_m2"),
-                                    result.getLong("fee_id"), CalculationBasis.valueOf(result.getString("calculation_basis")),
+                                    result.getInt("resident_count"), result.getLong("fee_id"),
+                                    CalculationBasis.valueOf(result.getString("calculation_basis")),
                                     result.getBigDecimal("unit_price")));
                         }
                     }
@@ -478,8 +490,14 @@ public final class AppRepository {
                 BigDecimal total = BigDecimal.ZERO;
                 try (PreparedStatement insert = connection.prepareStatement(addCharge)) {
                     for (ChargeInput input : inputs) {
-                        BigDecimal quantity = input.basis() == CalculationBasis.PER_M2 ? input.areaM2() : BigDecimal.ONE;
-                        BigDecimal amount = BillingRules.calculate(input.basis(), input.areaM2(), input.unitPrice());
+                        BigDecimal quantity = switch (input.basis()) {
+                            case PER_M2 -> input.areaM2();
+                            case PER_RESIDENT -> BigDecimal.valueOf(input.residentCount());
+                            case FIXED -> BigDecimal.ONE;
+                            case VOLUNTARY -> throw new SQLException("Không thể lập phí bắt buộc từ khoản đóng góp.");
+                        };
+                        BigDecimal amount = BillingRules.calculate(input.basis(), input.areaM2(),
+                                input.unitPrice(), input.residentCount());
                         insert.setLong(1, periodId);
                         insert.setLong(2, input.apartmentId());
                         insert.setLong(3, input.feeId());
@@ -642,6 +660,48 @@ public final class AppRepository {
         return payments;
     }
 
+    public List<ContributionRecord> listContributions() throws SQLException {
+        String sql = """
+                SELECT c.id, a.code, a.household_name, f.name AS fee_name, c.received_on,
+                       c.amount, c.method, c.reference, c.note, u.display_name
+                FROM contributions c
+                JOIN apartments a ON a.id = c.apartment_id
+                JOIN fee_types f ON f.id = c.fee_type_id
+                JOIN app_users u ON u.id = c.recorded_by
+                ORDER BY c.received_on DESC, c.id DESC
+                """;
+        List<ContributionRecord> records = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) records.add(new ContributionRecord(result.getLong("id"),
+                    result.getString("code"), result.getString("household_name"), result.getString("fee_name"),
+                    result.getDate("received_on").toLocalDate(), result.getBigDecimal("amount"),
+                    PaymentMethod.valueOf(result.getString("method")), result.getString("reference"),
+                    result.getString("note"), result.getString("display_name")));
+        }
+        return records;
+    }
+
+    public void recordContribution(Contribution contribution, long userId) throws SQLException {
+        String sql = """
+                INSERT INTO contributions(fee_type_id, apartment_id, received_on, amount, method, reference, note, recorded_by)
+                SELECT f.id, a.id, ?, ?, ?, ?, ?, ?
+                FROM fee_types f JOIN apartments a ON a.id = ?
+                WHERE f.id = ? AND f.required = FALSE AND f.active = TRUE AND a.active = TRUE
+                """;
+        try (Connection connection = database.openConnection(); PreparedStatement insert = connection.prepareStatement(sql)) {
+            insert.setDate(1, Date.valueOf(contribution.receivedOn()));
+            insert.setBigDecimal(2, contribution.amount());
+            insert.setString(3, contribution.method().name());
+            insert.setString(4, blankToNull(contribution.reference()));
+            insert.setString(5, blankToNull(contribution.note()));
+            insert.setLong(6, userId);
+            insert.setLong(7, contribution.apartmentId());
+            insert.setLong(8, contribution.feeTypeId());
+            if (insert.executeUpdate() != 1) throw new SQLException("Khoản đóng góp hoặc căn hộ không còn hiệu lực.");
+        }
+    }
+
     public DashboardSummary dashboard() throws SQLException {
         List<BillingPeriod> periods = listBillingPeriods();
         if (periods.isEmpty()) return new DashboardSummary("Chưa phát hành", BigDecimal.ZERO,
@@ -668,6 +728,6 @@ public final class AppRepository {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private record ChargeInput(long apartmentId, BigDecimal areaM2, long feeId,
+    private record ChargeInput(long apartmentId, BigDecimal areaM2, int residentCount, long feeId,
                                CalculationBasis basis, BigDecimal unitPrice) {}
 }

@@ -38,12 +38,21 @@ final class FeeView extends VBox {
         var add = Ui.button("Thêm khoản thu", true);
         add.setOnAction(event -> createFee());
         var addRate = Ui.button("Cập nhật đơn giá", false);
+        addRate.setDisable(true);
         addRate.setOnAction(event -> addRate());
+        var toggleStatus = Ui.button("Ngừng áp dụng", false);
+        toggleStatus.setDisable(true);
+        toggleStatus.setOnAction(event -> toggleStatus());
         var refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
         getChildren().addAll(Ui.pageHeader("Khoản thu", "Đơn giá mới chỉ áp dụng cho kỳ được phát hành sau ngày hiệu lực."),
                 Ui.toolbar(Ui.label("Khoản đã phát hành luôn giữ nguyên diện tích và đơn giá tại thời điểm tạo.", "muted"),
-                        Ui.spacer(), refresh, addRate, add), table);
+                        Ui.spacer(), refresh, toggleStatus, addRate, add), table);
+        table.getSelectionModel().selectedItemProperty().addListener((observable, oldFee, fee) -> {
+            toggleStatus.setDisable(fee == null);
+            toggleStatus.setText(fee != null && fee.active() ? "Ngừng áp dụng" : "Áp dụng lại");
+            addRate.setDisable(fee == null || !fee.required() || !fee.active());
+        });
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -53,8 +62,13 @@ final class FeeView extends VBox {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Tên khoản thu", FeeType::name));
         table.getColumns().add(column("Mã", FeeType::code));
-        table.getColumns().add(column("Cách tính", fee -> fee.basis() == CalculationBasis.PER_M2 ? "Theo diện tích" : "Cố định"));
         table.getColumns().add(column("Bắt buộc", fee -> fee.required() ? "Có" : "Không"));
+        table.getColumns().add(column("Cách tính", fee -> switch (fee.basis()) {
+            case PER_M2 -> "Theo diện tích";
+            case PER_RESIDENT -> "Theo nhân khẩu";
+            case FIXED -> "Cố định theo căn hộ";
+            case VOLUNTARY -> "Theo số tiền thực nhận";
+        }));
         table.getColumns().add(column("Đơn giá gần nhất", fee -> fee.unitPrice() == null
                 ? "Chưa có đơn giá hiện hành" : Ui.money(fee.unitPrice())));
         table.getColumns().add(column("Hiệu lực từ", fee -> Ui.date(fee.effectiveFrom())));
@@ -80,22 +94,55 @@ final class FeeView extends VBox {
         var name = Ui.textField("Tên khoản thu");
         var price = Ui.textField("Ví dụ: 3000");
         var basis = basisPicker();
+        ComboBox<Boolean> required = new ComboBox<>();
+        required.getItems().setAll(true, false);
+        required.setValue(true);
+        required.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Boolean value) { return Boolean.TRUE.equals(value) ? "Bắt buộc" : "Đóng góp tự nguyện"; }
+            @Override public Boolean fromString(String value) { return true; }
+        });
+        required.getStyleClass().add("form-field");
         var effective = new DatePicker(LocalDate.now());
         effective.getStyleClass().add("form-field");
+        Label basisLabel = formLabel("Cách tính");
+        Label priceLabel = formLabel("Đơn giá");
+        Label effectiveLabel = formLabel("Hiệu lực từ");
         GridPane form = form();
         addRow(form, 0, "Mã", code);
         addRow(form, 1, "Tên khoản thu", name);
-        addRow(form, 2, "Cách tính", basis);
-        addRow(form, 3, "Đơn giá", price);
-        addRow(form, 4, "Hiệu lực từ", effective);
-        form.add(new Label("Khoản thu bắt buộc hàng tháng."), 1, 5);
+        addRow(form, 2, "Phân loại", required);
+        addRow(form, 3, basisLabel, basis);
+        addRow(form, 4, priceLabel, price);
+        addRow(form, 5, effectiveLabel, effective);
+        Label hint = new Label("Khoản đóng góp được ghi nhận theo số tiền thực nhận, không tạo công nợ.");
+        hint.getStyleClass().add("muted");
+        hint.setVisible(false);
+        hint.setManaged(false);
+        form.add(hint, 1, 6);
+        required.valueProperty().addListener((observable, oldValue, value) -> {
+            boolean mandatory = Boolean.TRUE.equals(value);
+            basis.getItems().setAll(mandatory ? List.of(CalculationBasis.PER_M2, CalculationBasis.PER_RESIDENT,
+                    CalculationBasis.FIXED) : List.of(CalculationBasis.VOLUNTARY));
+            basis.setValue(mandatory ? CalculationBasis.PER_M2 : CalculationBasis.VOLUNTARY);
+            price.setVisible(mandatory);
+            price.setManaged(mandatory);
+            effective.setVisible(mandatory);
+            effective.setManaged(mandatory);
+            priceLabel.setVisible(mandatory);
+            priceLabel.setManaged(mandatory);
+            effectiveLabel.setVisible(mandatory);
+            effectiveLabel.setManaged(mandatory);
+            hint.setVisible(!mandatory);
+            hint.setManaged(!mandatory);
+        });
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().setMinWidth(500);
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             try {
-                services.fees().create(user, code.getText(), name.getText(), basis.getValue(),
-                        decimal(price.getText()), effective.getValue());
+                boolean mandatory = Boolean.TRUE.equals(required.getValue());
+                services.fees().create(user, code.getText(), name.getText(), mandatory, basis.getValue(),
+                        mandatory ? decimal(price.getText()) : null, mandatory ? effective.getValue() : null);
             } catch (Exception exception) {
                 event.consume();
                 Ui.error("Không tạo được khoản thu", exception);
@@ -138,13 +185,29 @@ final class FeeView extends VBox {
         load();
     }
 
+    private void toggleStatus() {
+        FeeType fee = table.getSelectionModel().getSelectedItem();
+        if (fee == null) return;
+        try {
+            services.fees().setActive(user, fee.id(), !fee.active());
+            load();
+        } catch (Exception exception) {
+            Ui.error("Không cập nhật được trạng thái khoản thu", exception);
+        }
+    }
+
     private static ComboBox<CalculationBasis> basisPicker() {
         ComboBox<CalculationBasis> basis = new ComboBox<>();
-        basis.getItems().setAll(CalculationBasis.values());
+        basis.getItems().setAll(CalculationBasis.PER_M2, CalculationBasis.PER_RESIDENT, CalculationBasis.FIXED);
         basis.setValue(CalculationBasis.PER_M2);
         basis.setConverter(new javafx.util.StringConverter<>() {
             @Override public String toString(CalculationBasis value) {
-                return value == CalculationBasis.PER_M2 ? "Theo diện tích (m² × đơn giá)" : "Mức cố định";
+                return switch (value) {
+                    case PER_M2 -> "Theo diện tích (m² × đơn giá)";
+                    case PER_RESIDENT -> "Theo nhân khẩu (người × đơn giá)";
+                    case FIXED -> "Mức cố định theo căn hộ";
+                    case VOLUNTARY -> "Đóng góp tự nguyện";
+                };
             }
             @Override public CalculationBasis fromString(String value) { return CalculationBasis.PER_M2; }
         });
@@ -161,12 +224,20 @@ final class FeeView extends VBox {
     }
 
     private static void addRow(GridPane form, int row, String title, javafx.scene.Node field) {
-        Label label = new Label(title);
-        label.getStyleClass().add("form-label");
+        addRow(form, row, formLabel(title), field);
+    }
+
+    private static void addRow(GridPane form, int row, Label label, javafx.scene.Node field) {
         label.setLabelFor(field);
         form.add(label, 0, row);
         form.add(field, 1, row);
         GridPane.setHgrow(field, Priority.ALWAYS);
+    }
+
+    private static Label formLabel(String title) {
+        Label label = new Label(title);
+        label.getStyleClass().add("form-label");
+        return label;
     }
 
     private static BigDecimal decimal(String value) {

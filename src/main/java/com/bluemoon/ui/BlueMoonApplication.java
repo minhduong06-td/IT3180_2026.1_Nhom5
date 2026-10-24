@@ -8,6 +8,7 @@ import com.bluemoon.service.AccountService;
 import com.bluemoon.service.AuthService;
 import com.bluemoon.service.BillingService;
 import com.bluemoon.service.CollectionService;
+import com.bluemoon.service.ContributionService;
 import com.bluemoon.service.DashboardService;
 import com.bluemoon.service.FeeService;
 import com.bluemoon.service.ResidentService;
@@ -30,7 +31,8 @@ public final class BlueMoonApplication extends Application {
         services = new AppServices(new AuthService(repository), new AccountService(repository),
                 new ApartmentService(repository), new ResidentService(repository),
                 new FeeService(repository), new BillingService(repository),
-                new CollectionService(repository), new DashboardService(repository));
+                new CollectionService(repository), new ContributionService(repository),
+                new DashboardService(repository));
         stage.setTitle("BlueMoon | Quản lý thu phí");
         stage.setWidth(1280);
         stage.setHeight(820);

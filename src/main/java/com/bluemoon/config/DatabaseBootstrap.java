@@ -30,7 +30,35 @@ public final class DatabaseBootstrap {
                 if (!sql.isBlank()) statement.execute(sql);
             }
             ensureApartmentProfile(connection);
+            ensureFeeCalculationBasis(connection);
             seedInitialData(connection);
+        }
+    }
+
+    private static void ensureFeeCalculationBasis(Connection connection) throws SQLException {
+        if (!columnType(connection, "fee_types", "calculation_basis").contains("PER_RESIDENT")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE fee_types MODIFY calculation_basis "
+                        + "ENUM('PER_M2', 'PER_RESIDENT', 'FIXED', 'VOLUNTARY') NOT NULL");
+            }
+        }
+        if (!columnType(connection, "charges", "calculation_basis_snapshot").contains("PER_RESIDENT")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE charges MODIFY calculation_basis_snapshot "
+                        + "ENUM('PER_M2', 'PER_RESIDENT', 'FIXED') NOT NULL");
+            }
+        }
+    }
+
+    private static String columnType(Connection connection, String table, String column) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement(
+                "SELECT column_type FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?")) {
+            query.setString(1, table);
+            query.setString(2, column);
+            try (ResultSet result = query.executeQuery()) {
+                if (!result.next()) throw new SQLException("Không tìm thấy cột " + table + "." + column + ".");
+                return result.getString(1);
+            }
         }
     }
 
@@ -159,19 +187,32 @@ public final class DatabaseBootstrap {
     }
 
     private static void seedFees(Connection connection) throws SQLException {
-        if (count(connection, "fee_types") != 0) return;
+        boolean missingDefaults = !hasFeeCode(connection, "SERVICE") || !hasFeeCode(connection, "MANAGEMENT")
+                || !hasFeeCode(connection, "SANITATION");
+        if (!missingDefaults) return;
         long adminId = findAdminId(connection);
-        addFee(connection, "SERVICE", "Phí dịch vụ", "3000", adminId);
-        addFee(connection, "MANAGEMENT", "Phí quản lý", "2000", adminId);
+        if (!hasFeeCode(connection, "SERVICE")) addFee(connection, "SERVICE", "Phí dịch vụ", "10000", "PER_M2", adminId);
+        if (!hasFeeCode(connection, "MANAGEMENT")) addFee(connection, "MANAGEMENT", "Phí quản lý", "7000", "PER_M2", adminId);
+        if (!hasFeeCode(connection, "SANITATION")) addFee(connection, "SANITATION", "Phí vệ sinh", "6000", "PER_RESIDENT", adminId);
+    }
+
+    private static boolean hasFeeCode(Connection connection, String code) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement("SELECT 1 FROM fee_types WHERE code = ?")) {
+            query.setString(1, code);
+            try (ResultSet result = query.executeQuery()) {
+                return result.next();
+            }
+        }
     }
 
     private static long addFee(Connection connection, String code, String name,
-                               String unitPrice, long adminId) throws SQLException {
+                               String unitPrice, String basis, long adminId) throws SQLException {
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO fee_types(code, name, required, calculation_basis) VALUES (?, ?, TRUE, 'PER_M2')",
+                "INSERT INTO fee_types(code, name, required, calculation_basis) VALUES (?, ?, TRUE, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             insert.setString(1, code);
             insert.setString(2, name);
+            insert.setString(3, basis);
             insert.executeUpdate();
             long id;
             try (ResultSet keys = insert.getGeneratedKeys()) {
