@@ -148,3 +148,10 @@
 .status-partial { -fx-text-fill: #99641a; -fx-font-weight: 700; }
 .status-unpaid { -fx-text-fill: #a14742; -fx-font-weight: 700; }
 .muted { -fx-text-fill: #688081; }
+.fee-notice-page { -fx-background-color: white; -fx-text-fill: #183639; }
+.notice-organization { -fx-text-fill: #174d52; -fx-font-size: 15px; -fx-font-weight: 700; }
+.notice-title { -fx-text-fill: #183639; -fx-font-size: 21px; -fx-font-weight: 700; }
+.notice-heading { -fx-text-fill: #183639; -fx-font-size: 15px; -fx-font-weight: 700; }
+.notice-body { -fx-text-fill: #29484a; -fx-font-size: 12px; }
+.notice-table-head { -fx-text-fill: #174d52; -fx-font-size: 12px; -fx-font-weight: 700; }
+.notice-total { -fx-text-fill: #174d52; -fx-font-size: 15px; -fx-font-weight: 700; }

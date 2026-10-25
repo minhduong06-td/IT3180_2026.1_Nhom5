@@ -8,6 +8,7 @@
 - Phân loại khoản bắt buộc, tính phí theo diện tích, nhân khẩu hoặc căn hộ; lưu khoản đóng góp theo số tiền thực nhận.
 - Quản lý đơn giá có ngày hiệu lực và giữ nguyên giá trị của các kỳ đã phát hành.
 - Phát hành kỳ thu, tạo bảng kê chi tiết theo từng căn hộ.
+- Xem trước và in thông báo thu phí cho từng căn hộ hoặc cả kỳ thu.
 - Ghi nhận thanh toán một phần hoặc toàn bộ bằng tiền mặt hay chuyển khoản.
 - Theo dõi riêng lịch sử đóng góp tự nguyện, không cộng vào công nợ phải thu.
 - Theo dõi số phải thu, số đã thu, công nợ và lịch sử giao dịch.
@@ -58,6 +59,10 @@ Mặc định ứng dụng kết nối MySQL tại `localhost:3307`, cơ sở d�
 | `BLUEMOON_DB_URL` | `jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh` |
 | `BLUEMOON_DB_USER` | `bluemoon_app` |
 | `BLUEMOON_DB_PASSWORD` | `bluemoon_dev` |
+
+Thông tin nhận chuyển khoản trên thông báo có thể đặt qua `BLUEMOON_BANK_NAME`,
+`BLUEMOON_BANK_ACCOUNT` và `BLUEMOON_BANK_HOLDER`. Nếu chưa cấu hình, thông báo
+hướng người nộp liên hệ Ban quản trị.
 
 Ví dụ trong PowerShell:
 
