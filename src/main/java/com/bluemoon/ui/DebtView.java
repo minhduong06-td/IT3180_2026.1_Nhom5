@@ -51,7 +51,7 @@ final class DebtView extends VBox {
         table.setPlaceholder(new Label("Không có hộ phù hợp với bộ lọc."));
         summaries.getChildren().addAll(
                 metric("Tổng phải thu", "0 ₫", ""),
-                metric("Đã thực thu", "0 ₫", "summary-accent"),
+                metric("Đã thanh toán", "0 ₫", "summary-accent"),
                 metric("Còn nợ", "0 ₫", "summary-warn"),
                 metric("Hộ đã hoàn tất", "0/0", ""));
         for (var node : summaries.getChildren()) HBox.setHgrow(node, Priority.ALWAYS);
@@ -70,8 +70,9 @@ final class DebtView extends VBox {
         table.getColumns().add(column("Diện tích", row -> row.areaM2().stripTrailingZeros().toPlainString() + " m²"));
         table.getColumns().add(column("Nhân khẩu", row -> Integer.toString(row.residentCount())));
         table.getColumns().add(column("Phải thu", row -> Ui.money(row.totalDue())));
-        table.getColumns().add(column("Đã thu", row -> Ui.money(row.paid())));
+        table.getColumns().add(column("Đã thanh toán", row -> Ui.money(row.paid())));
         table.getColumns().add(column("Còn nợ", row -> Ui.money(row.balance())));
+        table.getColumns().add(column("Số dư nộp trước", row -> Ui.money(row.creditBalance())));
         table.getColumns().add(column("Trạng thái", row -> status(row.status())));
         table.getColumns().add(column("Lần thu cuối", row -> row.lastPaidAt() == null ? "—"
                 : row.lastPaidAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
@@ -120,7 +121,7 @@ final class DebtView extends VBox {
         BigDecimal rate = debts.isEmpty() ? BigDecimal.ZERO : totalDue.signum() == 0 ? new BigDecimal("100")
                 : paid.multiply(BigDecimal.valueOf(100)).divide(totalDue, 1, RoundingMode.HALF_UP);
         setMetric(0, "Tổng phải thu", Ui.money(totalDue), "");
-        setMetric(1, "Đã thực thu", Ui.money(paid) + " · " + rate.toPlainString() + "%", "summary-accent");
+        setMetric(1, "Đã thanh toán", Ui.money(paid) + " · " + rate.toPlainString() + "%", "summary-accent");
         setMetric(2, "Còn nợ", Ui.money(balance), "summary-warn");
         setMetric(3, "Hộ đã hoàn tất", complete + "/" + debts.size(), "");
         footer.setText(debts.stream().filter(row -> row.balance().signum() > 0).count()

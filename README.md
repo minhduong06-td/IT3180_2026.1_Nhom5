@@ -10,9 +10,9 @@
 - Phát hành kỳ thu, tạo bảng kê chi tiết theo từng căn hộ.
 - Theo dõi công nợ theo hộ, lọc theo kỳ, trạng thái và khoảng tầng.
 - Xem trước và in thông báo thu phí cho từng căn hộ hoặc cả kỳ thu.
-- Ghi nhận thanh toán một phần hoặc toàn bộ bằng tiền mặt hay chuyển khoản.
+- Ghi nhận thanh toán bằng tiền mặt hoặc chuyển khoản, lưu người nộp và ngày thu; tiền nộp dư được chuyển thành số dư của hộ.
 - Theo dõi riêng lịch sử đóng góp tự nguyện, không cộng vào công nợ phải thu.
-- Theo dõi số phải thu, số đã thu, công nợ và lịch sử giao dịch.
+- Theo dõi số phải thu, số đã thanh toán, số dư nộp trước của từng hộ và lịch sử giao dịch.
 - Phân quyền thao tác giữa ban quản trị và kế toán.
 - Quản lý tài khoản, đổi mật khẩu và khóa đăng nhập tạm thời khi nhập sai nhiều lần.
 
