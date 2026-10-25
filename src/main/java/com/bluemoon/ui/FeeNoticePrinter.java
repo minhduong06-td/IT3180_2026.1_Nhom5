@@ -4,6 +4,7 @@ import com.bluemoon.model.Domain.CalculationBasis;
 import com.bluemoon.model.Domain.ChargeSummary;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.application.Platform;
 import javafx.print.PrinterJob;
 import javafx.scene.Scene;
 import javafx.scene.transform.Scale;
@@ -37,6 +38,7 @@ final class FeeNoticePrinter {
             return;
         }
         try {
+            List<VBox> pages = new java.util.ArrayList<>(households.size());
             for (List<ChargeSummary> charges : households) {
                 VBox page = page(charges);
                 Scene scene = new Scene(page, 700, 1200);
@@ -50,12 +52,26 @@ final class FeeNoticePrinter {
                 double scale = Math.min(1, Math.min(printableWidth / page.getLayoutBounds().getWidth(),
                         printableHeight / page.getLayoutBounds().getHeight()));
                 page.getTransforms().setAll(new Scale(scale, scale, 0, 0));
+                pages.add(page);
+            }
+            Thread printer = new Thread(() -> send(job, pages), "bluemoon-fee-notice-print");
+            printer.setDaemon(true);
+            printer.start();
+        } catch (RuntimeException exception) {
+            job.cancelJob();
+            Ui.error("Không in được thông báo", exception);
+        }
+    }
+
+    private static void send(PrinterJob job, List<VBox> pages) {
+        try {
+            for (VBox page : pages) {
                 if (!job.printPage(page)) throw new IllegalStateException("Không gửi được một trang đến máy in.");
             }
             if (!job.endJob()) throw new IllegalStateException("Không hoàn tất được lệnh in.");
         } catch (RuntimeException exception) {
             job.cancelJob();
-            Ui.error("Không in được thông báo", exception);
+            Platform.runLater(() -> Ui.error("Không in được thông báo", exception));
         }
     }
 
