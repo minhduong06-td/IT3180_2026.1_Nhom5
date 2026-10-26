@@ -59,6 +59,7 @@ final class MainShell extends BorderPane {
             addNavigation("Cư dân", () -> new ResidentView(services, user));
             addNavigation("Đóng góp", () -> new ContributionView(services, user));
         }
+        addNavigation("Công nợ", () -> new DebtView(services, user));
         addNavigation("Bảng kê phải thu", () -> new ChargesView(services, user));
         addNavigation("Lịch sử thu", () -> new TransactionsView(services, user));
         Region spacer = new Region();
