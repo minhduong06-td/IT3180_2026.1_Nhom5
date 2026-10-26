@@ -292,6 +292,8 @@ final class ChargesView extends VBox {
         return switch (charge.basis()) {
             case PER_M2 -> charge.quantity().stripTrailingZeros().toPlainString() + " m² × " + Ui.money(charge.unitPrice());
             case PER_RESIDENT -> charge.quantity().stripTrailingZeros().toPlainString() + " người × " + Ui.money(charge.unitPrice());
+            case PER_MOTORCYCLE -> charge.quantity().stripTrailingZeros().toPlainString() + " xe máy × " + Ui.money(charge.unitPrice());
+            case PER_CAR -> charge.quantity().stripTrailingZeros().toPlainString() + " ô tô × " + Ui.money(charge.unitPrice());
             case FIXED -> "Mức cố định " + Ui.money(charge.unitPrice());
             case VOLUNTARY -> "Đóng góp tự nguyện";
         };
