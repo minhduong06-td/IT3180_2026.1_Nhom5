@@ -57,17 +57,19 @@ public final class DatabaseBootstrap {
 
     private static void ensureFeeCalculationBasis(Connection connection) throws SQLException {
         String feeType = columnType(connection, "fee_types", "calculation_basis");
-        if (!feeType.contains("PER_MOTORCYCLE") || !feeType.contains("PER_CAR")) {
+        if (!feeType.contains("PER_MOTORCYCLE") || !feeType.contains("PER_CAR")
+                || !feeType.contains("EXTERNAL_BILL")) {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE fee_types MODIFY calculation_basis "
-                        + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'VOLUNTARY') NOT NULL");
+                        + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL', 'VOLUNTARY') NOT NULL");
             }
         }
         String chargeBasis = columnType(connection, "charges", "calculation_basis_snapshot");
-        if (!chargeBasis.contains("PER_MOTORCYCLE") || !chargeBasis.contains("PER_CAR")) {
+        if (!chargeBasis.contains("PER_MOTORCYCLE") || !chargeBasis.contains("PER_CAR")
+                || !chargeBasis.contains("EXTERNAL_BILL")) {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE charges MODIFY calculation_basis_snapshot "
-                        + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED') NOT NULL");
+                        + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL') NOT NULL");
             }
         }
     }
@@ -211,7 +213,8 @@ public final class DatabaseBootstrap {
     private static void seedFees(Connection connection) throws SQLException {
         boolean missingDefaults = !hasFeeCode(connection, "SERVICE") || !hasFeeCode(connection, "MANAGEMENT")
                 || !hasFeeCode(connection, "SANITATION") || !hasFeeCode(connection, "MOTORCYCLE_PARKING")
-                || !hasFeeCode(connection, "CAR_PARKING");
+                || !hasFeeCode(connection, "CAR_PARKING") || !hasFeeCode(connection, "UTILITY_ELECTRICITY")
+                || !hasFeeCode(connection, "UTILITY_WATER") || !hasFeeCode(connection, "UTILITY_INTERNET");
         if (!missingDefaults) return;
         long adminId = findAdminId(connection);
         if (!hasFeeCode(connection, "SERVICE")) addFee(connection, "SERVICE", "Phí dịch vụ", "10000", "PER_M2", adminId);
@@ -219,6 +222,9 @@ public final class DatabaseBootstrap {
         if (!hasFeeCode(connection, "SANITATION")) addFee(connection, "SANITATION", "Phí vệ sinh", "6000", "PER_RESIDENT", adminId);
         if (!hasFeeCode(connection, "MOTORCYCLE_PARKING")) addFee(connection, "MOTORCYCLE_PARKING", "Phí gửi xe máy", "70000", "PER_MOTORCYCLE", adminId);
         if (!hasFeeCode(connection, "CAR_PARKING")) addFee(connection, "CAR_PARKING", "Phí gửi ô tô", "1200000", "PER_CAR", adminId);
+        if (!hasFeeCode(connection, "UTILITY_ELECTRICITY")) addExternalFee(connection, "UTILITY_ELECTRICITY", "Tiền điện");
+        if (!hasFeeCode(connection, "UTILITY_WATER")) addExternalFee(connection, "UTILITY_WATER", "Tiền nước");
+        if (!hasFeeCode(connection, "UTILITY_INTERNET")) addExternalFee(connection, "UTILITY_INTERNET", "Internet");
     }
 
     private static boolean hasFeeCode(Connection connection, String code) throws SQLException {
@@ -246,6 +252,15 @@ public final class DatabaseBootstrap {
             }
             addRate(connection, id, unitPrice, adminId);
             return id;
+        }
+    }
+
+    private static void addExternalFee(Connection connection, String code, String name) throws SQLException {
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO fee_types(code, name, required, calculation_basis) VALUES (?, ?, FALSE, 'EXTERNAL_BILL')")) {
+            insert.setString(1, code);
+            insert.setString(2, name);
+            insert.executeUpdate();
         }
     }
 
