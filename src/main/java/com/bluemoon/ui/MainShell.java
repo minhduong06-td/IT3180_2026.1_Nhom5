@@ -2,12 +2,19 @@ package com.bluemoon.ui;
 
 import com.bluemoon.model.Domain.AppUser;
 import com.bluemoon.model.Domain.Role;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
@@ -43,6 +50,7 @@ final class MainShell extends BorderPane {
             sidebar.getChildren().addAll(brand, Ui.label("VẬN HÀNH", "sidebar-caption"), navItems);
             addNavigation("Căn hộ", () -> new ApartmentView(services, user));
             addNavigation("Khoản thu", () -> new FeeView(services, user));
+            addNavigation("Tài khoản", () -> new AccountView(services, user));
             addNavigation("Kỳ thu", () -> new BillingView(services, user, this::showCharges));
         } else {
             sidebar.getChildren().addAll(brand, Ui.label("THU PHÍ", "sidebar-caption"), navItems);
@@ -62,12 +70,62 @@ final class MainShell extends BorderPane {
         Label title = new Label("Quản lý thu phí BlueMoon");
         title.getStyleClass().add("topbar-title");
         Region spacer = Ui.spacer();
+        var changePassword = Ui.button("Đổi mật khẩu", false);
+        changePassword.setOnAction(event -> changePassword());
         var signOut = Ui.button("Đăng xuất", false);
         signOut.setOnAction(event -> logout.run());
-        HBox bar = new HBox(16, title, spacer, signOut);
+        HBox bar = new HBox(12, title, spacer, changePassword, signOut);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("app-topbar");
         return bar;
+    }
+
+    private void changePassword() {
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.setTitle("Đổi mật khẩu");
+        dialog.setHeaderText("Cập nhật mật khẩu đăng nhập");
+        dialog.initOwner(getScene().getWindow());
+        var save = new ButtonType("Cập nhật", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().setAll(save, ButtonType.CANCEL);
+        var current = new PasswordField();
+        current.setPromptText("Mật khẩu hiện tại");
+        current.getStyleClass().add("form-field");
+        var next = new PasswordField();
+        next.setPromptText("Mật khẩu mới từ 8 đến 72 byte");
+        next.getStyleClass().add("form-field");
+        var confirmation = new PasswordField();
+        confirmation.setPromptText("Nhập lại mật khẩu mới");
+        confirmation.getStyleClass().add("form-field");
+        GridPane form = new GridPane();
+        form.setHgap(14);
+        form.setVgap(12);
+        form.setPadding(new Insets(8, 0, 4, 0));
+        addPasswordRow(form, 0, "Mật khẩu hiện tại", current);
+        addPasswordRow(form, 1, "Mật khẩu mới", next);
+        addPasswordRow(form, 2, "Xác nhận mật khẩu", confirmation);
+        dialog.getDialogPane().setContent(form);
+        dialog.getDialogPane().setMinWidth(480);
+        var saveButton = (Button) dialog.getDialogPane().lookupButton(save);
+        saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
+            try {
+                services.accounts().changePassword(user, current.getText(), next.getText(), confirmation.getText());
+            } catch (Exception exception) {
+                event.consume();
+                Ui.error("Không đổi được mật khẩu", exception);
+            }
+        });
+        if (dialog.showAndWait().filter(save::equals).isPresent()) {
+            Ui.info("Đã đổi mật khẩu", "Mật khẩu đăng nhập đã được cập nhật.");
+        }
+    }
+
+    private static void addPasswordRow(GridPane form, int row, String title, Node field) {
+        var label = new Label(title);
+        label.getStyleClass().add("form-label");
+        label.setLabelFor(field);
+        form.add(label, 0, row);
+        form.add(field, 1, row);
+        GridPane.setHgrow(field, Priority.ALWAYS);
     }
 
     private void addNavigation(String title, Supplier<Node> page) {
