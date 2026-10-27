@@ -510,7 +510,7 @@ public final class AppRepository {
                     }
                     insert.executeBatch();
                 }
-                applyCredits(connection, periodId);
+                applyCredits(connection, periodId, year, month);
                 connection.commit();
                 return new BillingPeriod(periodId, year, month, issueDate, dueDate, inputs.size(), total);
             } catch (SQLException | RuntimeException exception) {
@@ -537,7 +537,7 @@ public final class AppRepository {
         }
     }
 
-    private static void applyCredits(Connection connection, long periodId) throws SQLException {
+    private static void applyCredits(Connection connection, long periodId, int year, int month) throws SQLException {
         String paidSql = """
                 SELECT COALESCE((SELECT SUM(applied_amount) FROM payments WHERE charge_id = ?), 0)
                      + COALESCE((SELECT SUM(amount) FROM credit_applications WHERE charge_id = ?), 0)
@@ -559,8 +559,18 @@ public final class AppRepository {
                         }
                     }
                     try (PreparedStatement credits = connection.prepareStatement(
-                            "SELECT id, remaining_amount FROM apartment_credits WHERE apartment_id = ? AND remaining_amount > 0 ORDER BY id FOR UPDATE")) {
+                            "SELECT ac.id, ac.remaining_amount FROM apartment_credits ac"
+                                    + " JOIN payments pm ON pm.id = ac.source_payment_id"
+                                    + " JOIN charges source_charge ON source_charge.id = pm.charge_id"
+                                    + " JOIN billing_periods source_period ON source_period.id = source_charge.billing_period_id"
+                                    + " WHERE ac.apartment_id = ? AND ac.remaining_amount > 0"
+                                    + " AND (source_period.period_year < ? OR"
+                                    + " (source_period.period_year = ? AND source_period.period_month < ?))"
+                                    + " ORDER BY ac.id FOR UPDATE")) {
                         credits.setLong(1, apartmentId);
+                        credits.setInt(2, year);
+                        credits.setInt(3, year);
+                        credits.setInt(4, month);
                         try (ResultSet creditRows = credits.executeQuery()) {
                             while (balance.signum() > 0 && creditRows.next()) {
                                 long creditId = creditRows.getLong("id");
