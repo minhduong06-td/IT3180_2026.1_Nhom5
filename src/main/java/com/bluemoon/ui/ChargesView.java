@@ -93,7 +93,7 @@ final class ChargesView extends VBox {
         table.getColumns().add(column("Kỳ", ChargeSummary::period));
         table.getColumns().add(column("Cách tính", ChargesView::formula));
         table.getColumns().add(column("Phải thu", charge -> Ui.money(charge.amount())));
-        table.getColumns().add(column("Đã thu", charge -> Ui.money(charge.paid())));
+        table.getColumns().add(column("Đã thanh toán", charge -> Ui.money(charge.paid())));
         table.getColumns().add(column("Còn nợ", charge -> Ui.money(charge.balance())));
         TableColumn<ChargeSummary, String> status = column("Trạng thái", charge -> status(charge.status()));
         status.setCellFactory(column -> new TableCell<>() {
@@ -164,7 +164,7 @@ final class ChargesView extends VBox {
             statement.getColumns().add(column("Khoản thu", ChargeSummary::feeName));
             statement.getColumns().add(column("Công thức", ChargesView::formula));
             statement.getColumns().add(column("Phải thu", charge -> Ui.money(charge.amount())));
-            statement.getColumns().add(column("Đã thu", charge -> Ui.money(charge.paid())));
+            statement.getColumns().add(column("Đã thanh toán", charge -> Ui.money(charge.paid())));
             statement.getColumns().add(column("Còn nợ", charge -> Ui.money(charge.balance())));
             statement.getItems().setAll(items);
             BigDecimal total = items.stream().map(ChargeSummary::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -177,7 +177,7 @@ final class ChargesView extends VBox {
             Label title = Ui.label(selected.apartmentCode() + "  ·  " + selected.householdName(), "section-title");
             Label due = Ui.label("Kỳ " + selected.period() + "  ·  Hạn nộp " + Ui.date(selected.dueDate()), "muted");
             Label profile = Ui.label("Diện tích " + area + " m²  ·  Nhân khẩu " + residents, "muted");
-            Label totals = Ui.label("Tổng phải nộp " + Ui.money(total) + "  ·  Đã thu " + Ui.money(paid)
+            Label totals = Ui.label("Tổng phải nộp " + Ui.money(total) + "  ·  Đã thanh toán " + Ui.money(paid)
                     + "  ·  Còn phải nộp " + Ui.money(balance), "section-title");
             Label bank = Ui.label(FeeNoticePrinter.bankInformation(), "muted");
             Label transfer = Ui.label("Nội dung chuyển khoản: " + FeeNoticePrinter.transferDescription(selected), "muted");
@@ -236,16 +236,19 @@ final class ChargesView extends VBox {
         dialog.setTitle("Ghi nhận thanh toán");
         dialog.setHeaderText(charge.apartmentCode() + "  ·  " + charge.feeName() + "  ·  " + charge.period());
         dialog.initOwner(getScene().getWindow());
-        ButtonType save = new ButtonType("Lưu giao dịch", ButtonBar.ButtonData.OK_DONE);
+        ButtonType save = new ButtonType("Lưu phiếu thu", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().setAll(save, ButtonType.CANCEL);
         var amount = Ui.textField(charge.balance().toPlainString());
         amount.setText(charge.balance().toPlainString());
+        var payer = Ui.textField(charge.householdName());
+        var paidOn = new javafx.scene.control.DatePicker(java.time.LocalDate.now());
+        paidOn.getStyleClass().add("form-field");
         var method = new ComboBox<PaymentMethod>();
         method.getItems().setAll(PaymentMethod.values());
         method.setValue(PaymentMethod.CASH);
         method.setConverter(new javafx.util.StringConverter<>() {
             @Override public String toString(PaymentMethod value) {
-                return value == PaymentMethod.CASH ? "Tiền mặt" : "Chuyển khoản thủ công";
+                return value == PaymentMethod.CASH ? "Tiền mặt" : "Chuyển khoản";
             }
             @Override public PaymentMethod fromString(String value) { return PaymentMethod.CASH; }
         });
@@ -257,24 +260,31 @@ final class ChargesView extends VBox {
         form.setVgap(12);
         form.setPadding(new Insets(8, 0, 4, 0));
         addRow(form, 0, "Còn nợ", new Label(Ui.money(charge.balance())));
-        addRow(form, 1, "Số tiền thu (VND)", amount);
-        addRow(form, 2, "Hình thức", method);
-        addRow(form, 3, "Mã giao dịch", reference);
-        addRow(form, 4, "Ghi chú", note);
+        addRow(form, 1, "Số tiền nhận (VND)", amount);
+        addRow(form, 2, "Người nộp", payer);
+        addRow(form, 3, "Ngày thu", paidOn);
+        addRow(form, 4, "Hình thức", method);
+        addRow(form, 5, "Mã giao dịch", reference);
+        addRow(form, 6, "Ghi chú", note);
         dialog.getDialogPane().setContent(form);
-        dialog.getDialogPane().setMinWidth(540);
+        dialog.getDialogPane().setMinWidth(560);
+        var receipt = new java.util.concurrent.atomic.AtomicReference<com.bluemoon.model.Domain.PaymentReceipt>();
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             try {
-                BigDecimal paid = new BigDecimal(amount.getText().trim().replace(',', '.'));
-                services.collections().recordPayment(user, charge.id(), paid, method.getValue(),
-                        reference.getText(), note.getText());
+                BigDecimal received = new BigDecimal(amount.getText().trim().replace(',', '.'));
+                receipt.set(services.collections().recordPayment(user, charge.id(), received, payer.getText(),
+                        paidOn.getValue(), method.getValue(), reference.getText(), note.getText()));
             } catch (Exception exception) {
                 event.consume();
                 Ui.error("Không ghi nhận được thanh toán", exception);
             }
         });
         dialog.showAndWait();
+        if (receipt.get() != null && receipt.get().credit().signum() > 0) {
+            Ui.info("Đã lưu số dư nộp trước",
+                    Ui.money(receipt.get().credit()) + " sẽ được trừ vào khoản thu của hộ ở kỳ tiếp theo.");
+        }
         load();
     }
 
