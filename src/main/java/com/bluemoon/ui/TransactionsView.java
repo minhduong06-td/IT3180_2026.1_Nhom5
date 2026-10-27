@@ -19,7 +19,7 @@ import java.util.function.Function;
 final class TransactionsView extends VBox {
     private final AppServices services;
     private final AppUser user;
-    private final javafx.scene.control.TextField search = Ui.textField("Tìm mã căn, khoản thu, mã giao dịch");
+    private final javafx.scene.control.TextField search = Ui.textField("Tìm căn hộ, người nộp, khoản thu, mã giao dịch");
     private final TableView<PaymentRecord> table = new TableView<>();
 
     TransactionsView(AppServices services, AppUser user) {
@@ -41,12 +41,15 @@ final class TransactionsView extends VBox {
 
     private void configureTable() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.getColumns().add(column("Thời gian", payment -> payment.paidAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+        table.getColumns().add(column("Ngày thu", payment -> payment.paidAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
         table.getColumns().add(column("Căn hộ", PaymentRecord::apartmentCode));
         table.getColumns().add(column("Chủ hộ", PaymentRecord::householdName));
+        table.getColumns().add(column("Người nộp", PaymentRecord::payerName));
         table.getColumns().add(column("Khoản thu", PaymentRecord::feeName));
         table.getColumns().add(column("Kỳ", PaymentRecord::period));
-        table.getColumns().add(column("Số tiền", payment -> Ui.money(payment.amount())));
+        table.getColumns().add(column("Số tiền nhận", payment -> Ui.money(payment.amount())));
+        table.getColumns().add(column("Đã cấn trừ", payment -> Ui.money(payment.appliedAmount())));
+        table.getColumns().add(column("Nộp dư", payment -> Ui.money(payment.amount().subtract(payment.appliedAmount()))));
         table.getColumns().add(column("Hình thức", payment -> payment.method() == PaymentMethod.CASH ? "Tiền mặt" : "Chuyển khoản"));
         table.getColumns().add(column("Mã giao dịch", payment -> empty(payment.reference())));
         table.getColumns().add(column("Ghi chú", payment -> empty(payment.note())));

@@ -36,7 +36,7 @@ final class DashboardView extends VBox {
             }
             HBox summaries = new HBox(12,
                     metric("Tổng phải thu", Ui.money(summary.totalAmount()), ""),
-                    metric("Đã thu", Ui.money(summary.paidAmount()), "summary-accent"),
+                    metric("Đã thanh toán", Ui.money(summary.paidAmount()), "summary-accent"),
                     metric("Còn phải thu", Ui.money(summary.balance()), "summary-warn"));
             for (Node node : summaries.getChildren()) HBox.setHgrow(node, Priority.ALWAYS);
 
@@ -75,8 +75,9 @@ final class DashboardView extends VBox {
         TableView<PaymentRecord> table = new TableView<>();
         table.setPrefHeight(300);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        table.getColumns().add(column("Ngày thu", row -> row.paidAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"))));
+        table.getColumns().add(column("Ngày thu", row -> row.paidAt().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))));
         table.getColumns().add(column("Căn hộ", PaymentRecord::apartmentCode));
+        table.getColumns().add(column("Người nộp", PaymentRecord::payerName));
         table.getColumns().add(column("Khoản thu", PaymentRecord::feeName));
         table.getColumns().add(column("Kỳ", PaymentRecord::period));
         table.getColumns().add(column("Số tiền", row -> Ui.money(row.amount())));

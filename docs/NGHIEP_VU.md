@@ -19,10 +19,10 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 | Nhân khẩu | Họ tên, ngày sinh, giới tính, CCCD/CMND, quan hệ, ngày chuyển đến | Họ tên dài 2 đến 50 ký tự chữ; người từ 14 tuổi cần CCCD/CMND 9 hoặc 12 chữ số; mỗi hộ có một chủ hộ. |
 | Khoản thu | Mã, tên, phân loại, cách tính, đơn giá, ngày hiệu lực, trạng thái | Mã không trùng; phí bắt buộc tính theo diện tích, nhân khẩu hoặc căn hộ; khoản đóng góp tự nguyện không có đơn giá bắt buộc. Đơn giá mới được lưu thành bản ghi riêng; khoản đã phát sinh chỉ được ngừng áp dụng, không xóa khỏi dữ liệu. |
 | Kỳ thu | Tháng, ngày phát hành, hạn nộp | Mỗi tháng chỉ phát hành một lần; hạn nộp không trước ngày phát hành. |
-| Bảng kê | Căn hộ, khoản thu, diện tích, đơn giá, số tiền, số đã thu | Thông tin tính phí được lưu tại thời điểm phát hành và không đổi theo các lần cập nhật sau. |
-| Công nợ hộ gia đình | Căn hộ, tầng, diện tích, nhân khẩu, phải thu, đã thu, số dư, trạng thái, lần thu cuối | Tổng hợp theo hộ trong kỳ; lọc theo trạng thái và khoảng tầng; tỷ lệ thu dựa trên tổng tiền đã thực thu. |
+| Bảng kê | Căn hộ, khoản thu, diện tích, đơn giá, số tiền, số đã thanh toán | Thông tin tính phí được lưu tại thời điểm phát hành và không đổi theo các lần cập nhật sau. |
+| Công nợ hộ gia đình | Căn hộ, tầng, diện tích, nhân khẩu, phải thu, đã thanh toán, còn nợ, số dư nộp trước, trạng thái, lần thanh toán cuối | Tổng hợp theo hộ trong kỳ; lọc theo trạng thái và khoảng tầng; số đã thanh toán gồm các khoản đã cấn trừ vào kỳ đó, số dư nộp trước được hiển thị riêng. |
 | Thông báo thu phí | Kỳ thu, căn hộ, thông tin hộ, chi tiết khoản thu, số dư, hạn nộp | Nội dung phải khớp với bảng kê đã phát hành; có thể xem trước, in riêng hoặc in toàn kỳ. |
-| Giao dịch | Thời gian, số tiền, hình thức, mã tham chiếu, ghi chú, người ghi nhận | Số tiền phải là số nguyên VND dương; từng lần thu được lưu riêng trong lịch sử. |
+| Giao dịch | Ngày thu, người nộp, số tiền nhận, số đã cấn trừ, số dư chuyển kỳ, hình thức, mã tham chiếu, ghi chú, người ghi nhận | Số tiền là số nguyên VND dương; mỗi phiếu thu được lưu riêng trong lịch sử. |
 | Đóng góp | Căn hộ, khoản đóng góp, ngày nhận, số tiền thực nhận, hình thức, mã tham chiếu | Ghi nhận riêng từng lần đóng góp; khoản này không tạo công nợ và không được cộng vào phí bắt buộc. |
 | Tài khoản | Tên đăng nhập, tên hiển thị, vai trò, mật khẩu | Ban quản trị tạo tài khoản; mật khẩu được lưu dưới dạng băm và người dùng có thể tự đổi mật khẩu. |
 
@@ -32,8 +32,8 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 2. Kết quả được làm tròn đến đơn vị VND gần nhất.
 3. Khi phát hành kỳ thu, hệ thống tạo tối đa một khoản cho mỗi căn hộ và khoản thu trong kỳ đó.
 4. Khoản đã phát hành giữ nguyên diện tích, đơn giá và số tiền đã tính, kể cả khi hồ sơ hoặc đơn giá thay đổi sau này.
-5. Có thể ghi nhận nhiều lần thanh toán cho cùng một khoản. Tổng tiền đã thu không được vượt quá số phải thu.
-6. Trạng thái được cập nhật theo số dư: chưa thu, thu một phần hoặc đã thanh toán.
+5. Có thể ghi nhận nhiều lần thanh toán cho cùng một khoản. Nếu số tiền nhận vượt phần còn nợ, phần đã đủ được cấn vào khoản thu và phần dư được lưu thành số dư của hộ.
+6. Trạng thái được cập nhật theo số đã cấn trừ: chưa thu, thu một phần hoặc đã thanh toán. Số dư nộp trước tự động cấn vào các khoản bắt buộc của hộ khi phát hành kỳ tiếp theo.
 7. Giao dịch đã ghi nhận được giữ trong lịch sử để đối soát.
 8. Khoản đóng góp tự nguyện chỉ ghi nhận số tiền đã thực nhận, không phát hành khoản phải thu hoặc làm tăng công nợ.
 
@@ -47,7 +47,7 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 6. Tạo khoản thu bắt buộc theo diện tích, nhân khẩu hoặc căn hộ; khai báo đơn giá và ngày bắt đầu áp dụng.
 7. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
 8. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
-9. Kế toán ghi nhận số tiền nhận được, phương thức thanh toán và thông tin đối chiếu nếu có.
+9. Kế toán ghi nhận người nộp, ngày thu, số tiền nhận, phương thức thanh toán và thông tin đối chiếu nếu có.
 10. Ghi nhận riêng khoản đóng góp tự nguyện theo số tiền thực nhận.
 11. Xem trước hoặc in thông báo thu phí theo căn hộ hay toàn kỳ.
 12. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
@@ -64,8 +64,8 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 ### Ghi nhận thanh toán
 
 - **Khi bắt đầu:** Khoản phải thu còn số dư.
-- **Khi thực hiện:** Kế toán ghi nhận số tiền dương không vượt số dư.
-- **Kết quả:** Giao dịch xuất hiện trong lịch sử, số đã thu và số còn nợ được cập nhật.
+- **Khi thực hiện:** Kế toán lưu ngày thu, người nộp, số tiền và phương thức. Khoản nộp dư được tách thành số dư của hộ.
+- **Kết quả:** Phiếu thu xuất hiện trong lịch sử với số đã cấn trừ và số dư nộp trước; số dư được tự động cấn vào kỳ tiếp theo.
 
 ### Phân quyền
 
