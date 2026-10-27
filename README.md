@@ -4,7 +4,7 @@
 
 ## Chức năng
 
-- Quản lý căn hộ, diện tích, chủ hộ và thông tin liên hệ.
+- Quản lý hộ khẩu, căn hộ và nhân khẩu; tra cứu theo căn hộ, tầng, họ tên, giấy tờ hoặc điện thoại.
 - Quản lý khoản thu và đơn giá có ngày hiệu lực.
 - Phát hành kỳ thu, tạo bảng kê chi tiết theo từng căn hộ.
 - Ghi nhận thanh toán một phần hoặc toàn bộ bằng tiền mặt hay chuyển khoản.
