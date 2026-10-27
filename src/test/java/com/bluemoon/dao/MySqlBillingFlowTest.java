@@ -4,11 +4,19 @@ import com.bluemoon.config.Database;
 import com.bluemoon.config.DatabaseBootstrap;
 import com.bluemoon.model.Domain.AppUser;
 import com.bluemoon.model.Domain.ChargeSummary;
+import com.bluemoon.model.Domain.Gender;
+import com.bluemoon.model.Domain.HouseholdRelationship;
+import com.bluemoon.model.Domain.Apartment;
+import com.bluemoon.model.Domain.OccupancyStatus;
 import com.bluemoon.model.Domain.PaymentMethod;
+import com.bluemoon.model.Domain.Resident;
 import com.bluemoon.model.Domain.Role;
 import com.bluemoon.service.AccountLockedException;
 import com.bluemoon.service.AccountService;
+import com.bluemoon.service.ApartmentService;
 import com.bluemoon.service.AuthService;
+import com.bluemoon.service.HouseholdHeadExistsException;
+import com.bluemoon.service.ResidentService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -17,11 +25,13 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MySqlBillingFlowTest {
@@ -30,8 +40,14 @@ class MySqlBillingFlowTest {
         String url = System.getenv("BLUEMOON_IT_DB_URL");
         Assumptions.assumeTrue(url != null && !url.isBlank(), "Set BLUEMOON_IT_DB_URL to run MySQL integration checks.");
         Database database = new Database(url, System.getenv("BLUEMOON_IT_DB_USER"), System.getenv("BLUEMOON_IT_DB_PASSWORD"));
+        if (Boolean.parseBoolean(System.getenv("BLUEMOON_IT_DB_LEGACY"))) createLegacyApartments(database);
         new DatabaseBootstrap(database).initialize();
         AppRepository repository = new AppRepository(database);
+        var firstApartment = repository.listApartments().getFirst();
+        assertEquals(1, firstApartment.floor());
+        if (Boolean.parseBoolean(System.getenv("BLUEMOON_IT_DB_LEGACY"))) {
+            assertEquals("HK-000001", firstApartment.householdCode());
+        }
         long adminId = userId(database, "admin");
         long accountantId = userId(database, "accountant");
         long serviceFeeId = feeId(database, "SERVICE");
@@ -46,6 +62,8 @@ class MySqlBillingFlowTest {
             assertEquals("ADMIN", admin.role().name());
             assertNull(auth.login("admin", "wrong-password"));
             verifyAccountManagement(database, repository, auth, admin);
+            verifyApartmentManagement(database, repository, admin);
+            verifyResidentManagement(database, repository, admin);
             var period = repository.issuePeriod(2098, 1, LocalDate.of(2098, 1, 20),
                     LocalDate.of(2098, 1, 31), adminId);
             assertEquals(6, period.chargeCount());
@@ -74,6 +92,93 @@ class MySqlBillingFlowTest {
         } finally {
             removePeriod(database, 2098, 1);
             removeRate(database, serviceFeeId, laterRateDate);
+        }
+    }
+
+    private static void verifyApartmentManagement(Database database, AppRepository repository, AppUser admin) throws Exception {
+        ApartmentService apartments = new ApartmentService(repository);
+        Apartment apartment = new Apartment(null, "P0508", "HK-0508", new BigDecimal("80.25"),
+                "Nguyễn Thị An", "0900000508", LocalDate.now().minusDays(1), OccupancyStatus.VACANT, true);
+        try {
+            apartments.save(admin, apartment);
+            Apartment saved = repository.listApartments().stream().filter(value -> value.code().equals("P0508"))
+                    .findFirst().orElseThrow();
+            assertEquals(5, saved.floor());
+            assertEquals("HK-0508", saved.householdCode());
+            assertEquals(OccupancyStatus.VACANT, saved.occupancyStatus());
+            assertThrows(IllegalArgumentException.class, () -> apartments.save(admin,
+                    new Apartment(null, "P0509", "HK-0508", BigDecimal.ONE, "Trần Văn A", "0900000509",
+                            LocalDate.now(), OccupancyStatus.OCCUPIED, true)));
+            assertThrows(IllegalArgumentException.class, () -> apartments.save(admin,
+                    new Apartment(null, "P0001", "HK-0001", BigDecimal.ONE, "Trần Văn A", "0900000001",
+                            LocalDate.now(), OccupancyStatus.OCCUPIED, true)));
+        } finally {
+            try (Connection connection = database.openConnection();
+                 PreparedStatement delete = connection.prepareStatement("DELETE FROM apartments WHERE code = 'P0508'")) {
+                delete.executeUpdate();
+            }
+        }
+    }
+
+    private static void createLegacyApartments(Database database) throws SQLException {
+        try (Connection connection = database.openConnection(); Statement statement = connection.createStatement()) {
+            statement.execute("""
+                    CREATE TABLE apartments (
+                        id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+                        code VARCHAR(20) NOT NULL UNIQUE,
+                        area_m2 DECIMAL(10, 2) NOT NULL,
+                        household_name VARCHAR(120) NOT NULL,
+                        contact_phone VARCHAR(32) NOT NULL,
+                        active BOOLEAN NOT NULL DEFAULT TRUE,
+                        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        CONSTRAINT chk_apartment_area CHECK (area_m2 > 0)
+                    )
+                    """);
+            statement.executeUpdate("INSERT INTO apartments(code, area_m2, household_name, contact_phone) VALUES "
+                    + "('A101', 65.00, 'Nguyễn Minh An', '0900000101'), "
+                    + "('A102', 78.50, 'Trần Gia Bảo', '0900000102'), "
+                    + "('A103', 92.00, 'Lê Thu Hà', '0900000103')");
+        }
+    }
+
+    private static void verifyResidentManagement(Database database, AppRepository repository, AppUser admin) throws Exception {
+        var apartment = repository.listApartments().stream().filter(value -> value.code().equals("A101")).findFirst().orElseThrow();
+        ResidentService residents = new ResidentService(repository);
+        String firstId = "%012d".formatted(System.currentTimeMillis() % 1_000_000_000_000L);
+        String secondId = "%012d".formatted((System.currentTimeMillis() + 1) % 1_000_000_000_000L);
+        try {
+            Resident head = new Resident(null, apartment.id(), "Đỗ Gia Ngọc", LocalDate.now().minusYears(30),
+                    Gender.FEMALE, firstId, HouseholdRelationship.HEAD, LocalDate.now().minusYears(1));
+            residents.save(admin, head, false);
+            Resident child = new Resident(null, apartment.id(), "Đỗ Minh An", LocalDate.now().minusYears(10),
+                    Gender.MALE, null, HouseholdRelationship.CHILD, LocalDate.now().minusYears(2));
+            residents.save(admin, child, false);
+            Resident nextHead = new Resident(null, apartment.id(), "Trần Thị Bảo", LocalDate.now().minusYears(28),
+                    Gender.FEMALE, secondId, HouseholdRelationship.HEAD, LocalDate.now().minusYears(1));
+            assertThrows(HouseholdHeadExistsException.class, () -> residents.save(admin, nextHead, false));
+            residents.save(admin, nextHead, true);
+            assertTrue(residents.list(admin, apartment.id()).stream()
+                    .anyMatch(value -> value.fullName().equals("Đỗ Gia Ngọc") && value.relationship() == HouseholdRelationship.OTHER));
+            assertTrue(residents.search(admin, "ngoc").stream()
+                    .anyMatch(entry -> entry.resident() != null && entry.resident().fullName().equals("Đỗ Gia Ngọc")));
+            assertTrue(residents.search(admin, firstId).stream()
+                    .anyMatch(entry -> entry.resident() != null && entry.resident().nationalId().equals(firstId)));
+            assertThrows(IllegalArgumentException.class, () -> residents.save(admin,
+                    new Resident(null, apartment.id(), "Người lớn", LocalDate.now().minusYears(30), Gender.MALE,
+                            null, HouseholdRelationship.OTHER, LocalDate.now()), false));
+        } finally {
+            try (Connection connection = database.openConnection();
+                 PreparedStatement delete = connection.prepareStatement("DELETE FROM residents WHERE apartment_id = ?")) {
+                delete.setLong(1, apartment.id());
+                delete.executeUpdate();
+            }
+            try (Connection connection = database.openConnection();
+                 PreparedStatement update = connection.prepareStatement(
+                         "UPDATE apartments SET household_name = 'Nguyễn Minh An' WHERE id = ?")) {
+                update.setLong(1, apartment.id());
+                update.executeUpdate();
+            }
         }
     }
 

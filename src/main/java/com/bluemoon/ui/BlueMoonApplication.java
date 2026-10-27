@@ -10,6 +10,7 @@ import com.bluemoon.service.BillingService;
 import com.bluemoon.service.CollectionService;
 import com.bluemoon.service.DashboardService;
 import com.bluemoon.service.FeeService;
+import com.bluemoon.service.ResidentService;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
@@ -26,7 +27,8 @@ public final class BlueMoonApplication extends Application {
         this.stage = stage;
         Database database = new Database();
         AppRepository repository = new AppRepository(database);
-        services = new AppServices(new AuthService(repository), new AccountService(repository), new ApartmentService(repository),
+        services = new AppServices(new AuthService(repository), new AccountService(repository),
+                new ApartmentService(repository), new ResidentService(repository),
                 new FeeService(repository), new BillingService(repository),
                 new CollectionService(repository), new DashboardService(repository));
         stage.setTitle("BlueMoon | Quản lý thu phí");
