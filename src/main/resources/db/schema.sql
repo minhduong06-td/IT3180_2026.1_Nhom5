@@ -94,7 +94,7 @@ CREATE TABLE IF NOT EXISTS utility_bills (
     period_month TINYINT UNSIGNED NOT NULL,
     apartment_id BIGINT NOT NULL,
     utility_type ENUM('ELECTRICITY', 'WATER', 'INTERNET') NOT NULL,
-    amount DECIMAL(15, 0) NOT NULL,
+    amount DECIMAL(13, 0) NOT NULL,
     provider VARCHAR(100) NOT NULL,
     reference VARCHAR(120) NULL,
     recorded_by BIGINT NOT NULL,
