@@ -18,6 +18,7 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 | Căn hộ | Mã căn, tầng, mã hộ khẩu, diện tích, chủ hộ, số điện thoại, ngày nhận nhà, tình trạng | Mã căn và mã hộ khẩu là duy nhất; tầng từ 1 đến 30; diện tích lớn hơn 0 và có tối đa hai chữ số thập phân; ngày nhận nhà không ở tương lai. |
 | Nhân khẩu | Họ tên, ngày sinh, giới tính, CCCD/CMND, quan hệ, ngày chuyển đến | Họ tên dài 2 đến 50 ký tự chữ; người từ 14 tuổi cần CCCD/CMND 9 hoặc 12 chữ số; mỗi hộ có một chủ hộ. |
 | Phương tiện | Căn hộ, loại xe, biển số, trạng thái đăng ký | Mỗi biển số chỉ được đăng ký một lần tại một thời điểm; xe đã ngừng đăng ký được giữ trong lịch sử và không tính cho kỳ thu phát hành sau đó. |
+| Hóa đơn tiện ích | Căn hộ, kỳ, loại dịch vụ, số tiền, nhà cung cấp, mã đối chiếu | Mỗi căn hộ có tối đa một hóa đơn cho từng dịch vụ trong một kỳ; được cập nhật trước khi phát hành và được giữ trong lịch sử sau khi đã đưa vào bảng kê. |
 | Khoản thu | Mã, tên, phân loại, cách tính, đơn giá, ngày hiệu lực, trạng thái | Mã không trùng; phí bắt buộc tính theo diện tích, nhân khẩu, số xe máy, số ô tô hoặc căn hộ; khoản đóng góp tự nguyện không có đơn giá bắt buộc. Đơn giá mới được lưu thành bản ghi riêng; khoản đã phát sinh chỉ được ngừng áp dụng, không xóa khỏi dữ liệu. |
 | Kỳ thu | Tháng, ngày phát hành, hạn nộp | Mỗi tháng chỉ phát hành một lần; hạn nộp không trước ngày phát hành. |
 | Bảng kê | Căn hộ, khoản thu, số lượng tính phí, đơn giá, số tiền, số đã thanh toán | Thông tin tính phí được lưu tại thời điểm phát hành và không đổi theo các lần cập nhật sau. |
@@ -31,13 +32,14 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 
 1. Phí theo diện tích được tính bằng `diện tích căn hộ × đơn giá có hiệu lực` tại ngày đầu kỳ; phí theo nhân khẩu dùng số người trong hộ; phí gửi xe dùng số xe máy hoặc ô tô đang đăng ký; phí cố định lấy số tiền từ đơn giá.
 2. Đơn giá mặc định gửi xe là 70.000 đồng/xe máy/tháng và 1.200.000 đồng/ô tô/tháng; ban quản trị có thể cập nhật đơn giá theo ngày hiệu lực.
-3. Kết quả được làm tròn đến đơn vị VND gần nhất.
-4. Khi phát hành kỳ thu, hệ thống tạo tối đa một khoản cho mỗi căn hộ và khoản thu trong kỳ đó.
-5. Khoản đã phát hành giữ nguyên diện tích, nhân khẩu, số phương tiện, đơn giá và số tiền đã tính, kể cả khi hồ sơ hoặc đơn giá thay đổi sau này.
-6. Có thể ghi nhận nhiều lần thanh toán cho cùng một khoản. Nếu số tiền nhận vượt phần còn nợ, phần đã đủ được cấn vào khoản thu và phần dư được lưu thành số dư của hộ.
-7. Trạng thái được cập nhật theo số đã cấn trừ: chưa thu, thu một phần hoặc đã thanh toán. Số dư nộp trước tự động cấn vào các khoản bắt buộc của hộ khi phát hành kỳ tiếp theo.
-8. Giao dịch đã ghi nhận được giữ trong lịch sử để đối soát.
-9. Khoản đóng góp tự nguyện chỉ ghi nhận số tiền đã thực nhận, không phát hành khoản phải thu hoặc làm tăng công nợ.
+3. Hóa đơn điện, nước và internet được nhập theo số tiền ghi trên chứng từ của nhà cung cấp cho từng căn hộ và kỳ thu.
+4. Kết quả phí định kỳ được làm tròn đến đơn vị VND gần nhất.
+5. Khi phát hành kỳ thu, hệ thống tạo tối đa một khoản cho mỗi căn hộ và khoản thu định kỳ; mỗi hóa đơn tiện ích đã nhập được tạo thành một khoản riêng.
+6. Khoản đã phát hành giữ nguyên diện tích, nhân khẩu, số phương tiện, đơn giá và số tiền đã tính, kể cả khi hồ sơ hoặc đơn giá thay đổi sau này.
+7. Có thể ghi nhận nhiều lần thanh toán cho cùng một khoản. Nếu số tiền nhận vượt phần còn nợ, phần đã đủ được cấn vào khoản thu và phần dư được lưu thành số dư của hộ.
+8. Trạng thái được cập nhật theo số đã cấn trừ: chưa thu, thu một phần hoặc đã thanh toán. Số dư nộp trước tự động cấn vào các khoản phải thu của hộ khi phát hành kỳ tiếp theo.
+9. Giao dịch đã ghi nhận được giữ trong lịch sử để đối soát.
+10. Khoản đóng góp tự nguyện chỉ ghi nhận số tiền đã thực nhận, không phát hành khoản phải thu hoặc làm tăng công nợ.
 
 ## Quy trình sử dụng
 
@@ -47,16 +49,23 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 4. Thêm nhân khẩu, xác định một chủ hộ, cập nhật ngày sinh, giấy tờ và quan hệ với chủ hộ.
 5. Tìm hồ sơ theo mã căn, tầng, họ tên có dấu hoặc không dấu, CCCD/CMND và số điện thoại.
 6. Đăng ký phương tiện theo căn hộ trước khi phát hành kỳ thu có phí gửi xe.
-7. Tạo khoản thu bắt buộc theo diện tích, nhân khẩu, phương tiện hoặc căn hộ; khai báo đơn giá và ngày bắt đầu áp dụng.
-8. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
-9. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
-10. Kế toán ghi nhận người nộp, ngày thu, số tiền nhận, phương thức thanh toán và thông tin đối chiếu nếu có.
-11. Ghi nhận riêng khoản đóng góp tự nguyện theo số tiền thực nhận.
-12. Xem trước hoặc in thông báo thu phí theo căn hộ hay toàn kỳ.
-13. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
-14. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
+7. Nhập hóa đơn điện, nước, internet cho từng căn hộ và kỳ trước khi phát hành.
+8. Tạo khoản thu bắt buộc theo diện tích, nhân khẩu, phương tiện hoặc căn hộ; khai báo đơn giá và ngày bắt đầu áp dụng.
+9. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
+10. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
+11. Kế toán ghi nhận người nộp, ngày thu, số tiền nhận, phương thức thanh toán và thông tin đối chiếu nếu có.
+12. Ghi nhận riêng khoản đóng góp tự nguyện theo số tiền thực nhận.
+13. Xem trước hoặc in thông báo thu phí theo căn hộ hay toàn kỳ.
+14. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
+15. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
 
 ## Tiêu chí chấp nhận
+
+### Hóa đơn tiện ích
+
+- **Khi bắt đầu:** Ban quản trị đã đăng nhập và hóa đơn thuộc một căn hộ đang hoạt động, kỳ chưa phát hành.
+- **Khi thực hiện:** Ban quản trị nhập hoặc cập nhật tiền điện, nước hoặc internet cùng nhà cung cấp và mã đối chiếu.
+- **Kết quả:** Hóa đơn được đưa vào bảng kê của đúng căn hộ và kỳ; sau khi phát hành, dữ liệu gốc và khoản phải thu không bị thay đổi.
 
 ### Đăng ký phương tiện
 
