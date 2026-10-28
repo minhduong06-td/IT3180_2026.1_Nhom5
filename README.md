@@ -5,9 +5,11 @@
 ## Chức năng
 
 - Quản lý hộ khẩu, căn hộ và nhân khẩu; tra cứu theo căn hộ, tầng, họ tên, giấy tờ hoặc điện thoại.
-- Quản lý khoản thu và đơn giá có ngày hiệu lực.
+- Phân loại khoản bắt buộc, tính phí theo diện tích, nhân khẩu hoặc căn hộ; lưu khoản đóng góp theo số tiền thực nhận.
+- Quản lý đơn giá có ngày hiệu lực và giữ nguyên giá trị của các kỳ đã phát hành.
 - Phát hành kỳ thu, tạo bảng kê chi tiết theo từng căn hộ.
 - Ghi nhận thanh toán một phần hoặc toàn bộ bằng tiền mặt hay chuyển khoản.
+- Theo dõi riêng lịch sử đóng góp tự nguyện, không cộng vào công nợ phải thu.
 - Theo dõi số phải thu, số đã thu, công nợ và lịch sử giao dịch.
 - Phân quyền thao tác giữa ban quản trị và kế toán.
 - Quản lý tài khoản, đổi mật khẩu và khóa đăng nhập tạm thời khi nhập sai nhiều lần.
