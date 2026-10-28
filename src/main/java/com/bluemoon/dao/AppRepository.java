@@ -662,20 +662,20 @@ public final class AppRepository {
 
     public List<ContributionRecord> listContributions() throws SQLException {
         String sql = """
-                SELECT c.id, a.code, a.household_name, f.name AS fee_name, c.received_at,
+                SELECT c.id, a.code, a.household_name, f.name AS fee_name, c.received_on,
                        c.amount, c.method, c.reference, c.note, u.display_name
                 FROM contributions c
                 JOIN apartments a ON a.id = c.apartment_id
                 JOIN fee_types f ON f.id = c.fee_type_id
                 JOIN app_users u ON u.id = c.recorded_by
-                ORDER BY c.received_at DESC, c.id DESC
+                ORDER BY c.received_on DESC, c.id DESC
                 """;
         List<ContributionRecord> records = new ArrayList<>();
         try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
              ResultSet result = query.executeQuery(sql)) {
             while (result.next()) records.add(new ContributionRecord(result.getLong("id"),
                     result.getString("code"), result.getString("household_name"), result.getString("fee_name"),
-                    result.getTimestamp("received_at").toLocalDateTime(), result.getBigDecimal("amount"),
+                    result.getDate("received_on").toLocalDate(), result.getBigDecimal("amount"),
                     PaymentMethod.valueOf(result.getString("method")), result.getString("reference"),
                     result.getString("note"), result.getString("display_name")));
         }
@@ -684,13 +684,13 @@ public final class AppRepository {
 
     public void recordContribution(Contribution contribution, long userId) throws SQLException {
         String sql = """
-                INSERT INTO contributions(fee_type_id, apartment_id, received_at, amount, method, reference, note, recorded_by)
+                INSERT INTO contributions(fee_type_id, apartment_id, received_on, amount, method, reference, note, recorded_by)
                 SELECT f.id, a.id, ?, ?, ?, ?, ?, ?
                 FROM fee_types f JOIN apartments a ON a.id = ?
                 WHERE f.id = ? AND f.required = FALSE AND f.active = TRUE AND a.active = TRUE
                 """;
         try (Connection connection = database.openConnection(); PreparedStatement insert = connection.prepareStatement(sql)) {
-            insert.setTimestamp(1, Timestamp.valueOf(contribution.receivedOn().atStartOfDay()));
+            insert.setDate(1, Date.valueOf(contribution.receivedOn()));
             insert.setBigDecimal(2, contribution.amount());
             insert.setString(3, contribution.method().name());
             insert.setString(4, blankToNull(contribution.reference()));
