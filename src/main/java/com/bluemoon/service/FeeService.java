@@ -25,21 +25,44 @@ public final class FeeService {
 
     public void create(AppUser user, String code, String name, CalculationBasis basis,
                        BigDecimal price, LocalDate effectiveFrom) throws SQLException {
+        create(user, code, name, true, basis, price, effectiveFrom);
+    }
+
+    public void create(AppUser user, String code, String name, boolean required, CalculationBasis basis,
+                       BigDecimal price, LocalDate effectiveFrom) throws SQLException {
         AccessRules.requireRole(user, Role.ADMIN);
-        validateRate(price, effectiveFrom);
-        if (code == null || !code.trim().matches("[A-Za-z0-9_-]{1,32}")) {
+        if (code == null || !code.trim().matches("[A-Za-z0-9_-]{1,20}")) {
             throw new IllegalArgumentException("Mã khoản thu chỉ gồm chữ, số, gạch ngang hoặc gạch dưới.");
         }
-        if (name == null || name.isBlank() || basis == null) {
+        if (name == null || name.trim().length() < 3 || name.trim().length() > 100 || basis == null) {
             throw new IllegalArgumentException("Cần nhập tên và cách tính khoản thu.");
         }
-        repository.createFeeType(code.trim().toUpperCase(), name.trim(), true, basis, price, effectiveFrom, user.id());
+        if (required) {
+            if (basis == CalculationBasis.VOLUNTARY) throw new IllegalArgumentException("Khoản bắt buộc cần cách tính cụ thể.");
+            validateRate(price, effectiveFrom);
+        } else if (basis != CalculationBasis.VOLUNTARY) {
+            throw new IllegalArgumentException("Khoản đóng góp tự nguyện không áp dụng đơn giá cố định.");
+        }
+        repository.createFeeType(code.trim().toUpperCase(java.util.Locale.ROOT), name.trim(), required,
+                basis, price, effectiveFrom, user.id());
     }
 
     public void addRate(AppUser user, long feeId, BigDecimal price, LocalDate effectiveFrom) throws SQLException {
         AccessRules.requireRole(user, Role.ADMIN);
         validateRate(price, effectiveFrom);
+        FeeType fee = repository.listFeeTypes().stream().filter(item -> item.id() == feeId).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khoản thu."));
+        if (!fee.required() || !fee.active() || fee.basis() == CalculationBasis.VOLUNTARY) {
+            throw new IllegalArgumentException("Chỉ khoản thu bắt buộc đang áp dụng mới có thể cập nhật đơn giá.");
+        }
         repository.addFeeRate(feeId, price, effectiveFrom, user.id());
+    }
+
+    public void setActive(AppUser user, long feeId, boolean active) throws SQLException {
+        AccessRules.requireRole(user, Role.ADMIN);
+        FeeType fee = repository.listFeeTypes().stream().filter(item -> item.id() == feeId).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khoản thu."));
+        if (fee.active() != active) repository.setFeeActive(feeId, active);
     }
 
     private static void validateRate(BigDecimal price, LocalDate effectiveFrom) {
