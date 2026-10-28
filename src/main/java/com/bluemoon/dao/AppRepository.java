@@ -200,6 +200,46 @@ public final class AppRepository {
         }
     }
 
+    public List<Vehicle> listVehicles() throws SQLException {
+        String sql = """
+                SELECT v.id, v.apartment_id, a.code AS apartment_code, a.household_name,
+                       v.vehicle_type, v.license_plate, v.active
+                FROM vehicles v JOIN apartments a ON a.id = v.apartment_id
+                ORDER BY v.active DESC, a.code, v.vehicle_type, v.license_plate
+                """;
+        List<Vehicle> vehicles = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) vehicles.add(new Vehicle(result.getLong("id"), result.getLong("apartment_id"),
+                    result.getString("apartment_code"), result.getString("household_name"),
+                    VehicleType.valueOf(result.getString("vehicle_type")), result.getString("license_plate"),
+                    result.getBoolean("active")));
+        }
+        return vehicles;
+    }
+
+    public void registerVehicle(long apartmentId, VehicleType type, String licensePlate, long userId) throws SQLException {
+        String sql = """
+                INSERT INTO vehicles(apartment_id, vehicle_type, license_plate, registered_by)
+                SELECT id, ?, ?, ? FROM apartments WHERE id = ? AND active = TRUE
+                """;
+        try (Connection connection = database.openConnection(); PreparedStatement insert = connection.prepareStatement(sql)) {
+            insert.setString(1, type.name());
+            insert.setString(2, licensePlate);
+            insert.setLong(3, userId);
+            insert.setLong(4, apartmentId);
+            if (insert.executeUpdate() != 1) throw new SQLException("Không tìm thấy căn hộ đang hoạt động.");
+        }
+    }
+
+    public void deactivateVehicle(long vehicleId) throws SQLException {
+        try (Connection connection = database.openConnection(); PreparedStatement update = connection.prepareStatement(
+                "UPDATE vehicles SET active = FALSE WHERE id = ? AND active = TRUE")) {
+            update.setLong(1, vehicleId);
+            if (update.executeUpdate() != 1) throw new SQLException("Phương tiện không còn hoạt động hoặc không tồn tại.");
+        }
+    }
+
     private static void bindApartment(PreparedStatement statement, Apartment apartment) throws SQLException {
         statement.setString(1, apartment.code());
         statement.setString(2, apartment.householdCode());
@@ -436,6 +476,7 @@ public final class AppRepository {
         String addPeriod = "INSERT INTO billing_periods(period_year, period_month, issue_date, due_date, created_by) VALUES (?, ?, ?, ?, ?)";
         String loadInputs = """
                 SELECT a.id AS apartment_id, a.area_m2, COALESCE(rc.resident_count, 0) AS resident_count,
+                       COALESCE(vc.motorcycle_count, 0) AS motorcycle_count, COALESCE(vc.car_count, 0) AS car_count,
                        f.id AS fee_id, f.calculation_basis, r.unit_price
                 FROM apartments a CROSS JOIN fee_types f
                 JOIN fee_rates r ON r.fee_type_id = f.id
@@ -443,6 +484,10 @@ public final class AppRepository {
                                           WHERE r2.fee_type_id = f.id AND r2.effective_from <= ?)
                 LEFT JOIN (SELECT apartment_id, COUNT(*) AS resident_count FROM residents GROUP BY apartment_id) rc
                   ON rc.apartment_id = a.id
+                LEFT JOIN (SELECT apartment_id,
+                                  COUNT(CASE WHEN vehicle_type = 'MOTORCYCLE' THEN 1 END) AS motorcycle_count,
+                                  COUNT(CASE WHEN vehicle_type = 'CAR' THEN 1 END) AS car_count
+                           FROM vehicles WHERE active = TRUE GROUP BY apartment_id) vc ON vc.apartment_id = a.id
                 WHERE a.active = TRUE AND f.active = TRUE AND f.required = TRUE
                 ORDER BY a.code, f.name
                 """;
@@ -474,7 +519,8 @@ public final class AppRepository {
                     try (ResultSet result = query.executeQuery()) {
                         while (result.next()) {
                             inputs.add(new ChargeInput(result.getLong("apartment_id"), result.getBigDecimal("area_m2"),
-                                    result.getInt("resident_count"), result.getLong("fee_id"),
+                                    result.getInt("resident_count"), result.getInt("motorcycle_count"),
+                                    result.getInt("car_count"), result.getLong("fee_id"),
                                     CalculationBasis.valueOf(result.getString("calculation_basis")),
                                     result.getBigDecimal("unit_price")));
                         }
@@ -493,11 +539,13 @@ public final class AppRepository {
                         BigDecimal quantity = switch (input.basis()) {
                             case PER_M2 -> input.areaM2();
                             case PER_RESIDENT -> BigDecimal.valueOf(input.residentCount());
+                            case PER_MOTORCYCLE -> BigDecimal.valueOf(input.motorcycleCount());
+                            case PER_CAR -> BigDecimal.valueOf(input.carCount());
                             case FIXED -> BigDecimal.ONE;
                             case VOLUNTARY -> throw new SQLException("Không thể lập phí bắt buộc từ khoản đóng góp.");
                         };
                         BigDecimal amount = BillingRules.calculate(input.basis(), input.areaM2(),
-                                input.unitPrice(), input.residentCount());
+                                input.unitPrice(), input.residentCount(), input.motorcycleCount(), input.carCount());
                         insert.setLong(1, periodId);
                         insert.setLong(2, input.apartmentId());
                         insert.setLong(3, input.feeId());
@@ -874,6 +922,7 @@ public final class AppRepository {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private record ChargeInput(long apartmentId, BigDecimal areaM2, int residentCount, long feeId,
+    private record ChargeInput(long apartmentId, BigDecimal areaM2, int residentCount, int motorcycleCount,
+                               int carCount, long feeId,
                                CalculationBasis basis, BigDecimal unitPrice) {}
 }
