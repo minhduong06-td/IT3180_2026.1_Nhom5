@@ -50,12 +50,27 @@ CREATE TABLE IF NOT EXISTS residents (
     CONSTRAINT fk_resident_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS vehicles (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    apartment_id BIGINT NOT NULL,
+    vehicle_type ENUM('MOTORCYCLE', 'CAR') NOT NULL,
+    license_plate VARCHAR(16) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    active_license_plate VARCHAR(16) GENERATED ALWAYS AS (IF(active, license_plate, NULL)) STORED,
+    registered_by BIGINT NOT NULL,
+    registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_vehicle_active_plate (active_license_plate),
+    KEY ix_vehicle_apartment_active_type (apartment_id, active, vehicle_type),
+    CONSTRAINT fk_vehicle_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_vehicle_user FOREIGN KEY (registered_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
 CREATE TABLE IF NOT EXISTS fee_types (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(32) NOT NULL UNIQUE,
     name VARCHAR(120) NOT NULL,
     required BOOLEAN NOT NULL DEFAULT TRUE,
-    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'FIXED', 'VOLUNTARY') NOT NULL,
+    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'VOLUNTARY') NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -92,7 +107,7 @@ CREATE TABLE IF NOT EXISTS charges (
     billing_period_id BIGINT NOT NULL,
     apartment_id BIGINT NOT NULL,
     fee_type_id BIGINT NOT NULL,
-    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'FIXED') NOT NULL,
+    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED') NOT NULL,
     quantity_snapshot DECIMAL(10, 2) NOT NULL,
     unit_price_snapshot DECIMAL(15, 2) NOT NULL,
     amount DECIMAL(15, 0) NOT NULL,

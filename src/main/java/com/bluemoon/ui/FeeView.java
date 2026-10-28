@@ -66,6 +66,8 @@ final class FeeView extends VBox {
         table.getColumns().add(column("Cách tính", fee -> switch (fee.basis()) {
             case PER_M2 -> "Theo diện tích";
             case PER_RESIDENT -> "Theo nhân khẩu";
+            case PER_MOTORCYCLE -> "Theo xe máy";
+            case PER_CAR -> "Theo ô tô";
             case FIXED -> "Cố định theo căn hộ";
             case VOLUNTARY -> "Theo số tiền thực nhận";
         }));
@@ -122,7 +124,8 @@ final class FeeView extends VBox {
         required.valueProperty().addListener((observable, oldValue, value) -> {
             boolean mandatory = Boolean.TRUE.equals(value);
             basis.getItems().setAll(mandatory ? List.of(CalculationBasis.PER_M2, CalculationBasis.PER_RESIDENT,
-                    CalculationBasis.FIXED) : List.of(CalculationBasis.VOLUNTARY));
+                    CalculationBasis.PER_MOTORCYCLE, CalculationBasis.PER_CAR, CalculationBasis.FIXED)
+                    : List.of(CalculationBasis.VOLUNTARY));
             basis.setValue(mandatory ? CalculationBasis.PER_M2 : CalculationBasis.VOLUNTARY);
             price.setVisible(mandatory);
             price.setManaged(mandatory);
@@ -198,13 +201,16 @@ final class FeeView extends VBox {
 
     private static ComboBox<CalculationBasis> basisPicker() {
         ComboBox<CalculationBasis> basis = new ComboBox<>();
-        basis.getItems().setAll(CalculationBasis.PER_M2, CalculationBasis.PER_RESIDENT, CalculationBasis.FIXED);
+        basis.getItems().setAll(CalculationBasis.PER_M2, CalculationBasis.PER_RESIDENT,
+                CalculationBasis.PER_MOTORCYCLE, CalculationBasis.PER_CAR, CalculationBasis.FIXED);
         basis.setValue(CalculationBasis.PER_M2);
         basis.setConverter(new javafx.util.StringConverter<>() {
             @Override public String toString(CalculationBasis value) {
                 return switch (value) {
                     case PER_M2 -> "Theo diện tích (m² × đơn giá)";
                     case PER_RESIDENT -> "Theo nhân khẩu (người × đơn giá)";
+                    case PER_MOTORCYCLE -> "Theo số xe máy đăng ký";
+                    case PER_CAR -> "Theo số ô tô đăng ký";
                     case FIXED -> "Mức cố định theo căn hộ";
                     case VOLUNTARY -> "Đóng góp tự nguyện";
                 };
