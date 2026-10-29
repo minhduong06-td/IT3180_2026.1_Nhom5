@@ -88,6 +88,26 @@ CREATE TABLE IF NOT EXISTS fee_rates (
     CONSTRAINT fk_fee_rate_user FOREIGN KEY (created_by) REFERENCES app_users(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS utility_bills (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    period_year SMALLINT NOT NULL,
+    period_month TINYINT UNSIGNED NOT NULL,
+    apartment_id BIGINT NOT NULL,
+    utility_type ENUM('ELECTRICITY', 'WATER', 'INTERNET') NOT NULL,
+    amount DECIMAL(15, 0) NOT NULL,
+    provider VARCHAR(100) NOT NULL,
+    reference VARCHAR(120) NULL,
+    recorded_by BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_utility_bill_period (apartment_id, period_year, period_month, utility_type),
+    KEY ix_utility_bill_month (period_year, period_month),
+    CONSTRAINT chk_utility_bill_period CHECK (period_year BETWEEN 2000 AND 2200 AND period_month BETWEEN 1 AND 12),
+    CONSTRAINT chk_utility_bill_amount CHECK (amount > 0),
+    CONSTRAINT fk_utility_bill_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_utility_bill_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
 CREATE TABLE IF NOT EXISTS billing_periods (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     period_year SMALLINT NOT NULL,

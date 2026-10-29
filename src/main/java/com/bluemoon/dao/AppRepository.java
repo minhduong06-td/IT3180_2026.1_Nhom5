@@ -240,6 +240,136 @@ public final class AppRepository {
         }
     }
 
+    public List<UtilityBill> listUtilityBills() throws SQLException {
+        String sql = """
+                SELECT b.id, b.period_year, b.period_month, b.apartment_id, a.code AS apartment_code,
+                       b.utility_type, b.amount, b.provider, b.reference,
+                       EXISTS (SELECT 1 FROM billing_periods p
+                               WHERE p.period_year = b.period_year AND p.period_month = b.period_month) AS issued
+                FROM utility_bills b JOIN apartments a ON a.id = b.apartment_id
+                ORDER BY b.period_year DESC, b.period_month DESC, a.code, b.utility_type
+                """;
+        List<UtilityBill> bills = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) bills.add(new UtilityBill(result.getLong("id"), result.getInt("period_year"),
+                    result.getInt("period_month"), result.getLong("apartment_id"), result.getString("apartment_code"),
+                    UtilityType.valueOf(result.getString("utility_type")), result.getBigDecimal("amount"),
+                    result.getString("provider"), result.getString("reference"), result.getBoolean("issued")));
+        }
+        return bills;
+    }
+
+    public void saveUtilityBill(UtilityBillInput bill, long userId) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                ensurePeriodUnissued(connection, bill.year(), bill.month());
+                try (PreparedStatement apartment = connection.prepareStatement(
+                        "SELECT 1 FROM apartments WHERE id = ? AND active = TRUE FOR UPDATE")) {
+                    apartment.setLong(1, bill.apartmentId());
+                    try (ResultSet result = apartment.executeQuery()) {
+                        if (!result.next()) throw new SQLException("Không tìm thấy căn hộ đang hoạt động.");
+                    }
+                }
+                if (bill.id() != null) {
+                    try (PreparedStatement existing = connection.prepareStatement("""
+                            SELECT 1 FROM utility_bills WHERE id = ? AND period_year = ? AND period_month = ?
+                              AND apartment_id = ? AND utility_type = ? FOR UPDATE
+                            """)) {
+                        existing.setLong(1, bill.id());
+                        existing.setInt(2, bill.year());
+                        existing.setInt(3, bill.month());
+                        existing.setLong(4, bill.apartmentId());
+                        existing.setString(5, bill.type().name());
+                        try (ResultSet result = existing.executeQuery()) {
+                            if (!result.next()) throw new SQLException("Không tìm thấy hóa đơn cần cập nhật.");
+                        }
+                    }
+                }
+                String sql = bill.id() == null ? """
+                        INSERT INTO utility_bills(period_year, period_month, apartment_id, utility_type, amount,
+                                                  provider, reference, recorded_by)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE amount = ?, provider = ?, reference = ?, recorded_by = ?
+                        """ : """
+                        UPDATE utility_bills SET amount = ?, provider = ?, reference = ?, recorded_by = ?,
+                                                 updated_at = CURRENT_TIMESTAMP
+                        WHERE id = ? AND period_year = ? AND period_month = ? AND apartment_id = ? AND utility_type = ?
+                        """;
+                try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                    int index = 1;
+                    if (bill.id() == null) {
+                        statement.setInt(index++, bill.year());
+                        statement.setInt(index++, bill.month());
+                        statement.setLong(index++, bill.apartmentId());
+                        statement.setString(index++, bill.type().name());
+                    }
+                    statement.setBigDecimal(index++, bill.amount());
+                    statement.setString(index++, bill.provider());
+                    setNullableString(statement, index++, bill.reference());
+                    statement.setLong(index++, userId);
+                    if (bill.id() == null) {
+                        statement.setBigDecimal(index++, bill.amount());
+                        statement.setString(index++, bill.provider());
+                        setNullableString(statement, index++, bill.reference());
+                        statement.setLong(index, userId);
+                    } else {
+                        statement.setLong(index++, bill.id());
+                        statement.setInt(index++, bill.year());
+                        statement.setInt(index++, bill.month());
+                        statement.setLong(index++, bill.apartmentId());
+                        statement.setString(index, bill.type().name());
+                    }
+                    statement.executeUpdate();
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    public void deleteUtilityBill(long billId) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                int year;
+                int month;
+                try (PreparedStatement query = connection.prepareStatement(
+                        "SELECT period_year, period_month FROM utility_bills WHERE id = ? FOR UPDATE")) {
+                    query.setLong(1, billId);
+                    try (ResultSet result = query.executeQuery()) {
+                        if (!result.next()) throw new SQLException("Không tìm thấy hóa đơn cần xóa.");
+                        year = result.getInt("period_year");
+                        month = result.getInt("period_month");
+                    }
+                }
+                ensurePeriodUnissued(connection, year, month);
+                try (PreparedStatement delete = connection.prepareStatement("DELETE FROM utility_bills WHERE id = ?")) {
+                    delete.setLong(1, billId);
+                    if (delete.executeUpdate() != 1) throw new SQLException("Không tìm thấy hóa đơn cần xóa.");
+                }
+                connection.commit();
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    private static void ensurePeriodUnissued(Connection connection, int year, int month) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement(
+                "SELECT id FROM billing_periods WHERE period_year = ? AND period_month = ? FOR UPDATE")) {
+            query.setInt(1, year);
+            query.setInt(2, month);
+            try (ResultSet result = query.executeQuery()) {
+                if (result.next()) throw new SQLException("Kỳ thu này đã phát hành; hóa đơn không thể thay đổi.");
+            }
+        }
+    }
+
     private static void bindApartment(PreparedStatement statement, Apartment apartment) throws SQLException {
         statement.setString(1, apartment.code());
         statement.setString(2, apartment.householdCode());
