@@ -39,6 +39,7 @@ final class ChargesView extends VBox {
     private final Map<String, Long> periodIds = new HashMap<>();
     private final javafx.scene.control.TextField search = Ui.textField("Tìm mã căn, chủ hộ, khoản thu");
     private final TableView<ChargeSummary> table = new TableView<>();
+    private final Button printAll = Ui.button("In cả kỳ", false);
 
     ChargesView(AppServices services, AppUser user) {
         this(services, user, null);
@@ -57,18 +58,28 @@ final class ChargesView extends VBox {
         refresh.setOnAction(event -> load());
         search.setOnAction(event -> load());
         var statement = Ui.button("Xem bảng kê căn hộ", false);
+        statement.setDisable(true);
         statement.setOnAction(event -> showStatement());
+        var printNotice = Ui.button("In thông báo", false);
+        printNotice.setDisable(true);
+        printNotice.setOnAction(event -> printSelectedNotice());
+        printAll.setDisable(true);
+        printAll.setOnAction(event -> printAllNotices());
         var pay = Ui.button("Ghi nhận thanh toán", true);
+        pay.setDisable(true);
         pay.setVisible(user.role() == Role.ACCOUNTANT);
         pay.setManaged(user.role() == Role.ACCOUNTANT);
         pay.setOnAction(event -> recordPayment());
         table.setPlaceholder(new Label("Không có khoản phải thu phù hợp."));
         table.getSelectionModel().selectedItemProperty().addListener((observable, oldRow, row) -> {
             statement.setDisable(row == null);
+            printNotice.setDisable(row == null);
             pay.setDisable(row == null || row.status() == ChargeStatus.PAID);
         });
+        periodFilter.valueProperty().addListener((observable, oldValue, value) ->
+                printAll.setDisable(value == null || periodIds.get(value) == null));
         getChildren().addAll(Ui.pageHeader("Bảng kê phải thu", "Tra cứu từng khoản, công thức tính và số dư của căn hộ."),
-                Ui.toolbar(periodFilter, search, refresh, Ui.spacer(), statement, pay), table);
+                Ui.toolbar(periodFilter, search, refresh, Ui.spacer(), statement, printNotice, printAll, pay), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         loadPeriods();
@@ -123,6 +134,7 @@ final class ChargesView extends VBox {
             periodFilter.setValue(initialPeriodId == null ? "Tất cả các kỳ"
                     : periods.stream().filter(period -> period.id() == initialPeriodId).map(BillingPeriod::label)
                     .findFirst().orElse("Tất cả các kỳ"));
+            printAll.setDisable(periodIds.get(periodFilter.getValue()) == null);
         } catch (SQLException exception) {
             Ui.error("Không tải được kỳ thu", exception);
         }
@@ -156,11 +168,21 @@ final class ChargesView extends VBox {
             statement.getColumns().add(column("Còn nợ", charge -> Ui.money(charge.balance())));
             statement.getItems().setAll(items);
             BigDecimal total = items.stream().map(ChargeSummary::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal paid = items.stream().map(ChargeSummary::paid).reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal balance = items.stream().map(ChargeSummary::balance).reduce(BigDecimal.ZERO, BigDecimal::add);
+            String area = items.stream().filter(charge -> charge.basis() == CalculationBasis.PER_M2)
+                    .map(charge -> charge.quantity().stripTrailingZeros().toPlainString()).findFirst().orElse("—");
+            String residents = items.stream().filter(charge -> charge.basis() == CalculationBasis.PER_RESIDENT)
+                    .map(charge -> charge.quantity().stripTrailingZeros().toPlainString()).findFirst().orElse("—");
             Label title = Ui.label(selected.apartmentCode() + "  ·  " + selected.householdName(), "section-title");
             Label due = Ui.label("Kỳ " + selected.period() + "  ·  Hạn nộp " + Ui.date(selected.dueDate()), "muted");
-            Label totals = Ui.label("Tổng phải thu " + Ui.money(total) + "  ·  Còn nợ " + Ui.money(balance), "section-title");
-            VBox content = new VBox(12, title, due, statement, totals);
+            Label profile = Ui.label("Diện tích " + area + " m²  ·  Nhân khẩu " + residents, "muted");
+            Label totals = Ui.label("Tổng phải nộp " + Ui.money(total) + "  ·  Đã thu " + Ui.money(paid)
+                    + "  ·  Còn phải nộp " + Ui.money(balance), "section-title");
+            Label bank = Ui.label(FeeNoticePrinter.bankInformation(), "muted");
+            Label transfer = Ui.label("Nội dung chuyển khoản: " + FeeNoticePrinter.transferDescription(selected), "muted");
+            VBox content = new VBox(12, title, due, profile, statement, totals, bank, transfer,
+                    Ui.label("Có thể nộp tại Văn phòng Ban quản trị (Tầng 1).", "muted"));
             content.setPadding(new Insets(8, 0, 2, 0));
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setTitle("Bảng kê căn hộ");
@@ -171,6 +193,35 @@ final class ChargesView extends VBox {
             alert.showAndWait();
         } catch (SQLException exception) {
             Ui.error("Không tải được bảng kê căn hộ", exception);
+        }
+    }
+
+    private void printSelectedNotice() {
+        ChargeSummary selected = table.getSelectionModel().getSelectedItem();
+        if (selected == null) return;
+        try {
+            List<ChargeSummary> items = services.collections().charges(user, selected.periodId(), selected.apartmentCode())
+                    .stream().filter(charge -> charge.apartmentCode().equals(selected.apartmentCode())).toList();
+            FeeNoticePrinter.print(getScene().getWindow(), List.of(items));
+        } catch (SQLException exception) {
+            Ui.error("Không tải được thông báo", exception);
+        }
+    }
+
+    private void printAllNotices() {
+        Long periodId = periodIds.get(periodFilter.getValue());
+        if (periodId == null) {
+            Ui.info("Chọn kỳ thu", "Chọn một kỳ thu trước khi in thông báo cho toàn bộ căn hộ.");
+            return;
+        }
+        try {
+            Map<String, List<ChargeSummary>> byApartment = new java.util.TreeMap<>();
+            for (ChargeSummary charge : services.collections().charges(user, periodId, "")) {
+                byApartment.computeIfAbsent(charge.apartmentCode(), ignored -> new java.util.ArrayList<>()).add(charge);
+            }
+            FeeNoticePrinter.print(getScene().getWindow(), List.copyOf(byApartment.values()));
+        } catch (SQLException exception) {
+            Ui.error("Không tải được thông báo", exception);
         }
     }
 
@@ -227,7 +278,7 @@ final class ChargesView extends VBox {
         load();
     }
 
-    private static String formula(ChargeSummary charge) {
+    static String formula(ChargeSummary charge) {
         return switch (charge.basis()) {
             case PER_M2 -> charge.quantity().stripTrailingZeros().toPlainString() + " m² × " + Ui.money(charge.unitPrice());
             case PER_RESIDENT -> charge.quantity().stripTrailingZeros().toPlainString() + " người × " + Ui.money(charge.unitPrice());
