@@ -581,6 +581,47 @@ public final class AppRepository {
         return charges;
     }
 
+    public List<HouseholdDebt> listHouseholdDebts(long periodId) throws SQLException {
+        String sql = """
+                WITH charge_payments AS (
+                    SELECT charge_id, SUM(amount) AS paid, MAX(paid_at) AS last_paid
+                    FROM payments GROUP BY charge_id
+                ), resident_counts AS (
+                    SELECT apartment_id, COUNT(*) AS resident_count FROM residents GROUP BY apartment_id
+                )
+                SELECT a.id, MAX(a.code) AS code, MAX(a.household_name) AS household_name,
+                       MAX(a.area_m2) AS area_m2,
+                       MAX(CASE WHEN a.code REGEXP '^[A-Z][0-9]{3,4}$'
+                                THEN CAST(SUBSTRING(a.code, 2, CHAR_LENGTH(a.code) - 3) AS UNSIGNED)
+                                ELSE 0 END) AS floor,
+                       MAX(COALESCE(r.resident_count, 0)) AS resident_count,
+                       SUM(c.amount) AS total_due, SUM(COALESCE(p.paid, 0)) AS paid,
+                       MAX(p.last_paid) AS last_paid
+                FROM charges c
+                JOIN apartments a ON a.id = c.apartment_id
+                LEFT JOIN charge_payments p ON p.charge_id = c.id
+                LEFT JOIN resident_counts r ON r.apartment_id = a.id
+                WHERE c.billing_period_id = ?
+                GROUP BY a.id ORDER BY code
+                """;
+        List<HouseholdDebt> debts = new ArrayList<>();
+        try (Connection connection = database.openConnection(); PreparedStatement query = connection.prepareStatement(sql)) {
+            query.setLong(1, periodId);
+            try (ResultSet result = query.executeQuery()) {
+                while (result.next()) {
+                    BigDecimal totalDue = result.getBigDecimal("total_due");
+                    BigDecimal paid = result.getBigDecimal("paid");
+                    Timestamp lastPaid = result.getTimestamp("last_paid");
+                    debts.add(new HouseholdDebt(result.getString("code"), result.getString("household_name"),
+                            result.getInt("floor"), result.getBigDecimal("area_m2"), result.getInt("resident_count"),
+                            totalDue, paid, totalDue.subtract(paid), BillingRules.status(totalDue, paid),
+                            lastPaid == null ? null : lastPaid.toLocalDateTime()));
+                }
+            }
+        }
+        return debts;
+    }
+
     public void recordPayment(long chargeId, BigDecimal amount, PaymentMethod method,
                               String reference, String note, long userId) throws SQLException {
         try (Connection connection = database.openConnection()) {
