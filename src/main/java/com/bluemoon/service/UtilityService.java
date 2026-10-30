@@ -11,7 +11,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 public final class UtilityService {
-    private static final BigDecimal MAX_AMOUNT = new BigDecimal("999999999999999");
+    private static final BigDecimal MAX_AMOUNT = new BigDecimal("9999999999999");
     private final AppRepository repository;
 
     public UtilityService(AppRepository repository) {
@@ -31,7 +31,7 @@ public final class UtilityService {
         }
         if (bill.amount() == null || bill.amount().signum() <= 0
                 || bill.amount().stripTrailingZeros().scale() > 0 || bill.amount().compareTo(MAX_AMOUNT) > 0) {
-            throw new IllegalArgumentException("Số tiền phải là số nguyên VND dương, tối đa 15 chữ số.");
+            throw new IllegalArgumentException("Số tiền phải là số nguyên VND dương, tối đa 13 chữ số.");
         }
         String provider = bill.provider() == null ? "" : bill.provider().trim();
         String reference = bill.reference() == null || bill.reference().isBlank() ? null : bill.reference().trim();
