@@ -50,6 +50,7 @@ final class MainShell extends BorderPane {
             sidebar.getChildren().addAll(brand, Ui.label("VẬN HÀNH", "sidebar-caption"), navItems);
             addNavigation("Căn hộ", () -> new ApartmentView(services, user));
             addNavigation("Phương tiện", () -> new VehicleView(services, user));
+            addNavigation("Điện, nước, internet", () -> new UtilityView(services, user));
             addNavigation("Cư dân", () -> new ResidentView(services, user));
             addNavigation("Khoản thu", () -> new FeeView(services, user));
             addNavigation("Đóng góp", () -> new ContributionView(services, user));

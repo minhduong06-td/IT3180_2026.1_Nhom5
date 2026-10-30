@@ -69,6 +69,7 @@ final class FeeView extends VBox {
             case PER_MOTORCYCLE -> "Theo xe máy";
             case PER_CAR -> "Theo ô tô";
             case FIXED -> "Cố định theo căn hộ";
+            case EXTERNAL_BILL -> "Theo hóa đơn nhà cung cấp";
             case VOLUNTARY -> "Theo số tiền thực nhận";
         }));
         table.getColumns().add(column("Đơn giá gần nhất", fee -> fee.unitPrice() == null
@@ -212,6 +213,7 @@ final class FeeView extends VBox {
                     case PER_MOTORCYCLE -> "Theo số xe máy đăng ký";
                     case PER_CAR -> "Theo số ô tô đăng ký";
                     case FIXED -> "Mức cố định theo căn hộ";
+                    case EXTERNAL_BILL -> "Theo hóa đơn nhà cung cấp";
                     case VOLUNTARY -> "Đóng góp tự nguyện";
                 };
             }

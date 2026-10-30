@@ -34,6 +34,7 @@ public final class BillingRules {
             case PER_MOTORCYCLE -> BigDecimal.valueOf(motorcycleCount);
             case PER_CAR -> BigDecimal.valueOf(carCount);
             case FIXED -> BigDecimal.ONE;
+            case EXTERNAL_BILL -> BigDecimal.ONE;
             case VOLUNTARY -> throw new IllegalArgumentException("Khoản đóng góp không được tính tự động.");
         };
         BigDecimal amount = quantity.multiply(unitPrice).setScale(0, RoundingMode.HALF_UP);

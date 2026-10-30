@@ -37,6 +37,9 @@ public final class FeeService {
         if (name == null || name.trim().length() < 3 || name.trim().length() > 100 || basis == null) {
             throw new IllegalArgumentException("Cần nhập tên và cách tính khoản thu.");
         }
+        if (basis == CalculationBasis.EXTERNAL_BILL) {
+            throw new IllegalArgumentException("Hóa đơn nhà cung cấp cần được nhập trong mục Điện, nước, internet.");
+        }
         if (required) {
             if (basis == CalculationBasis.VOLUNTARY) throw new IllegalArgumentException("Khoản bắt buộc cần cách tính cụ thể.");
             validateRate(price, effectiveFrom);

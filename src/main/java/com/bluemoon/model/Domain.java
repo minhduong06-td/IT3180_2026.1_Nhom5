@@ -8,8 +8,9 @@ public final class Domain {
     private Domain() {}
 
     public enum Role { ADMIN, ACCOUNTANT }
-    public enum CalculationBasis { PER_M2, PER_RESIDENT, PER_MOTORCYCLE, PER_CAR, FIXED, VOLUNTARY }
+    public enum CalculationBasis { PER_M2, PER_RESIDENT, PER_MOTORCYCLE, PER_CAR, FIXED, EXTERNAL_BILL, VOLUNTARY }
     public enum VehicleType { MOTORCYCLE, CAR }
+    public enum UtilityType { ELECTRICITY, WATER, INTERNET }
     public enum OccupancyStatus { OCCUPIED, VACANT, RENTED }
     public enum Gender { MALE, FEMALE }
     public enum HouseholdRelationship { HEAD, WIFE, HUSBAND, CHILD, PARENT, TENANT, OTHER }
@@ -41,6 +42,13 @@ public final class Domain {
 
     public record Vehicle(long id, long apartmentId, String apartmentCode, String householdName,
                           VehicleType type, String licensePlate, boolean active) {}
+
+    public record UtilityBill(long id, int year, int month, long apartmentId, String apartmentCode,
+                              UtilityType type, BigDecimal amount, String provider, String reference,
+                              boolean issued) {}
+
+    public record UtilityBillInput(Long id, int year, int month, long apartmentId, UtilityType type,
+                                   BigDecimal amount, String provider, String reference) {}
 
     public record FeeType(long id, String code, String name, boolean required,
                           CalculationBasis basis, BigDecimal unitPrice,
