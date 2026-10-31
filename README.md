@@ -7,6 +7,7 @@
 - Quản lý hộ khẩu, căn hộ và nhân khẩu; tra cứu theo căn hộ, tầng, họ tên, giấy tờ hoặc điện thoại.
 - Quản lý phương tiện theo căn hộ; tính phí gửi xe máy và ô tô theo số xe đăng ký.
 - Nhập hóa đơn điện, nước, internet theo căn hộ và cộng vào bảng kê khi phát hành kỳ thu.
+- Tiếp nhận yêu cầu cư dân, phân loại phản ánh và theo dõi trạng thái xử lý.
 - Phân loại khoản bắt buộc, tính phí theo diện tích, nhân khẩu, phương tiện hoặc căn hộ; lưu khoản đóng góp theo số tiền thực nhận.
 - Quản lý đơn giá có ngày hiệu lực và giữ nguyên giá trị của các kỳ đã phát hành.
 - Phát hành kỳ thu, tạo bảng kê chi tiết theo từng căn hộ.

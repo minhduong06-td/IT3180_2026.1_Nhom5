@@ -6,7 +6,7 @@ Tài liệu mô tả cách ban quản trị và kế toán quản lý khoản th
 
 | Vai trò | Quyền sử dụng |
 |---|---|
-| Ban quản trị | Quản lý tài khoản, căn hộ, nhân khẩu, khoản thu, đơn giá và phát hành kỳ thu; xem bảng kê và báo cáo tổng quan. |
+| Ban quản trị | Quản lý tài khoản, căn hộ, nhân khẩu, yêu cầu cư dân, khoản thu, đơn giá và phát hành kỳ thu; xem bảng kê và báo cáo tổng quan. |
 | Kế toán | Xem hồ sơ căn hộ và nhân khẩu, bảng kê; ghi nhận thanh toán và tra cứu lịch sử thu. |
 
 Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dựa vào việc ẩn nút trên màn hình.
@@ -19,6 +19,7 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 | Nhân khẩu | Họ tên, ngày sinh, giới tính, CCCD/CMND, quan hệ, ngày chuyển đến | Họ tên dài 2 đến 50 ký tự chữ; người từ 14 tuổi cần CCCD/CMND 9 hoặc 12 chữ số; mỗi hộ có một chủ hộ. |
 | Phương tiện | Căn hộ, loại xe, biển số, trạng thái đăng ký | Mỗi biển số chỉ được đăng ký một lần tại một thời điểm; xe đã ngừng đăng ký được giữ trong lịch sử và không tính cho kỳ thu phát hành sau đó. |
 | Hóa đơn tiện ích | Căn hộ, kỳ, loại dịch vụ, số tiền, nhà cung cấp, mã đối chiếu | Mỗi căn hộ có tối đa một hóa đơn cho từng dịch vụ trong một kỳ; được cập nhật trước khi phát hành và được giữ trong lịch sử sau khi đã đưa vào bảng kê. |
+| Yêu cầu cư dân | Căn hộ, người báo, nhóm yêu cầu, tiêu đề, mô tả, trạng thái, ghi chú xử lý | Ban quản trị tiếp nhận yêu cầu mới, cập nhật trạng thái và ghi chú xử lý; yêu cầu được giữ lại để tra cứu. |
 | Khoản thu | Mã, tên, phân loại, cách tính, đơn giá, ngày hiệu lực, trạng thái | Mã không trùng; phí bắt buộc tính theo diện tích, nhân khẩu, số xe máy, số ô tô hoặc căn hộ; khoản đóng góp tự nguyện không có đơn giá bắt buộc. Đơn giá mới được lưu thành bản ghi riêng; khoản đã phát sinh chỉ được ngừng áp dụng, không xóa khỏi dữ liệu. |
 | Kỳ thu | Tháng, ngày phát hành, hạn nộp | Mỗi tháng chỉ phát hành một lần; hạn nộp không trước ngày phát hành. |
 | Bảng kê | Căn hộ, khoản thu, số lượng tính phí, đơn giá, số tiền, số đã thanh toán | Thông tin tính phí được lưu tại thời điểm phát hành và không đổi theo các lần cập nhật sau. |
@@ -50,14 +51,15 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 5. Tìm hồ sơ theo mã căn, tầng, họ tên có dấu hoặc không dấu, CCCD/CMND và số điện thoại.
 6. Đăng ký phương tiện theo căn hộ trước khi phát hành kỳ thu có phí gửi xe.
 7. Nhập hóa đơn điện, nước, internet cho từng căn hộ và kỳ trước khi phát hành.
-8. Tạo khoản thu bắt buộc theo diện tích, nhân khẩu, phương tiện hoặc căn hộ; khai báo đơn giá và ngày bắt đầu áp dụng.
-9. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
-10. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
-11. Kế toán ghi nhận người nộp, ngày thu, số tiền nhận, phương thức thanh toán và thông tin đối chiếu nếu có.
-12. Ghi nhận riêng khoản đóng góp tự nguyện theo số tiền thực nhận.
-13. Xem trước hoặc in thông báo thu phí theo căn hộ hay toàn kỳ.
-14. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
-15. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
+8. Ghi nhận yêu cầu cư dân theo căn hộ, phân loại nội dung, cập nhật trạng thái và ghi chú xử lý.
+9. Tạo khoản thu bắt buộc theo diện tích, nhân khẩu, phương tiện hoặc căn hộ; khai báo đơn giá và ngày bắt đầu áp dụng.
+10. Chọn tháng, ngày phát hành và hạn nộp để phát hành kỳ thu.
+11. Mở bảng kê để xem công thức, số phải thu, số đã thu và công nợ theo từng căn hộ.
+12. Kế toán ghi nhận người nộp, ngày thu, số tiền nhận, phương thức thanh toán và thông tin đối chiếu nếu có.
+13. Ghi nhận riêng khoản đóng góp tự nguyện theo số tiền thực nhận.
+14. Xem trước hoặc in thông báo thu phí theo căn hộ hay toàn kỳ.
+15. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
+16. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
 
 ## Tiêu chí chấp nhận
 
@@ -72,6 +74,12 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 - **Khi bắt đầu:** Ban quản trị đã đăng nhập và căn hộ đang hoạt động.
 - **Khi thực hiện:** Ban quản trị đăng ký xe máy hoặc ô tô bằng biển số chưa được dùng; có thể ngừng đăng ký xe đang hoạt động.
 - **Kết quả:** Biển số đang hoạt động không bị trùng; số xe được tính theo loại khi phát hành kỳ thu và dữ liệu kỳ cũ không đổi.
+
+### Yêu cầu cư dân
+
+- **Khi bắt đầu:** Ban quản trị đã đăng nhập và căn hộ đang hoạt động.
+- **Khi thực hiện:** Ban quản trị ghi nhận người báo, nhóm yêu cầu, tiêu đề và mô tả; sau đó cập nhật trạng thái cùng ghi chú xử lý.
+- **Kết quả:** Yêu cầu được lưu theo căn hộ, có thời điểm tiếp nhận và cập nhật gần nhất, đồng thời vẫn có thể tra cứu sau khi hoàn tất.
 
 ### Phát hành kỳ thu
 

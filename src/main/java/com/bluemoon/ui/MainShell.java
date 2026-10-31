@@ -51,6 +51,7 @@ final class MainShell extends BorderPane {
             addNavigation("Căn hộ", () -> new ApartmentView(services, user));
             addNavigation("Phương tiện", () -> new VehicleView(services, user));
             addNavigation("Điện, nước, internet", () -> new UtilityView(services, user));
+            addNavigation("Yêu cầu cư dân", () -> new ResidentRequestView(services, user));
             addNavigation("Cư dân", () -> new ResidentView(services, user));
             addNavigation("Khoản thu", () -> new FeeView(services, user));
             addNavigation("Đóng góp", () -> new ContributionView(services, user));

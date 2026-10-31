@@ -361,6 +361,61 @@ public final class AppRepository {
         }
     }
 
+    public List<ResidentRequest> listResidentRequests() throws SQLException {
+        String sql = """
+                SELECT r.id, r.apartment_id, a.code AS apartment_code, r.reporter_name, r.category,
+                       r.subject, r.description, r.status, r.handling_note, r.created_at, r.updated_at
+                FROM resident_requests r JOIN apartments a ON a.id = r.apartment_id
+                ORDER BY r.updated_at DESC, r.id DESC
+                """;
+        List<ResidentRequest> requests = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) requests.add(new ResidentRequest(result.getLong("id"),
+                    result.getLong("apartment_id"), result.getString("apartment_code"),
+                    result.getString("reporter_name"), RequestCategory.valueOf(result.getString("category")),
+                    result.getString("subject"), result.getString("description"),
+                    RequestStatus.valueOf(result.getString("status")), result.getString("handling_note"),
+                    result.getTimestamp("created_at").toLocalDateTime(),
+                    result.getTimestamp("updated_at").toLocalDateTime()));
+        }
+        return requests;
+    }
+
+    public void saveResidentRequest(ResidentRequestInput request, long userId) throws SQLException {
+        String sql = request.id() == null ? """
+                INSERT INTO resident_requests(apartment_id, reporter_name, category, subject, description,
+                                              status, handling_note, created_by)
+                SELECT id, ?, ?, ?, ?, ?, ?, ? FROM apartments WHERE id = ? AND active = TRUE
+                """ : """
+                UPDATE resident_requests
+                SET reporter_name = ?, category = ?, subject = ?, description = ?, status = ?,
+                    handling_note = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND apartment_id = ?
+                """;
+        try (Connection connection = database.openConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+            int index = 1;
+            statement.setString(index++, request.reporterName());
+            statement.setString(index++, request.category().name());
+            statement.setString(index++, request.subject());
+            statement.setString(index++, request.description());
+            statement.setString(index++, request.status().name());
+            setNullableString(statement, index++, request.handlingNote());
+            if (request.id() == null) {
+                statement.setLong(index++, userId);
+                statement.setLong(index, request.apartmentId());
+            } else {
+                statement.setLong(index++, request.id());
+                statement.setLong(index, request.apartmentId());
+            }
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException(request.id() == null
+                        ? "Không tìm thấy căn hộ đang hoạt động."
+                        : "Yêu cầu không còn tồn tại hoặc đã chuyển căn hộ.");
+            }
+        }
+    }
+
     private static void ensurePeriodUnissued(Connection connection, int year, int month) throws SQLException {
         try (PreparedStatement query = connection.prepareStatement(
                 "SELECT id FROM billing_periods WHERE period_year = ? AND period_month = ? FOR UPDATE")) {
