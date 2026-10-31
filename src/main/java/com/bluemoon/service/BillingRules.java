@@ -48,8 +48,8 @@ public final class BillingRules {
         if (amount.stripTrailingZeros().scale() > 0) {
             throw new IllegalArgumentException("Số tiền thu phải là số nguyên VND.");
         }
-        if (balance == null || balance.signum() < 0 || amount.compareTo(balance) > 0) {
-            throw new IllegalArgumentException("Số tiền thu vượt quá công nợ còn lại.");
+        if (balance == null || balance.signum() <= 0) {
+            throw new IllegalArgumentException("Khoản phải thu không còn số dư cần thanh toán.");
         }
     }
 }
