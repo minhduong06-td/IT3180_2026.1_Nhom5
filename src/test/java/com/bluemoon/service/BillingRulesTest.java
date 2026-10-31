@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BillingRulesTest {
@@ -34,13 +35,14 @@ class BillingRulesTest {
     }
 
     @Test
-    void rejectsZeroAreaAndOverpayment() {
+    void acceptsOverpaymentForCreditAndRejectsInvalidAmounts() {
         assertThrows(IllegalArgumentException.class, () -> BillingRules.calculate(
                 CalculationBasis.PER_M2, BigDecimal.ZERO, BigDecimal.ONE));
         assertThrows(IllegalArgumentException.class, () -> BillingRules.calculate(
                 CalculationBasis.PER_M2, BigDecimal.ONE, new BigDecimal("0.01")));
+        assertDoesNotThrow(() -> BillingRules.validatePayment(new BigDecimal("101"), new BigDecimal("100")));
         assertThrows(IllegalArgumentException.class, () -> BillingRules.validatePayment(
-                new BigDecimal("101"), new BigDecimal("100")));
+                BigDecimal.ONE, BigDecimal.ZERO));
         assertThrows(IllegalArgumentException.class, () -> BillingRules.validatePayment(
                 new BigDecimal("1.5"), new BigDecimal("100")));
     }

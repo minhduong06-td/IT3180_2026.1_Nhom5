@@ -21,6 +21,6 @@ class AuthorizationTest {
     @Test
     void administratorCannotRecordPayments() {
         assertThrows(SecurityException.class, () -> new CollectionService(null).recordPayment(admin, 1,
-                java.math.BigDecimal.ONE, PaymentMethod.CASH, null, null));
+                java.math.BigDecimal.ONE, "Admin", java.time.LocalDate.now(), PaymentMethod.CASH, null, null));
     }
 }

@@ -510,6 +510,7 @@ public final class AppRepository {
                     }
                     insert.executeBatch();
                 }
+                applyCredits(connection, periodId, year, month);
                 connection.commit();
                 return new BillingPeriod(periodId, year, month, issueDate, dueDate, inputs.size(), total);
             } catch (SQLException | RuntimeException exception) {
@@ -536,13 +537,75 @@ public final class AppRepository {
         }
     }
 
+    private static void applyCredits(Connection connection, long periodId, int year, int month) throws SQLException {
+        String paidSql = """
+                SELECT COALESCE((SELECT SUM(applied_amount) FROM payments WHERE charge_id = ?), 0)
+                     + COALESCE((SELECT SUM(amount) FROM credit_applications WHERE charge_id = ?), 0)
+                """;
+        try (PreparedStatement charges = connection.prepareStatement(
+                "SELECT id, apartment_id, amount FROM charges WHERE billing_period_id = ? ORDER BY apartment_id, id FOR UPDATE")) {
+            charges.setLong(1, periodId);
+            try (ResultSet chargeRows = charges.executeQuery()) {
+                while (chargeRows.next()) {
+                    long chargeId = chargeRows.getLong("id");
+                    long apartmentId = chargeRows.getLong("apartment_id");
+                    BigDecimal balance = chargeRows.getBigDecimal("amount");
+                    try (PreparedStatement paid = connection.prepareStatement(paidSql)) {
+                        paid.setLong(1, chargeId);
+                        paid.setLong(2, chargeId);
+                        try (ResultSet result = paid.executeQuery()) {
+                            result.next();
+                            balance = balance.subtract(result.getBigDecimal(1));
+                        }
+                    }
+                    try (PreparedStatement credits = connection.prepareStatement(
+                            "SELECT ac.id, ac.remaining_amount FROM apartment_credits ac"
+                                    + " JOIN payments pm ON pm.id = ac.source_payment_id"
+                                    + " JOIN charges source_charge ON source_charge.id = pm.charge_id"
+                                    + " JOIN billing_periods source_period ON source_period.id = source_charge.billing_period_id"
+                                    + " WHERE ac.apartment_id = ? AND ac.remaining_amount > 0"
+                                    + " AND (source_period.period_year < ? OR"
+                                    + " (source_period.period_year = ? AND source_period.period_month < ?))"
+                                    + " ORDER BY ac.id FOR UPDATE")) {
+                        credits.setLong(1, apartmentId);
+                        credits.setInt(2, year);
+                        credits.setInt(3, year);
+                        credits.setInt(4, month);
+                        try (ResultSet creditRows = credits.executeQuery()) {
+                            while (balance.signum() > 0 && creditRows.next()) {
+                                long creditId = creditRows.getLong("id");
+                                BigDecimal applied = balance.min(creditRows.getBigDecimal("remaining_amount"));
+                                try (PreparedStatement insert = connection.prepareStatement(
+                                        "INSERT INTO credit_applications(credit_id, charge_id, amount) VALUES (?, ?, ?)")) {
+                                    insert.setLong(1, creditId);
+                                    insert.setLong(2, chargeId);
+                                    insert.setBigDecimal(3, applied);
+                                    insert.executeUpdate();
+                                }
+                                try (PreparedStatement update = connection.prepareStatement(
+                                        "UPDATE apartment_credits SET remaining_amount = remaining_amount - ? WHERE id = ? AND remaining_amount >= ?")) {
+                                    update.setBigDecimal(1, applied);
+                                    update.setLong(2, creditId);
+                                    update.setBigDecimal(3, applied);
+                                    if (update.executeUpdate() != 1) throw new SQLException("Không cập nhật được số dư nộp trước.");
+                                }
+                                balance = balance.subtract(applied);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     public List<ChargeSummary> listCharges(Long periodId, String search) throws SQLException {
         String sql = """
                 SELECT c.id, c.billing_period_id, a.code, a.household_name, f.name AS fee_name,
                        CONCAT(LPAD(p.period_month, 2, '0'), '/', p.period_year) AS period_label,
                        c.calculation_basis_snapshot, c.quantity_snapshot, c.unit_price_snapshot,
                        c.amount, p.due_date,
-                       (SELECT COALESCE(SUM(pm.amount), 0) FROM payments pm WHERE pm.charge_id = c.id) AS paid
+                       (SELECT COALESCE(SUM(pm.applied_amount), 0) FROM payments pm WHERE pm.charge_id = c.id)
+                         + (SELECT COALESCE(SUM(ca.amount), 0) FROM credit_applications ca WHERE ca.charge_id = c.id) AS paid
                 FROM charges c
                 JOIN apartments a ON a.id = c.apartment_id
                 JOIN fee_types f ON f.id = c.fee_type_id
@@ -583,9 +646,18 @@ public final class AppRepository {
 
     public List<HouseholdDebt> listHouseholdDebts(long periodId) throws SQLException {
         String sql = """
-                WITH charge_payments AS (
-                    SELECT charge_id, SUM(amount) AS paid, MAX(paid_at) AS last_paid
-                    FROM payments GROUP BY charge_id
+                WITH charge_activity AS (
+                    SELECT charge_id, SUM(paid) AS paid, MAX(last_paid) AS last_paid
+                    FROM (
+                        SELECT charge_id, SUM(applied_amount) AS paid, MAX(paid_at) AS last_paid
+                        FROM payments GROUP BY charge_id
+                        UNION ALL
+                        SELECT charge_id, SUM(amount) AS paid, MAX(applied_at) AS last_paid
+                        FROM credit_applications GROUP BY charge_id
+                    ) activity GROUP BY charge_id
+                ), credit_balances AS (
+                    SELECT apartment_id, SUM(remaining_amount) AS credit_balance
+                    FROM apartment_credits GROUP BY apartment_id
                 ), resident_counts AS (
                     SELECT apartment_id, COUNT(*) AS resident_count FROM residents GROUP BY apartment_id
                 )
@@ -596,10 +668,11 @@ public final class AppRepository {
                                 ELSE 0 END) AS floor,
                        MAX(COALESCE(r.resident_count, 0)) AS resident_count,
                        SUM(c.amount) AS total_due, SUM(COALESCE(p.paid, 0)) AS paid,
-                       MAX(p.last_paid) AS last_paid
+                       MAX(COALESCE(cr.credit_balance, 0)) AS credit_balance, MAX(p.last_paid) AS last_paid
                 FROM charges c
                 JOIN apartments a ON a.id = c.apartment_id
-                LEFT JOIN charge_payments p ON p.charge_id = c.id
+                LEFT JOIN charge_activity p ON p.charge_id = c.id
+                LEFT JOIN credit_balances cr ON cr.apartment_id = a.id
                 LEFT JOIN resident_counts r ON r.apartment_id = a.id
                 WHERE c.billing_period_id = ?
                 GROUP BY a.id ORDER BY code
@@ -614,7 +687,8 @@ public final class AppRepository {
                     Timestamp lastPaid = result.getTimestamp("last_paid");
                     debts.add(new HouseholdDebt(result.getString("code"), result.getString("household_name"),
                             result.getInt("floor"), result.getBigDecimal("area_m2"), result.getInt("resident_count"),
-                            totalDue, paid, totalDue.subtract(paid), BillingRules.status(totalDue, paid),
+                            totalDue, paid, totalDue.subtract(paid), result.getBigDecimal("credit_balance"),
+                            BillingRules.status(totalDue, paid),
                             lastPaid == null ? null : lastPaid.toLocalDateTime()));
                 }
             }
@@ -622,40 +696,68 @@ public final class AppRepository {
         return debts;
     }
 
-    public void recordPayment(long chargeId, BigDecimal amount, PaymentMethod method,
-                              String reference, String note, long userId) throws SQLException {
+    public PaymentReceipt recordPayment(long chargeId, BigDecimal amount, String payerName, LocalDate paidOn,
+                                        PaymentMethod method, String reference, String note, long userId) throws SQLException {
         try (Connection connection = database.openConnection()) {
             connection.setAutoCommit(false);
             try {
+                long apartmentId;
                 BigDecimal chargeAmount;
-                try (PreparedStatement lock = connection.prepareStatement("SELECT amount FROM charges WHERE id = ? FOR UPDATE")) {
+                try (PreparedStatement lock = connection.prepareStatement(
+                        "SELECT apartment_id, amount FROM charges WHERE id = ? FOR UPDATE")) {
                     lock.setLong(1, chargeId);
                     try (ResultSet result = lock.executeQuery()) {
-                        if (!result.next()) throw new SQLException("Không tìm thấy khoản phải thu.");
-                        chargeAmount = result.getBigDecimal(1);
+                        if (!result.next()) throw new SQLException("Kh\u00f4ng t\u00ecm th\u1ea5y kho\u1ea3n ph\u1ea3i thu.");
+                        apartmentId = result.getLong("apartment_id");
+                        chargeAmount = result.getBigDecimal("amount");
                     }
                 }
                 BigDecimal paid;
                 try (PreparedStatement query = connection.prepareStatement(
-                        "SELECT COALESCE(SUM(amount), 0) FROM payments WHERE charge_id = ?")) {
+                        "SELECT COALESCE((SELECT SUM(applied_amount) FROM payments WHERE charge_id = ?), 0)"
+                                + " + COALESCE((SELECT SUM(amount) FROM credit_applications WHERE charge_id = ?), 0)")) {
                     query.setLong(1, chargeId);
+                    query.setLong(2, chargeId);
                     try (ResultSet result = query.executeQuery()) {
                         result.next();
                         paid = result.getBigDecimal(1);
                     }
                 }
-                BillingRules.validatePayment(amount, chargeAmount.subtract(paid));
-                String sql = "INSERT INTO payments(charge_id, amount, method, reference, note, recorded_by) VALUES (?, ?, ?, ?, ?, ?)";
-                try (PreparedStatement insert = connection.prepareStatement(sql)) {
+                BigDecimal balance = chargeAmount.subtract(paid);
+                BillingRules.validatePayment(amount, balance);
+                BigDecimal applied = amount.min(balance);
+                BigDecimal credit = amount.subtract(applied);
+                String sql = "INSERT INTO payments(charge_id, payer_name, paid_at, amount, applied_amount, method, reference, note, recorded_by)"
+                        + " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                long paymentId;
+                try (PreparedStatement insert = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                     insert.setLong(1, chargeId);
-                    insert.setBigDecimal(2, amount);
-                    insert.setString(3, method.name());
-                    insert.setString(4, blankToNull(reference));
-                    insert.setString(5, blankToNull(note));
-                    insert.setLong(6, userId);
+                    insert.setString(2, payerName);
+                    insert.setTimestamp(3, Timestamp.valueOf(paidOn.atStartOfDay()));
+                    insert.setBigDecimal(4, amount);
+                    insert.setBigDecimal(5, applied);
+                    insert.setString(6, method.name());
+                    insert.setString(7, blankToNull(reference));
+                    insert.setString(8, blankToNull(note));
+                    insert.setLong(9, userId);
                     insert.executeUpdate();
+                    try (ResultSet keys = insert.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("Kh\u00f4ng t\u1ea1o \u0111\u01b0\u1ee3c phi\u1ebfu thu.");
+                        paymentId = keys.getLong(1);
+                    }
+                }
+                if (credit.signum() > 0) {
+                    try (PreparedStatement insert = connection.prepareStatement(
+                            "INSERT INTO apartment_credits(apartment_id, source_payment_id, amount, remaining_amount) VALUES (?, ?, ?, ?)")) {
+                        insert.setLong(1, apartmentId);
+                        insert.setLong(2, paymentId);
+                        insert.setBigDecimal(3, credit);
+                        insert.setBigDecimal(4, credit);
+                        insert.executeUpdate();
+                    }
                 }
                 connection.commit();
+                return new PaymentReceipt(amount, applied, credit);
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
@@ -667,14 +769,15 @@ public final class AppRepository {
         String sql = """
                 SELECT pm.id, a.code, a.household_name, f.name AS fee_name,
                        CONCAT(LPAD(p.period_month, 2, '0'), '/', p.period_year) AS period_label,
-                       pm.paid_at, pm.amount, pm.method, pm.reference, pm.note, u.display_name
+                       pm.paid_at, pm.payer_name, pm.amount, pm.applied_amount,
+                       pm.method, pm.reference, pm.note, u.display_name
                 FROM payments pm
                 JOIN charges c ON c.id = pm.charge_id
                 JOIN apartments a ON a.id = c.apartment_id
                 JOIN fee_types f ON f.id = c.fee_type_id
                 JOIN billing_periods p ON p.id = c.billing_period_id
                 JOIN app_users u ON u.id = pm.recorded_by
-                WHERE (? = '' OR a.code LIKE ? OR a.household_name LIKE ? OR f.name LIKE ? OR pm.reference LIKE ? OR pm.note LIKE ?)
+                WHERE (? = '' OR a.code LIKE ? OR a.household_name LIKE ? OR f.name LIKE ? OR pm.payer_name LIKE ? OR pm.reference LIKE ? OR pm.note LIKE ?)
                 ORDER BY pm.paid_at DESC, pm.id DESC
                 """;
         List<PaymentRecord> payments = new ArrayList<>();
@@ -687,13 +790,15 @@ public final class AppRepository {
             query.setString(4, pattern);
             query.setString(5, pattern);
             query.setString(6, pattern);
+            query.setString(7, pattern);
             try (ResultSet result = query.executeQuery()) {
                 while (result.next()) {
                     Timestamp paidAt = result.getTimestamp("paid_at");
                     payments.add(new PaymentRecord(result.getLong("id"), result.getString("code"),
                             result.getString("household_name"), result.getString("fee_name"),
                             result.getString("period_label"), paidAt.toLocalDateTime(),
-                            result.getBigDecimal("amount"), PaymentMethod.valueOf(result.getString("method")),
+                            result.getString("payer_name"), result.getBigDecimal("amount"),
+                            result.getBigDecimal("applied_amount"), PaymentMethod.valueOf(result.getString("method")),
                             result.getString("reference"), result.getString("note"), result.getString("display_name")));
                 }
             }
