@@ -13,6 +13,7 @@ import com.bluemoon.service.DashboardService;
 import com.bluemoon.service.FeeService;
 import com.bluemoon.service.ResidentService;
 import com.bluemoon.service.ResidentRequestService;
+import com.bluemoon.service.ResidenceChangeService;
 import com.bluemoon.service.VehicleService;
 import com.bluemoon.service.UtilityService;
 import javafx.application.Application;
@@ -36,7 +37,7 @@ public final class BlueMoonApplication extends Application {
                 new FeeService(repository), new BillingService(repository),
                 new CollectionService(repository), new ContributionService(repository),
                 new DashboardService(repository), new VehicleService(repository), new UtilityService(repository),
-                new ResidentRequestService(repository));
+                new ResidentRequestService(repository), new ResidenceChangeService(repository));
         stage.setTitle("BlueMoon | Quản lý thu phí");
         stage.setWidth(1280);
         stage.setHeight(820);

@@ -553,6 +553,48 @@ public final class AppRepository {
                 HouseholdRelationship.valueOf(result.getString("relationship")), moveInDate.toLocalDate());
     }
 
+    public List<ResidenceChange> listResidenceChanges() throws SQLException {
+        String sql = """
+                SELECT c.id, c.resident_id, r.full_name, a.code AS apartment_code, c.status,
+                       c.start_date, c.end_date, c.reason, c.recorded_at, u.display_name
+                FROM residence_changes c
+                JOIN residents r ON r.id = c.resident_id
+                JOIN apartments a ON a.id = r.apartment_id
+                JOIN app_users u ON u.id = c.recorded_by
+                ORDER BY c.start_date DESC, c.id DESC
+                """;
+        List<ResidenceChange> changes = new ArrayList<>();
+        try (Connection connection = database.openConnection(); Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery(sql)) {
+            while (result.next()) {
+                Date endDate = result.getDate("end_date");
+                changes.add(new ResidenceChange(result.getLong("id"), result.getLong("resident_id"),
+                        result.getString("full_name"), result.getString("apartment_code"),
+                        ResidenceStatus.valueOf(result.getString("status")),
+                        result.getDate("start_date").toLocalDate(), endDate == null ? null : endDate.toLocalDate(),
+                        result.getString("reason"), result.getTimestamp("recorded_at").toLocalDateTime(),
+                        result.getString("display_name")));
+            }
+        }
+        return changes;
+    }
+
+    public void saveResidenceChange(long residentId, ResidenceStatus status, LocalDate startDate,
+                                    LocalDate endDate, String reason, long recordedBy) throws SQLException {
+        String sql = "INSERT INTO residence_changes(resident_id, status, start_date, end_date, reason, recorded_by) "
+                + "VALUES (?, ?, ?, ?, ?, ?)";
+        try (Connection connection = database.openConnection(); PreparedStatement insert = connection.prepareStatement(sql)) {
+            insert.setLong(1, residentId);
+            insert.setString(2, status.name());
+            insert.setDate(3, Date.valueOf(startDate));
+            if (endDate == null) insert.setNull(4, Types.DATE);
+            else insert.setDate(4, Date.valueOf(endDate));
+            insert.setString(5, reason);
+            insert.setLong(6, recordedBy);
+            insert.executeUpdate();
+        }
+    }
+
     private static void bindResident(PreparedStatement statement, Resident resident) throws SQLException {
         statement.setLong(1, resident.apartmentId());
         statement.setString(2, resident.fullName());

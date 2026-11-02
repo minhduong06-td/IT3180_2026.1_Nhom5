@@ -5,6 +5,7 @@
 ## Chức năng
 
 - Quản lý hộ khẩu, căn hộ và nhân khẩu; tra cứu theo căn hộ, tầng, họ tên, giấy tờ hoặc điện thoại.
+- Ghi nhận lịch sử biến động cư trú của nhân khẩu: thường trú, tạm trú và tạm vắng theo thời gian, kèm lý do và người ghi nhận.
 - Quản lý phương tiện theo căn hộ; tính phí gửi xe máy và ô tô theo số xe đăng ký.
 - Nhập hóa đơn điện, nước, internet theo căn hộ và cộng vào bảng kê khi phát hành kỳ thu.
 - Tiếp nhận yêu cầu cư dân, phân loại phản ánh và theo dõi trạng thái xử lý.
