@@ -36,6 +36,7 @@ final class UtilityView extends VBox {
     private final AppUser user;
     private final TextField search = Ui.textField("Tìm căn hộ, nhà cung cấp hoặc mã đối chiếu");
     private final TableView<UtilityBill> table = new TableView<>();
+    private final Button exportCsv = Ui.button("Xuất CSV", false);
 
     UtilityView(AppServices services, AppUser user) {
         this.services = services;
@@ -53,6 +54,8 @@ final class UtilityView extends VBox {
         remove.setOnAction(event -> deleteSelected());
         Button refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
+        exportCsv.setDisable(true);
+        exportCsv.setOnAction(event -> exportVisibleRows());
         search.setOnAction(event -> load());
         table.getSelectionModel().selectedItemProperty().addListener((observable, oldBill, bill) -> {
             change.setDisable(bill == null || bill.issued());
@@ -60,7 +63,7 @@ final class UtilityView extends VBox {
         });
         getChildren().addAll(Ui.pageHeader("Điện, nước và internet",
                         "Nhập số tiền theo hóa đơn nhà cung cấp trước khi phát hành kỳ thu."),
-                Ui.toolbar(search, refresh, Ui.spacer(), change, remove, add), table);
+                Ui.toolbar(search, refresh, Ui.spacer(), change, remove, exportCsv, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -88,14 +91,26 @@ final class UtilityView extends VBox {
     private void load() {
         try {
             String term = search.getText() == null ? "" : search.getText().trim().toLowerCase(Locale.ROOT);
-            table.getItems().setAll(services.utilities().list(user).stream()
+            List<UtilityBill> bills = services.utilities().list(user).stream()
                     .filter(bill -> term.isEmpty() || bill.apartmentCode().toLowerCase(Locale.ROOT).contains(term)
                             || bill.provider().toLowerCase(Locale.ROOT).contains(term)
                             || bill.reference() != null && bill.reference().toLowerCase(Locale.ROOT).contains(term))
-                    .toList());
+                    .toList();
+            table.getItems().setAll(bills);
+            exportCsv.setDisable(bills.isEmpty());
         } catch (SQLException exception) {
             Ui.error("Không tải được hóa đơn tiện ích", exception);
         }
+    }
+
+    private void exportVisibleRows() {
+        if (table.getItems().isEmpty()) return;
+        List<List<String>> rows = table.getItems().stream().map(bill -> List.of(
+                "%02d/%d".formatted(bill.month(), bill.year()), bill.apartmentCode(), typeName(bill.type()),
+                bill.provider(), bill.amount().toPlainString(), bill.reference() == null ? "—" : bill.reference(),
+                bill.issued() ? "Đã phát hành" : "Chưa phát hành")).toList();
+        CsvExporter.save(getScene().getWindow(), "Xuất hóa đơn tiện ích", "hoa-don-tien-ich.csv",
+                List.of("Kỳ", "Căn hộ", "Dịch vụ", "Nhà cung cấp", "Số tiền (VND)", "Mã đối chiếu", "Trạng thái"), rows);
     }
 
     private void editSelected() {
