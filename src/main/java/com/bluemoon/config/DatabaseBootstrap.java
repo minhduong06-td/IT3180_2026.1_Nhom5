@@ -56,16 +56,18 @@ public final class DatabaseBootstrap {
     }
 
     private static void ensureFeeCalculationBasis(Connection connection) throws SQLException {
-        if (!columnType(connection, "fee_types", "calculation_basis").contains("PER_RESIDENT")) {
+        String feeType = columnType(connection, "fee_types", "calculation_basis");
+        if (!feeType.contains("PER_MOTORCYCLE") || !feeType.contains("PER_CAR")) {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE fee_types MODIFY calculation_basis "
-                        + "ENUM('PER_M2', 'PER_RESIDENT', 'FIXED', 'VOLUNTARY') NOT NULL");
+                        + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'VOLUNTARY') NOT NULL");
             }
         }
-        if (!columnType(connection, "charges", "calculation_basis_snapshot").contains("PER_RESIDENT")) {
+        String chargeBasis = columnType(connection, "charges", "calculation_basis_snapshot");
+        if (!chargeBasis.contains("PER_MOTORCYCLE") || !chargeBasis.contains("PER_CAR")) {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE charges MODIFY calculation_basis_snapshot "
-                        + "ENUM('PER_M2', 'PER_RESIDENT', 'FIXED') NOT NULL");
+                        + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED') NOT NULL");
             }
         }
     }
@@ -208,12 +210,15 @@ public final class DatabaseBootstrap {
 
     private static void seedFees(Connection connection) throws SQLException {
         boolean missingDefaults = !hasFeeCode(connection, "SERVICE") || !hasFeeCode(connection, "MANAGEMENT")
-                || !hasFeeCode(connection, "SANITATION");
+                || !hasFeeCode(connection, "SANITATION") || !hasFeeCode(connection, "MOTORCYCLE_PARKING")
+                || !hasFeeCode(connection, "CAR_PARKING");
         if (!missingDefaults) return;
         long adminId = findAdminId(connection);
         if (!hasFeeCode(connection, "SERVICE")) addFee(connection, "SERVICE", "Phí dịch vụ", "10000", "PER_M2", adminId);
         if (!hasFeeCode(connection, "MANAGEMENT")) addFee(connection, "MANAGEMENT", "Phí quản lý", "7000", "PER_M2", adminId);
         if (!hasFeeCode(connection, "SANITATION")) addFee(connection, "SANITATION", "Phí vệ sinh", "6000", "PER_RESIDENT", adminId);
+        if (!hasFeeCode(connection, "MOTORCYCLE_PARKING")) addFee(connection, "MOTORCYCLE_PARKING", "Phí gửi xe máy", "70000", "PER_MOTORCYCLE", adminId);
+        if (!hasFeeCode(connection, "CAR_PARKING")) addFee(connection, "CAR_PARKING", "Phí gửi ô tô", "1200000", "PER_CAR", adminId);
     }
 
     private static boolean hasFeeCode(Connection connection, String code) throws SQLException {
