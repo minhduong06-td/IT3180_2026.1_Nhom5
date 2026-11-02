@@ -33,6 +33,7 @@ final class ContributionView extends VBox {
     private final AppUser user;
     private final TableView<ContributionRecord> table = new TableView<>();
     private final Label total = Ui.label("Tổng đã nhận: 0 ₫", "section-title");
+    private final Button exportCsv = Ui.button("Xuất CSV", false);
 
     ContributionView(AppServices services, AppUser user) {
         this.services = services;
@@ -44,9 +45,11 @@ final class ContributionView extends VBox {
         record.setOnAction(event -> record());
         Button refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
+        exportCsv.setDisable(true);
+        exportCsv.setOnAction(event -> exportVisibleRows());
         table.setPlaceholder(new Label("Chưa có khoản đóng góp được ghi nhận."));
         getChildren().addAll(Ui.pageHeader("Đóng góp", "Theo dõi số tiền thực nhận theo từng căn hộ và khoản đóng góp."),
-                Ui.toolbar(total, Ui.spacer(), refresh, record), table);
+                Ui.toolbar(total, Ui.spacer(), refresh, exportCsv, record), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -70,9 +73,21 @@ final class ContributionView extends VBox {
             table.getItems().setAll(rows);
             BigDecimal received = rows.stream().map(ContributionRecord::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
             total.setText("Tổng đã nhận: " + Ui.money(received));
+            exportCsv.setDisable(rows.isEmpty());
         } catch (SQLException exception) {
             Ui.error("Không tải được khoản đóng góp", exception);
         }
+    }
+
+    private void exportVisibleRows() {
+        if (table.getItems().isEmpty()) return;
+        List<List<String>> rows = table.getItems().stream().map(row -> List.of(
+                row.receivedOn().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), row.apartmentCode(),
+                row.householdName(), row.feeName(), row.amount().toPlainString(), method(row.method()),
+                empty(row.reference()), empty(row.note()), row.recordedBy())).toList();
+        CsvExporter.save(getScene().getWindow(), "Xuất khoản đóng góp", "dong-gop.csv",
+                List.of("Ngày nhận", "Căn hộ", "Chủ hộ", "Khoản đóng góp", "Số tiền (VND)",
+                        "Hình thức", "Mã giao dịch", "Ghi chú", "Người ghi nhận"), rows);
     }
 
     private void record() {
