@@ -519,6 +519,7 @@ public final class AppRepository {
                 LEFT JOIN fee_rates r ON r.id = (
                     SELECT r2.id FROM fee_rates r2 WHERE r2.fee_type_id = f.id
                     ORDER BY r2.effective_from DESC LIMIT 1)
+                WHERE f.calculation_basis <> 'EXTERNAL_BILL'
                 ORDER BY f.name
                 """;
         List<FeeType> fees = new ArrayList<>();
@@ -672,6 +673,7 @@ public final class AppRepository {
                             case PER_MOTORCYCLE -> BigDecimal.valueOf(input.motorcycleCount());
                             case PER_CAR -> BigDecimal.valueOf(input.carCount());
                             case FIXED -> BigDecimal.ONE;
+                            case EXTERNAL_BILL -> BigDecimal.ONE;
                             case VOLUNTARY -> throw new SQLException("Không thể lập phí bắt buộc từ khoản đóng góp.");
                         };
                         BigDecimal amount = BillingRules.calculate(input.basis(), input.areaM2(),
@@ -688,14 +690,58 @@ public final class AppRepository {
                     }
                     insert.executeBatch();
                 }
+                UtilityChargeTotal utilities = issueUtilityBills(connection, periodId, year, month);
+                total = total.add(utilities.amount());
                 applyCredits(connection, periodId, year, month);
                 connection.commit();
-                return new BillingPeriod(periodId, year, month, issueDate, dueDate, inputs.size(), total);
+                return new BillingPeriod(periodId, year, month, issueDate, dueDate,
+                        inputs.size() + utilities.count(), total);
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
             }
         }
+    }
+
+    private static UtilityChargeTotal issueUtilityBills(Connection connection, long periodId,
+                                                         int year, int month) throws SQLException {
+        String querySql = """
+                SELECT b.apartment_id, b.utility_type, b.amount, f.id AS fee_id
+                FROM utility_bills b
+                JOIN apartments a ON a.id = b.apartment_id
+                LEFT JOIN fee_types f ON f.code = CONCAT('UTILITY_', b.utility_type)
+                WHERE b.period_year = ? AND b.period_month = ?
+                ORDER BY a.code, b.utility_type
+                """;
+        String insertSql = """
+                INSERT INTO charges(billing_period_id, apartment_id, fee_type_id, calculation_basis_snapshot,
+                                    quantity_snapshot, unit_price_snapshot, amount)
+                VALUES (?, ?, ?, 'EXTERNAL_BILL', 1, ?, ?)
+                """;
+        BigDecimal total = BigDecimal.ZERO;
+        int count = 0;
+        try (PreparedStatement query = connection.prepareStatement(querySql);
+             PreparedStatement insert = connection.prepareStatement(insertSql)) {
+            query.setInt(1, year);
+            query.setInt(2, month);
+            try (ResultSet result = query.executeQuery()) {
+                while (result.next()) {
+                    long feeId = result.getLong("fee_id");
+                    if (result.wasNull()) throw new SQLException("Thiếu loại khoản thu cho một hóa đơn tiện ích.");
+                    BigDecimal amount = result.getBigDecimal("amount");
+                    insert.setLong(1, periodId);
+                    insert.setLong(2, result.getLong("apartment_id"));
+                    insert.setLong(3, feeId);
+                    insert.setBigDecimal(4, amount);
+                    insert.setBigDecimal(5, amount);
+                    insert.addBatch();
+                    total = total.add(amount);
+                    count++;
+                }
+            }
+            if (count > 0) insert.executeBatch();
+        }
+        return new UtilityChargeTotal(count, total);
     }
 
     private static int countActive(Connection connection, String table) throws SQLException {
@@ -1055,4 +1101,6 @@ public final class AppRepository {
     private record ChargeInput(long apartmentId, BigDecimal areaM2, int residentCount, int motorcycleCount,
                                int carCount, long feeId,
                                CalculationBasis basis, BigDecimal unitPrice) {}
+
+    private record UtilityChargeTotal(int count, BigDecimal amount) {}
 }

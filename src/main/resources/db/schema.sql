@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS fee_types (
     code VARCHAR(32) NOT NULL UNIQUE,
     name VARCHAR(120) NOT NULL,
     required BOOLEAN NOT NULL DEFAULT TRUE,
-    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'VOLUNTARY') NOT NULL,
+    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL', 'VOLUNTARY') NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS charges (
     billing_period_id BIGINT NOT NULL,
     apartment_id BIGINT NOT NULL,
     fee_type_id BIGINT NOT NULL,
-    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED') NOT NULL,
+    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL') NOT NULL,
     quantity_snapshot DECIMAL(10, 2) NOT NULL,
     unit_price_snapshot DECIMAL(15, 2) NOT NULL,
     amount DECIMAL(15, 0) NOT NULL,
