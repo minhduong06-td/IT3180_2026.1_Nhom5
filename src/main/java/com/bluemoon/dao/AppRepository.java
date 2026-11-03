@@ -25,6 +25,60 @@ public final class AppRepository {
         this.database = database;
     }
 
+    public boolean hasUsers() throws SQLException {
+        try (Connection connection = database.openConnection();
+             Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery("SELECT 1 FROM app_users LIMIT 1")) {
+            return result.next();
+        }
+    }
+
+    public AppUser createInitialAdmin(String username, String passwordHash, String displayName) throws SQLException {
+        try (Connection connection = database.openConnection()) {
+            try (PreparedStatement lock = connection.prepareStatement("SELECT GET_LOCK('bluemoon-first-admin', 10)")) {
+                try (ResultSet result = lock.executeQuery()) {
+                    if (!result.next() || result.getInt(1) != 1) {
+                        throw new SQLException("Không thể khởi tạo tài khoản quản trị lúc này.");
+                    }
+                }
+            }
+            connection.setAutoCommit(false);
+            try {
+                if (hasUsers(connection)) throw new IllegalStateException("Database đã có tài khoản. Hãy đăng nhập.");
+                long userId;
+                try (PreparedStatement insert = connection.prepareStatement(
+                        "INSERT INTO app_users(username, password_hash, display_name, role) VALUES (?, ?, ?, 'ADMIN')",
+                        Statement.RETURN_GENERATED_KEYS)) {
+                    insert.setString(1, username);
+                    insert.setString(2, passwordHash);
+                    insert.setString(3, displayName);
+                    insert.executeUpdate();
+                    try (ResultSet keys = insert.getGeneratedKeys()) {
+                        if (!keys.next()) throw new SQLException("Không tạo được tài khoản quản trị.");
+                        userId = keys.getLong(1);
+                    }
+                }
+                try (PreparedStatement state = connection.prepareStatement(
+                        "INSERT INTO account_login_state(user_id) VALUES (?)")) {
+                    state.setLong(1, userId);
+                    state.executeUpdate();
+                }
+                connection.commit();
+                return new AppUser(userId, username, displayName, Role.ADMIN);
+            } catch (SQLException | RuntimeException exception) {
+                connection.rollback();
+                throw exception;
+            }
+        }
+    }
+
+    private static boolean hasUsers(Connection connection) throws SQLException {
+        try (Statement query = connection.createStatement();
+             ResultSet result = query.executeQuery("SELECT 1 FROM app_users LIMIT 1 FOR UPDATE")) {
+            return result.next();
+        }
+    }
+
     public LoginCredential findLoginCredential(String username) throws SQLException {
         String sql = """
                 SELECT u.id, u.username, u.display_name, u.role, u.password_hash,
@@ -265,6 +319,7 @@ public final class AppRepository {
             connection.setAutoCommit(false);
             try {
                 ensurePeriodUnissued(connection, bill.year(), bill.month());
+                ensureUtilityFeeType(connection, bill.type());
                 if (bill.id() == null) {
                     try (PreparedStatement apartment = connection.prepareStatement(
                             "SELECT 1 FROM apartments WHERE id = ? AND active = TRUE FOR UPDATE")) {
@@ -330,6 +385,21 @@ public final class AppRepository {
                 connection.rollback();
                 throw exception;
             }
+        }
+    }
+
+    private static void ensureUtilityFeeType(Connection connection, UtilityType type) throws SQLException {
+        String name = switch (type) {
+            case ELECTRICITY -> "Tiền điện";
+            case WATER -> "Tiền nước";
+            case INTERNET -> "Internet";
+        };
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT IGNORE INTO fee_types(code, name, required, calculation_basis) "
+                        + "VALUES (?, ?, FALSE, 'EXTERNAL_BILL')")) {
+            insert.setString(1, "UTILITY_" + type.name());
+            insert.setString(2, name);
+            insert.executeUpdate();
         }
     }
 
