@@ -60,9 +60,9 @@ Chờ dịch vụ `mysql` có trạng thái `healthy`, sau đó chạy:
 .\mvnw.cmd javafx:run
 ```
 
-Ứng dụng tự tạo bảng, cập nhật các cấu trúc được hỗ trợ và nạp dữ liệu demo khi khởi tạo database mới. Nếu gặp lỗi kết nối, kiểm tra trạng thái MySQL và các biến `BLUEMOON_DB_*` trong cửa sổ PowerShell đang chạy ứng dụng.
+Ứng dụng tự tạo bảng và cập nhật các cấu trúc được hỗ trợ. Database mới không được nạp dữ liệu mẫu. Nếu chưa có tài khoản, ứng dụng yêu cầu tạo tài khoản quản trị đầu tiên; nếu đã có tài khoản, ứng dụng mở màn hình đăng nhập.
 
-### 3. Dừng hoặc tạo lại dữ liệu demo
+### 3. Dừng hoặc tạo lại database
 
 Dừng MySQL và giữ dữ liệu:
 
@@ -70,42 +70,20 @@ Dừng MySQL và giữ dữ liệu:
 docker compose down
 ```
 
-Chỉ với database demo có thể bỏ đi, dùng lệnh sau để xóa volume dữ liệu của dự án rồi tạo lại:
+Chỉ khi chấp nhận xóa toàn bộ dữ liệu local, dùng lệnh sau để xóa volume của dự án rồi tạo lại:
 
 ```powershell
 docker compose down -v
 docker compose up -d
 ```
 
-Lệnh `down -v` xóa toàn bộ dữ liệu trong volume của cấu hình Compose đang dùng. Khi cần nâng cấp database cũ, sao lưu và thử trên bản sao; lỗi bootstrap R-01 hiện vẫn cần xử lý trong code.
+Lệnh `down -v` xóa toàn bộ dữ liệu trong volume của cấu hình Compose đang dùng. Khi cần nâng cấp database cũ, sao lưu và thử trên bản sao.
 
-## Dữ liệu demo
+## Khởi tạo tài khoản và dữ liệu
 
-Database mới được nạp 8 căn hộ A101-A108 và 18 nhân khẩu. Chưa có kỳ thu, bảng kê hoặc thanh toán; các dữ liệu này được tạo qua luồng ứng dụng.
+Database mới chỉ có cấu trúc bảng, không có tài khoản hoặc dữ liệu nghiệp vụ mẫu. Lần đầu mở ứng dụng, hãy tạo tài khoản quản trị bằng tên đăng nhập, tên hiển thị và mật khẩu của bạn. Sau đó đăng nhập để thêm căn hộ, cư dân, khoản thu và tài khoản kế toán.
 
-| Khoản thu | Đơn giá khởi tạo | Trạng thái |
-|---|---:|---|
-| Phí dịch vụ (`SERVICE`) | 10.000 đồng/m² | Bắt buộc, đang áp dụng |
-| Phí quản lý (`MANAGEMENT`) | 7.000 đồng/m² | Bắt buộc, đang áp dụng |
-| Phí vệ sinh (`SANITATION`) | 6.000 đồng/người | Bắt buộc, mặc định ngừng áp dụng |
-| Phí gửi xe máy (`MOTORCYCLE_PARKING`) | 70.000 đồng/xe | Bắt buộc, mặc định ngừng áp dụng |
-| Phí gửi ô tô (`CAR_PARKING`) | 1.200.000 đồng/xe | Bắt buộc, mặc định ngừng áp dụng |
-| Điện, nước, internet | Nhập theo hóa đơn nhà cung cấp | Có loại khoản thu riêng; chỉ sinh khoản phải thu khi đã nhập hóa đơn cho kỳ tương ứng |
-
-Các đơn giá khởi tạo có hiệu lực từ 01/01/2026. Fixture Sprint 1 chỉ có hai khoản bắt buộc theo m² và không có hóa đơn tiện ích. Với 8 căn giữ nguyên diện tích, một kỳ sinh 16 khoản, tổng **10.161.750 đồng**.
-
-Bootstrap không đồng bộ lại toàn bộ database cũ theo bộ demo mới: việc chèn cư dân chỉ được bỏ qua khi bảng `residents` đã có ít nhất một dòng. Database có căn hộ nhưng chưa có cư dân có thể gặp R-01; xem [các điểm cần sửa](docs/SPRINT1_COVERAGE_REVIEW.md).
-
-## Tài khoản và phân quyền
-
-| Vai trò | Tên đăng nhập demo | Mật khẩu demo | Thao tác chính |
-|---|---|---|---|
-| Ban quản trị | `admin` | `admin123` | Quản lý hồ sơ, tài khoản, khoản thu, đơn giá và phát hành kỳ; quản lý phần mở rộng. |
-| Kế toán | `accountant` | `accountant123` | Xem hồ sơ, bảng kê, công nợ; ghi nhận thanh toán và tra cứu lịch sử thu. |
-
-Cả hai vai trò đều xem tổng quan, tự đổi mật khẩu và ghi nhận đóng góp tự nguyện. Thu tiền cho khoản phải thu bắt buộc chỉ dành cho kế toán. Ban quản trị có thể tạo tài khoản và xem trạng thái; chưa có chức năng chủ động khóa/mở tài khoản hoặc đổi vai trò sau khi tạo. Khóa đăng nhập tạm thời được kích hoạt sau 5 lần sai mật khẩu, kéo dài 5 phút.
-
-Các tài khoản trên phục vụ demo. Đổi mật khẩu khi dùng database có dữ liệu riêng.
+Nếu database đã có tài khoản, ứng dụng chuyển thẳng tới màn hình đăng nhập và giữ nguyên dữ liệu hiện có. Cả hai vai trò đều xem tổng quan, tự đổi mật khẩu và ghi nhận đóng góp tự nguyện. Thu tiền cho khoản phải thu bắt buộc chỉ dành cho kế toán. Ban quản trị có thể tạo tài khoản và xem trạng thái; chưa có chức năng chủ động khóa/mở tài khoản hoặc đổi vai trò sau khi tạo. Khóa đăng nhập tạm thời được kích hoạt sau 5 lần sai mật khẩu, kéo dài 5 phút.
 
 ## Cấu hình
 
@@ -178,7 +156,7 @@ Remove-Item Env:BLUEMOON_IT_DB_LEGACY -ErrorAction SilentlyContinue
 
 `BLUEMOON_IT_DB_*` được test đọc riêng, không dùng thay cho `BLUEMOON_DB_*` của ứng dụng. Khi chưa đặt `BLUEMOON_IT_DB_URL`, test tích hợp bị bỏ qua; một lần build thành công có test bị bỏ qua chưa chứng minh luồng MySQL đã đạt.
 
-Chế độ `BLUEMOON_IT_DB_LEGACY=true` tạo fixture database cũ và hiện liên quan lỗi R-01. Chỉ dùng chế độ đó trên database kiểm thử mới, riêng biệt để tái hiện lỗi; chưa coi đó là luồng migration đã đạt.
+Chế độ `BLUEMOON_IT_DB_LEGACY=true` tạo fixture database cũ để kiểm tra bootstrap trên schema có dữ liệu một phần. Chỉ dùng chế độ đó trên database kiểm thử mới, riêng biệt.
 
 Sau khi lấy log, có thể xóa riêng container và volume kiểm thử:
 
@@ -192,7 +170,6 @@ Log kết quả từng lớp nằm ở `target/surefire-reports/`. Ghi commit, m
 
 | Mã | Nội dung |
 |---|---|
-| R-01 | Bootstrap cư dân demo có thể thất bại trên database cũ thiếu A101-A108. |
 | R-02 | Chưa có cơ chế chống ghi trùng cùng một yêu cầu thu tiền/mã giao dịch. |
 | R-03 | Code chọn đơn giá theo ngày phát hành; yêu cầu nghiệp vụ đầu kỳ chưa được đáp ứng. |
 | R-04 | Mã căn và tên hộ trên chứng từ cũ còn lấy từ hồ sơ hiện tại. |
