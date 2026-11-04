@@ -2,6 +2,8 @@
 
 Ứng dụng desktop quản lý căn hộ, cư dân và thu phí chung cư cho ban quản trị và kế toán.
 
+![Tổng quan BlueMoon trên database mới](docs/images/tong-quan.png)
+
 ## Chức năng
 
 - Quản lý căn hộ, nhân khẩu, phương tiện và biến động cư trú.
