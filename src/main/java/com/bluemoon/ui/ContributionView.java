@@ -48,8 +48,8 @@ final class ContributionView extends VBox {
         exportCsv.setDisable(true);
         exportCsv.setOnAction(event -> exportVisibleRows());
         table.setPlaceholder(new Label("Chưa có khoản đóng góp được ghi nhận."));
-        getChildren().addAll(Ui.pageHeader("Đóng góp", "Theo dõi số tiền thực nhận theo từng căn hộ và khoản đóng góp."),
-                Ui.toolbar(total, Ui.spacer(), refresh, exportCsv, record), table);
+        getChildren().addAll(Ui.pageHeader("Đóng góp", ""),
+                Ui.toolbar(total, refresh, exportCsv, record), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();

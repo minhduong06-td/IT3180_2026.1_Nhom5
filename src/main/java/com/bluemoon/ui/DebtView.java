@@ -55,7 +55,7 @@ final class DebtView extends VBox {
                 metric("Còn nợ", "0 ₫", "summary-warn"),
                 metric("Hộ đã hoàn tất", "0/0", ""));
         for (var node : summaries.getChildren()) HBox.setHgrow(node, Priority.ALWAYS);
-        getChildren().addAll(Ui.pageHeader("Theo dõi công nợ", "Tổng hợp số phải thu, thanh toán và số dư theo từng hộ."),
+        getChildren().addAll(Ui.pageHeader("Công nợ", ""),
                 Ui.toolbar(periodFilter, statusFilter, floorFrom, floorTo, filter), summaries, table, footer);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();

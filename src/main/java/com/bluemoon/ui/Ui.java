@@ -8,6 +8,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -25,18 +26,20 @@ final class Ui {
     private Ui() {}
 
     static VBox page(String title, String subtitle, Node... content) {
-        Label heading = new Label(title);
-        heading.getStyleClass().add("page-title");
-        Label intro = new Label(subtitle);
-        intro.getStyleClass().add("page-subtitle");
-        VBox box = new VBox(20, new VBox(4, heading, intro));
+        VBox box = new VBox(20, pageHeader(title, subtitle));
         box.getStyleClass().add("page");
         box.getChildren().addAll(content);
         return box;
     }
 
     static VBox pageHeader(String title, String subtitle) {
-        return new VBox(4, label(title, "page-title"), label(subtitle, "page-subtitle"));
+        VBox header = new VBox(4, label(title, "page-title"));
+        if (subtitle != null && !subtitle.isBlank()) {
+            Label intro = label(subtitle, "page-subtitle");
+            intro.setWrapText(true);
+            header.getChildren().add(intro);
+        }
+        return header;
     }
 
     static Label label(String value, String style) {
@@ -96,8 +99,8 @@ final class Ui {
         alert.showAndWait();
     }
 
-    static HBox toolbar(Node... nodes) {
-        HBox box = new HBox(12, nodes);
+    static FlowPane toolbar(Node... nodes) {
+        FlowPane box = new FlowPane(12, 10, nodes);
         box.setAlignment(Pos.CENTER_LEFT);
         box.setPadding(new Insets(0, 0, 4, 0));
         return box;

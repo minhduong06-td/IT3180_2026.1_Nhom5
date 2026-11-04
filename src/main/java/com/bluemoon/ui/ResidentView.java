@@ -68,8 +68,8 @@ final class ResidentView extends VBox {
             details.setDisable(value == null);
             edit.setDisable(value == null || value.resident() == null);
         });
-        getChildren().addAll(Ui.pageHeader("Cư dân", "Tra cứu hồ sơ căn hộ và nhân khẩu đang sinh sống."),
-                Ui.toolbar(search, find, clear, Ui.spacer(), details, edit, add), table);
+        getChildren().addAll(Ui.pageHeader("Cư dân", ""),
+                Ui.toolbar(search, find, clear, details, edit, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
