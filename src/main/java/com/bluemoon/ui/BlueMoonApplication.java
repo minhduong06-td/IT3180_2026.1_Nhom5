@@ -52,14 +52,18 @@ public final class BlueMoonApplication extends Application {
 
     private void connect() {
         setRoot(new ConnectionView("Đang kết nối cơ sở dữ liệu...", null, this::connect));
-        Task<Void> task = new Task<>() {
+        Database database = new Database();
+        AppRepository repository = new AppRepository(database);
+        Task<Boolean> task = new Task<>() {
             @Override
-            protected Void call() throws Exception {
-                new DatabaseBootstrap(new Database()).initialize();
-                return null;
+            protected Boolean call() throws Exception {
+                new DatabaseBootstrap(database).initialize();
+                return repository.hasUsers();
             }
         };
-        task.setOnSucceeded(event -> setRoot(new LoginView(services, this::openApp)));
+        task.setOnSucceeded(event -> setRoot(task.getValue()
+                ? new LoginView(services, this::openApp)
+                : new InitialAdminView(services.accounts(), this::openApp)));
         task.setOnFailed(event -> setRoot(new ConnectionView(
                 "Không kết nối được MySQL", task.getException(), this::connect)));
         Thread thread = new Thread(task, "bluemoon-database-bootstrap");

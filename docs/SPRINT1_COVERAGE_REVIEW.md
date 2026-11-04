@@ -21,7 +21,7 @@ Nguồn có thể kiểm tra ngay trong repo:
 | Đăng nhập | `AuthService`, `LoginView`, `account_login_state` | Có BCrypt, ngưỡng 5 lần sai và khóa 5 phút. Cần kiểm tra cả thời điểm hết khóa; thao tác DB vẫn đồng bộ trên UI. |
 | Tài khoản/quyền | `AccountService`, `AccountView`, `AccessRules` | Có tạo tài khoản, xem trạng thái và tự đổi mật khẩu; chưa có quản trị khóa/mở tài khoản hoặc đổi role sau tạo. Các test quyền hiện tại chưa bao phủ toàn bộ service. |
 | Căn hộ/hộ | `ApartmentService`, `ApartmentView`, `apartments` | Có tạo/sửa, mã duy nhất, diện tích, ngày và cờ tính phí. Cần thống nhất tên liên hệ/chủ hộ (R-05). |
-| Nhân khẩu | `ResidentService`, `ResidentView`, `residents` | Có quan hệ, giấy tờ, tra cứu không dấu và thay chủ hộ có xác nhận; việc bootstrap cư dân trên DB cũ cần sửa (R-01). |
+| Nhân khẩu | `ResidentService`, `ResidentView`, `residents` | Có quan hệ, giấy tờ, tra cứu không dấu và thay chủ hộ có xác nhận; database mới không được thêm cư dân mẫu. |
 | Loại phí/đơn giá | `FeeService`, `FeeView`, `fee_types`, `fee_rates` | Có lịch sử giá và trạng thái áp dụng; mốc chọn giá chưa đúng yêu cầu đầu kỳ (R-03). |
 | Kỳ thu | `BillingService`, `AppRepository.issuePeriod`, `charges` | Có transaction, unique kỳ và snapshot số lượng/giá/tiền; cần hồi quy R-03 và kiểm tra thiếu đơn giá. |
 | Bảng kê/thông báo | `ChargesView`, `FeeNoticePrinter` | Có xem bảng kê, in riêng/in cả kỳ. Test tự động chỉ kiểm tra chuỗi chuyển khoản; cần thử bố cục/in thật và giữ đúng thông tin lịch sử (R-04). |
@@ -30,25 +30,26 @@ Nguồn có thể kiểm tra ngay trong repo:
 | Tra cứu/tổng quan | `ResidentService.search`, `DashboardView` | Có tìm kiếm hồ sơ và KPI kỳ mới nhất theo tháng/năm. Cần đối chiếu tiền cấn trừ, không cộng toàn bộ tiền nhận vào KPI đã thanh toán. |
 | Phản hồi giao diện | Các handler `load`, đăng nhập, lưu và phát hành | Bootstrap và gửi trang in có luồng nền; nhiều truy vấn/lưu dữ liệu khác vẫn chạy trên JavaFX Application Thread (R-06). |
 
-## Fixture Sprint 1
+## Fixture kiểm thử
 
-Trên database demo mới sau bootstrap:
+Database mới sau bootstrap không có tài khoản hoặc dữ liệu nghiệp vụ; lần mở đầu tiên yêu cầu tạo tài khoản quản trị. Bộ kiểm thử tính phí tự tạo fixture riêng:
 
 - 8 căn A101-A108, tổng diện tích 597,75 m²; 18 nhân khẩu, gồm HEAD/WIFE/CHILD/PARENT/TENANT.
-- Hai tài khoản admin/accountant. Chưa có kỳ thu hoặc thanh toán.
+- Tài khoản quản trị và kế toán do test tạo. Chưa có kỳ thu hoặc thanh toán.
 - Chỉ `SERVICE` (10.000 đồng/m²) và `MANAGEMENT` (7.000 đồng/m²) đang áp dụng trong nhóm bắt buộc, hiệu lực từ 01/01/2026.
-- Phí vệ sinh và phí xe có metadata/đơn giá nhưng tắt. Các loại tiện ích đã có; cần giữ bảng hóa đơn của kỳ trống để không phát sinh khoản tiện ích.
+- Phí vệ sinh và phí xe do test tạo nhưng tắt. Loại tiện ích được tạo khi nhập hóa đơn đầu tiên.
 - Một kỳ trên fixture nguyên trạng sinh 16 khoản, tổng 10.161.750 đồng. A101 phải thu 816.000 đồng, A102 phải thu 892.500 đồng.
 
-Database cũ không tự được đưa về fixture này. Sau khi chạy CRUD hoặc phần mở rộng, không dùng lại tổng tiền baseline mà chưa khôi phục fixture. Các bộ dữ liệu được tách trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md).
+Fixture này không được nạp vào database ứng dụng. Database cũ được giữ nguyên, không tự thêm các căn hộ, cư dân hoặc khoản thu còn thiếu.
 
 ## Các điểm cần sửa code
 
 Các mục dưới đây được xác định qua đối chiếu source. Chưa đánh dấu là đã tái hiện trên MySQL trong lần kiểm tra 11/11/2026; trạng thái chạy thực tế ghi riêng trong [Biên bản kiểm thử](QA_TEST_REPORT.md).
 
+R-01 đã xử lý: bootstrap chỉ tạo/cập nhật cấu trúc, không seed dữ liệu mẫu. Kiểm thử MySQL xác nhận database trống và database cũ có ba căn nhưng không có cư dân đều khởi động được.
+
 | Mã | Ưu tiên | Hiện trạng và hướng xử lý | Kiểm tra lại |
 |---|---|---|---|
-| R-01 | Cao | `seedResidents()` chỉ bỏ qua khi `residents` có dữ liệu; nếu DB cũ chỉ có A101-A103, chèn đến A104 thất bại. Tách migration khỏi seed demo, không buộc DB cũ phải có đủ mã căn mẫu. Nhánh test legacy cũng cần fixture/expected phù hợp. | MIG-01, MIG-02 |
 | R-02 | Cao | `recordPayment()` luôn tạo phiếu mới, `reference` không có unique/check trùng. Thêm mã yêu cầu duy nhất có ràng buộc DB và trả lại kết quả khi gửi lại; chốt quy tắc mã giao dịch ngân hàng. Khóa hàng chỉ giải quyết cạnh tranh cập nhật, không thay cho chống gửi trùng. | PAY-04, PAY-05 |
 | R-03 | Cao | Truy vấn giá lấy `issueDate`, khác yêu cầu ngày đầu kỳ. Dùng ngày đầu tháng để chọn giá và cập nhật expected test; không đổi yêu cầu chỉ để khớp test cũ. | RATE-01, RATE-02 |
 | R-04 | Trung bình | `listCharges()` và `listPayments()` join mã căn/tên hộ hiện tại. Cần snapshot thông tin nhận diện chứng từ hoặc liên kết hồ sơ hộ có phiên bản; xác định rõ dữ liệu lịch sử và thông tin liên hệ hiện tại. | HIST-01 |
@@ -71,7 +72,7 @@ Các chức năng này có thể kiểm thử hồi quy riêng. Menu hiện vẫ
 ## Điều kiện chốt nghiệm thu
 
 1. Bổ sung baseline kế hoạch có phiên bản để xác nhận phạm vi và các yêu cầu chưa rõ.
-2. Xử lý R-01, R-02, R-03; chạy lại các case liên quan và hồi quy luồng thu phí.
+2. Xử lý R-02 và R-03; chạy lại các case liên quan và hồi quy luồng thu phí.
 3. Chốt chính sách R-04/R-05, kiểm tra chứng từ cũ sau khi đổi hồ sơ; xử lý hoặc ghi nhận quyết định chấp nhận có giới hạn cho các mục trung bình còn mở.
 4. Chạy với JDK 25 và MySQL 8.4 trên database kiểm thử riêng; báo cáo rõ đạt/lỗi/bỏ qua. Test tích hợp bị skip không được tính là đã xác minh MySQL.
 5. Có bằng chứng thủ công cho UI, phân quyền tại service và in thực tế; lưu log, ảnh/CSV, SQL đối chiếu theo kế hoạch QA.

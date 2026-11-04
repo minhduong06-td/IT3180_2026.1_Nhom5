@@ -121,6 +121,6 @@ Kịch bản trên phục vụ demo luồng đã có; không thay thế các cas
 | Chứng từ | Số tiền và thông tin hộ đúng với thời điểm cần đối soát; cần sửa/chốt chính sách R-04, R-05. Kiểm tra bản in thực tế. |
 | Thu tiền | Đúng số nhận/cấn/dư, có lịch sử; gửi lại một yêu cầu không tạo phiếu mới sau khi sửa R-02. |
 | Quyền và tài khoản | Service từ chối thao tác sai vai trò, khóa sau 5 lần sai và mở lại sau 5 phút; mật khẩu mới tuân thủ quy tắc. |
-| Nâng cấp và giao diện | Bootstrap không phụ thuộc mã căn demo trên database cũ; giao diện có phản hồi khi database chậm, theo R-01 và R-06. |
+| Nâng cấp và giao diện | Bootstrap không phụ thuộc dữ liệu mẫu trên database mới hoặc cũ; giao diện có phản hồi khi database chậm (R-06). |
 
 Danh sách mã vấn đề, trạng thái và phạm vi kiểm thử được theo dõi tại [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md) và [Biên bản kiểm thử](QA_TEST_REPORT.md).
