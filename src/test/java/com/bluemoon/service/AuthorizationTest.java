@@ -23,4 +23,12 @@ class AuthorizationTest {
         assertThrows(SecurityException.class, () -> new CollectionService(null).recordPayment(admin, 1,
                 java.math.BigDecimal.ONE, "Admin", java.time.LocalDate.now(), PaymentMethod.CASH, null, null));
     }
+
+    @Test
+    void accountantCannotManageUtilityBillsOrResidentRequests() {
+        assertThrows(SecurityException.class, () -> new UtilityService(null).list(accountant));
+        assertThrows(SecurityException.class, () -> new ResidentRequestService(null).list(accountant));
+        assertThrows(SecurityException.class, () -> new ResidentRequestService(null).save(accountant, null));
+        assertThrows(SecurityException.class, () -> new VehicleService(null).list(accountant));
+    }
 }

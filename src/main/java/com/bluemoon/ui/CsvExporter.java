@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 
@@ -34,17 +35,23 @@ final class CsvExporter {
             confirmation.initOwner(owner);
             if (confirmation.showAndWait().filter(ButtonType.OK::equals).isEmpty()) return;
         }
-        try (BufferedWriter writer = Files.newBufferedWriter(target.toPath(), StandardCharsets.UTF_8)) {
-            writer.write('\uFEFF');
-            writer.write("sep=,");
-            writer.write("\r\n");
-            writeRow(writer, headers);
-            for (List<String> row : rows) writeRow(writer, row);
+        try {
+            write(target.toPath(), headers, rows);
         } catch (IOException exception) {
             Ui.error("Không lưu được tệp CSV", exception);
             return;
         }
         Ui.info("Đã xuất tệp CSV", "Tệp đã được lưu tại:\n" + target.getAbsolutePath());
+    }
+
+    static void write(Path target, List<String> headers, List<List<String>> rows) throws IOException {
+        try (BufferedWriter writer = Files.newBufferedWriter(target, StandardCharsets.UTF_8)) {
+            writer.write('\uFEFF');
+            writer.write("sep=,");
+            writer.write("\r\n");
+            writeRow(writer, headers);
+            for (List<String> row : rows) writeRow(writer, row);
+        }
     }
 
     private static void writeRow(BufferedWriter writer, List<String> values) throws IOException {

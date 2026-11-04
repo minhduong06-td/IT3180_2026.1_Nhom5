@@ -52,6 +52,10 @@ public final class DatabaseBootstrap {
                 statement.executeUpdate("UPDATE payments SET applied_amount = amount WHERE applied_amount IS NULL");
                 statement.executeUpdate("ALTER TABLE payments MODIFY applied_amount DECIMAL(15, 0) NOT NULL");
             }
+            if (!hasConstraint(connection, "payments", "chk_payment_applied")) {
+                statement.executeUpdate("ALTER TABLE payments ADD CONSTRAINT chk_payment_applied "
+                        + "CHECK (applied_amount >= 0 AND applied_amount <= amount)");
+            }
         }
     }
 
@@ -140,6 +144,19 @@ public final class DatabaseBootstrap {
                 "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?")) {
             query.setString(1, table);
             query.setString(2, index);
+            try (ResultSet result = query.executeQuery()) {
+                return result.next();
+            }
+        }
+    }
+
+    private static boolean hasConstraint(Connection connection, String table, String constraint) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement(
+                "SELECT 1 FROM information_schema.table_constraints "
+                        + "WHERE constraint_schema = DATABASE() AND table_name = ? "
+                        + "AND constraint_name = ? AND constraint_type = 'CHECK'")) {
+            query.setString(1, table);
+            query.setString(2, constraint);
             try (ResultSet result = query.executeQuery()) {
                 return result.next();
             }
