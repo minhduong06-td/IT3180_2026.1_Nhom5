@@ -21,6 +21,7 @@ final class TransactionsView extends VBox {
     private final AppUser user;
     private final javafx.scene.control.TextField search = Ui.textField("Tìm căn hộ, người nộp, khoản thu, mã giao dịch");
     private final TableView<PaymentRecord> table = new TableView<>();
+    private final javafx.scene.control.Button exportCsv = Ui.button("Xuất CSV", false);
 
     TransactionsView(AppServices services, AppUser user) {
         this.services = services;
@@ -31,9 +32,11 @@ final class TransactionsView extends VBox {
         var find = Ui.button("Tìm kiếm", true);
         find.setOnAction(event -> load());
         search.setOnAction(event -> load());
+        exportCsv.setDisable(true);
+        exportCsv.setOnAction(event -> exportVisibleRows());
         table.setPlaceholder(new Label("Chưa có giao dịch phù hợp."));
         getChildren().addAll(Ui.pageHeader("Lịch sử thu", "Tra cứu các giao dịch đã ghi nhận để đối soát."),
-                Ui.toolbar(search, find), table);
+                Ui.toolbar(search, find, Ui.spacer(), exportCsv), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -60,9 +63,24 @@ final class TransactionsView extends VBox {
         try {
             List<PaymentRecord> rows = services.collections().payments(user, search.getText());
             table.getItems().setAll(rows);
+            exportCsv.setDisable(rows.isEmpty());
         } catch (SQLException exception) {
             Ui.error("Không tải được lịch sử thu", exception);
         }
+    }
+
+    private void exportVisibleRows() {
+        if (table.getItems().isEmpty()) return;
+        DateTimeFormatter dateTime = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+        List<List<String>> rows = table.getItems().stream().map(payment -> List.of(
+                payment.paidAt().format(dateTime), payment.apartmentCode(), payment.householdName(),
+                payment.payerName(), payment.feeName(), payment.period(), payment.amount().toPlainString(),
+                payment.appliedAmount().toPlainString(), payment.amount().subtract(payment.appliedAmount()).toPlainString(),
+                payment.method() == PaymentMethod.CASH ? "Tiền mặt" : "Chuyển khoản", empty(payment.reference()),
+                empty(payment.note()), payment.recordedBy())).toList();
+        CsvExporter.save(getScene().getWindow(), "Xuất lịch sử thu", "lich-su-thu.csv",
+                List.of("Ngày thu", "Căn hộ", "Chủ hộ", "Người nộp", "Khoản thu", "Kỳ", "Số tiền nhận (VND)",
+                        "Đã cấn trừ (VND)", "Nộp dư (VND)", "Hình thức", "Mã giao dịch", "Ghi chú", "Người ghi nhận"), rows);
     }
 
     private static String empty(String value) {
