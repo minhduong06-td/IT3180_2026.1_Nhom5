@@ -32,7 +32,14 @@ Kiểm tra Maven đang dùng Java 25 và chờ MySQL chuyển sang `healthy`, r�
 
 Docker Compose chạy MySQL; cửa sổ desktop được chạy bằng Java trên máy.
 
-Database mới được tạo cấu trúc bảng tự động, không cần nhập SQL hoặc nạp dữ liệu mẫu. Lần đầu mở ứng dụng, tạo tài khoản quản trị để bắt đầu. Database đã có tài khoản sẽ mở màn hình đăng nhập.
+Khi tạo volume mới, Docker nạp cấu trúc bảng và dữ liệu khởi tạo từ `database/demo-data.sql`. Ứng dụng mở màn hình đăng nhập với các tài khoản dưới đây; hãy đổi mật khẩu sau lần đăng nhập đầu.
+
+| Vai trò | Tên đăng nhập | Mật khẩu ban đầu |
+|---|---|---|
+| Ban quản trị | `admin` | `admin123` |
+| Kế toán | `accountant` | `accountant123` |
+
+Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Ứng dụng vẫn chạy được với database rỗng: tạo database MySQL riêng và đặt các biến kết nối bên dưới. Java tự tạo bảng và yêu cầu tạo quản trị đầu tiên nếu chưa có tài khoản.
 
 ### Bắt đầu sử dụng
 
@@ -77,7 +84,7 @@ Java 25, JavaFX 25.0.2, JDBC, MySQL 8.4, BCrypt và JUnit 5. Maven Wrapper dùng
 Chạy các test không cần MySQL:
 
 ```powershell
-.\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest" test
+.\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
 ```
 
 Test tích hợp cần database riêng, rỗng và có thể xóa. Xem [hướng dẫn QA](docs/QA.md) trước khi chạy; thiếu `BLUEMOON_IT_DB_URL` sẽ làm test tích hợp bị bỏ qua.
