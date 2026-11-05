@@ -41,13 +41,23 @@ public final class AccountService {
 
     public void create(AppUser user, String username, String displayName, Role role,
                        String password, String confirmation) throws SQLException {
+        create(user, username, displayName, role, null, password, confirmation);
+    }
+
+    public void create(AppUser user, String username, String displayName, Role role, Long apartmentId,
+                       String password, String confirmation) throws SQLException {
         AccessRules.requireRole(user, Role.ADMIN);
         String normalizedUsername = normalizeUsername(username);
         validateDisplayName(displayName);
         validatePassword(password, confirmation);
         if (role == null) throw new IllegalArgumentException("Chọn vai trò cho tài khoản.");
+        if (role == Role.RESIDENT && apartmentId == null) {
+            throw new IllegalArgumentException("Tài khoản người dùng phải gắn với một căn hộ.");
+        }
+        if (role != Role.RESIDENT) apartmentId = null;
         try {
-            repository.createUser(normalizedUsername, BCrypt.hashpw(password, BCrypt.gensalt(10)), displayName.trim(), role);
+            repository.createUser(normalizedUsername, BCrypt.hashpw(password, BCrypt.gensalt(10)), displayName.trim(), role,
+                    apartmentId);
         } catch (SQLException exception) {
             if ("23000".equals(exception.getSQLState())) {
                 throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.", exception);

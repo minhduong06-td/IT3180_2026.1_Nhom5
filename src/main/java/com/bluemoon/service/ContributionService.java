@@ -7,6 +7,7 @@ import com.bluemoon.model.Domain.Contribution;
 import com.bluemoon.model.Domain.ContributionRecord;
 import com.bluemoon.model.Domain.FeeType;
 import com.bluemoon.model.Domain.PaymentMethod;
+import com.bluemoon.model.Domain.Role;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
@@ -22,11 +23,14 @@ public final class ContributionService {
 
     public List<ContributionRecord> list(AppUser user) throws SQLException {
         AccessRules.requireSignedIn(user);
-        return repository.listContributions();
+        String apartmentCode = residentApartmentCode(user);
+        return repository.listContributions().stream()
+                .filter(record -> apartmentCode == null || apartmentCode.equals(record.apartmentCode()))
+                .toList();
     }
 
     public void record(AppUser user, Contribution contribution) throws SQLException {
-        AccessRules.requireSignedIn(user);
+        AccessRules.requireAnyRole(user, Role.ADMIN, Role.ACCOUNTANT);
         if (contribution == null || contribution.amount() == null || contribution.amount().signum() <= 0
                 || contribution.amount().stripTrailingZeros().scale() > 0) {
             throw new IllegalArgumentException("Số tiền đóng góp phải là số nguyên VND dương.");
@@ -51,5 +55,14 @@ public final class ContributionService {
             throw new IllegalArgumentException("Chọn căn hộ đang hoạt động.");
         }
         repository.recordContribution(contribution, user.id());
+    }
+
+    private String residentApartmentCode(AppUser user) throws SQLException {
+        if (user.role() != Role.RESIDENT) return null;
+        if (user.apartmentId() == null) return "";
+        return repository.listApartments().stream()
+                .filter(apartment -> apartment.id().equals(user.apartmentId()))
+                .map(apartment -> apartment.code())
+                .findFirst().orElse("");
     }
 }

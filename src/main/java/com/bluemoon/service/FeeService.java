@@ -19,7 +19,7 @@ public final class FeeService {
     }
 
     public List<FeeType> list(AppUser user) throws SQLException {
-        AccessRules.requireSignedIn(user);
+        AccessRules.requireAnyRole(user, Role.ADMIN, Role.ACCOUNTANT);
         return repository.listFeeTypes();
     }
 

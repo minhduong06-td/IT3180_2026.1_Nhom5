@@ -25,9 +25,10 @@ public final class ResidentService {
     public List<ResidentDirectoryEntry> search(AppUser user, String term) throws SQLException {
         AccessRules.requireSignedIn(user);
         String query = normalize(term);
-        if (query.isEmpty()) return repository.listResidentDirectory();
+        List<ResidentDirectoryEntry> directory = visibleDirectory(user);
+        if (query.isEmpty()) return directory;
         Integer floor = query.matches("\\d{1,2}") ? Integer.valueOf(query) : null;
-        return repository.listResidentDirectory().stream().filter(entry -> {
+        return directory.stream().filter(entry -> {
             var apartment = entry.apartment();
             var resident = entry.resident();
             return (normalize(apartment.code()).startsWith(query)
@@ -43,7 +44,17 @@ public final class ResidentService {
 
     public List<Resident> list(AppUser user, long apartmentId) throws SQLException {
         AccessRules.requireSignedIn(user);
+        if (user.role() == Role.RESIDENT && !Long.valueOf(apartmentId).equals(user.apartmentId())) {
+            throw new SecurityException("Bạn chỉ được xem nhân khẩu trong căn hộ của mình.");
+        }
         return repository.listResidents(apartmentId);
+    }
+
+    private List<ResidentDirectoryEntry> visibleDirectory(AppUser user) throws SQLException {
+        List<ResidentDirectoryEntry> directory = repository.listResidentDirectory();
+        if (user.role() != Role.RESIDENT) return directory;
+        if (user.apartmentId() == null) return List.of();
+        return directory.stream().filter(entry -> entry.apartment().id().equals(user.apartmentId())).toList();
     }
 
     public void save(AppUser user, Resident resident, boolean replaceHead) throws SQLException {

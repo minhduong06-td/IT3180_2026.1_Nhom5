@@ -19,7 +19,10 @@ public final class ApartmentService {
 
     public List<Apartment> list(AppUser user) throws SQLException {
         AccessRules.requireSignedIn(user);
-        return repository.listApartments();
+        List<Apartment> apartments = repository.listApartments();
+        if (user.role() != Role.RESIDENT) return apartments;
+        if (user.apartmentId() == null) return List.of();
+        return apartments.stream().filter(apartment -> apartment.id().equals(user.apartmentId())).toList();
     }
 
     public void save(AppUser user, Apartment apartment) throws SQLException {

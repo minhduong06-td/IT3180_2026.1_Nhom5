@@ -24,7 +24,10 @@ public final class CollectionService {
 
     public List<ChargeSummary> charges(AppUser user, Long periodId, String search) throws SQLException {
         AccessRules.requireSignedIn(user);
-        return repository.listCharges(periodId, search);
+        String apartmentCode = residentApartmentCode(user);
+        return repository.listCharges(periodId, search).stream()
+                .filter(charge -> apartmentCode == null || apartmentCode.equals(charge.apartmentCode()))
+                .toList();
     }
 
     public List<HouseholdDebt> debts(AppUser user, long periodId, Integer floorFrom, Integer floorTo,
@@ -36,7 +39,9 @@ public final class CollectionService {
                 || (floorFrom != null && floorTo != null && floorFrom > floorTo)) {
             throw new IllegalArgumentException("Khoảng tầng phải nằm trong tầng 1 đến 30 và có thứ tự hợp lệ.");
         }
+        String apartmentCode = residentApartmentCode(user);
         return repository.listHouseholdDebts(periodId).stream()
+                .filter(debt -> apartmentCode == null || apartmentCode.equals(debt.apartmentCode()))
                 .filter(debt -> floorFrom == null || debt.floor() >= floorFrom)
                 .filter(debt -> floorTo == null || debt.floor() <= floorTo)
                 .filter(debt -> status == null || debt.status() == status)
@@ -66,6 +71,18 @@ public final class CollectionService {
 
     public List<PaymentRecord> payments(AppUser user, String search) throws SQLException {
         AccessRules.requireSignedIn(user);
-        return repository.listPayments(search);
+        String apartmentCode = residentApartmentCode(user);
+        return repository.listPayments(search).stream()
+                .filter(payment -> apartmentCode == null || apartmentCode.equals(payment.apartmentCode()))
+                .toList();
+    }
+
+    private String residentApartmentCode(AppUser user) throws SQLException {
+        if (user.role() != Role.RESIDENT) return null;
+        if (user.apartmentId() == null) return "";
+        return repository.listApartments().stream()
+                .filter(apartment -> apartment.id().equals(user.apartmentId()))
+                .map(apartment -> apartment.code())
+                .findFirst().orElse("");
     }
 }

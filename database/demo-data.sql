@@ -5,18 +5,21 @@
 USE bluemoon;
 SET NAMES utf8mb4;
 
--- Demo accounts: admin/admin123 and accountant/accountant123.
-INSERT INTO app_users (username, password_hash, display_name, role)
+-- Demo accounts: admin/admin123, accountant/accountant123 and resident/resident123.
+-- The resident account is linked to apartment A101 after apartments are seeded below.
+INSERT INTO app_users (username, password_hash, display_name, role, apartment_id)
 VALUES
-    ('admin', '$2a$10$yy6S51.swB9.1eFqHWOCpukuVPtcBoFJ3Ar3S5gZGeaACz2EekFbC', 'Ban quản trị BlueMoon', 'ADMIN'),
-    ('accountant', '$2a$10$zBuNJQo8bdNgn5A8qZApaexDXi9CxM01bY943w3/ZLy8YAVFZFN7G', 'Lê Thu Ngân', 'ACCOUNTANT')
+    ('admin', '$2a$10$yy6S51.swB9.1eFqHWOCpukuVPtcBoFJ3Ar3S5gZGeaACz2EekFbC', 'Ban quản trị BlueMoon', 'ADMIN', NULL),
+    ('accountant', '$2a$10$zBuNJQo8bdNgn5A8qZApaexDXi9CxM01bY943w3/ZLy8YAVFZFN7G', 'Lê Thu Ngân', 'ACCOUNTANT', NULL),
+    ('resident', '$2a$10$Vgtp/jmFwlRZsuxvkwO1PepcgQB8LsSa3Ss98bGa47OVEnjoEBpny', 'Nguyễn Minh An', 'RESIDENT', NULL)
 ON DUPLICATE KEY UPDATE
     display_name = VALUES(display_name),
     role = VALUES(role),
+    apartment_id = VALUES(apartment_id),
     active = TRUE;
 
 INSERT IGNORE INTO account_login_state (user_id)
-SELECT id FROM app_users WHERE username IN ('admin', 'accountant');
+SELECT id FROM app_users WHERE username IN ('admin', 'accountant', 'resident');
 
 -- Apartments span floors 1, 2, 3, 4, 5, 6, 7, 8, 10 and 12.
 -- The floor is intentionally derived from each apartment code by the application.
@@ -41,6 +44,11 @@ ON DUPLICATE KEY UPDATE
     move_in_date = VALUES(move_in_date),
     occupancy_status = VALUES(occupancy_status),
     active = VALUES(active);
+
+UPDATE app_users u
+JOIN apartments a ON a.code = 'A101'
+SET u.apartment_id = a.id
+WHERE u.username = 'resident' AND u.role = 'RESIDENT';
 
 -- Households intentionally have different sizes and relationships.
 INSERT INTO residents

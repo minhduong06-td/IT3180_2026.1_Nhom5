@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 public final class Domain {
     private Domain() {}
 
-    public enum Role { ADMIN, ACCOUNTANT }
+    public enum Role { ADMIN, ACCOUNTANT, RESIDENT }
     public enum CalculationBasis { PER_M2, PER_RESIDENT, PER_MOTORCYCLE, PER_CAR, FIXED, EXTERNAL_BILL, VOLUNTARY }
     public enum VehicleType { MOTORCYCLE, CAR }
     public enum UtilityType { ELECTRICITY, WATER, INTERNET }
@@ -20,7 +20,11 @@ public final class Domain {
     public enum PaymentMethod { CASH, BANK_TRANSFER }
     public enum ChargeStatus { UNPAID, PARTIALLY_PAID, PAID }
 
-    public record AppUser(long id, String username, String displayName, Role role) {}
+    public record AppUser(long id, String username, String displayName, Role role, Long apartmentId) {
+        public AppUser(long id, String username, String displayName, Role role) {
+            this(id, username, displayName, role, null);
+        }
+    }
 
     public record UserAccount(long id, String username, String displayName, Role role,
                               boolean active, boolean loginLocked) {}

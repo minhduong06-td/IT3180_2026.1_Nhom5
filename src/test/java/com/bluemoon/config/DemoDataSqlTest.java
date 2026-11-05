@@ -34,4 +34,15 @@ class DemoDataSqlTest {
         assertTrue(sql.contains("INSERT INTO contributions"), "Thiếu dữ liệu đóng góp mẫu");
         assertTrue(sql.contains("INSERT INTO resident_requests"), "Thiếu dữ liệu yêu cầu cư dân mẫu");
     }
+
+    @Test
+    void demoDataContainsAResidentAccountButNoAuthorityAccount() throws IOException {
+        String sql = Files.readString(DEMO_DATA);
+
+        assertTrue(sql.contains("'resident'"), "Thiếu tài khoản người dùng mẫu");
+        assertTrue(sql.contains("'RESIDENT'"), "Thiếu role RESIDENT");
+        assertTrue(sql.contains("apartment_id"), "Tài khoản người dùng chưa được gắn phạm vi căn hộ");
+        org.junit.jupiter.api.Assertions.assertFalse(sql.contains("'coquan'"), "Không được seed tài khoản coquan");
+        org.junit.jupiter.api.Assertions.assertFalse(sql.contains("AUTHORITY"), "Không được seed role Authority trong bản demo này");
+    }
 }

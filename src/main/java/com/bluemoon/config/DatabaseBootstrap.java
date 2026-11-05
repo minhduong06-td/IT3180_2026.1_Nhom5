@@ -28,6 +28,7 @@ public final class DatabaseBootstrap {
                 if (!sql.isBlank()) statement.execute(sql);
             }
             ensureApartmentProfile(connection);
+            ensureUserProfile(connection);
             ensureFeeCalculationBasis(connection);
             ensureFeeProfile(connection);
             ensurePaymentProfile(connection);
@@ -80,6 +81,21 @@ public final class DatabaseBootstrap {
         if (!hasColumn(connection, "fee_types", "active")) {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE fee_types ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE");
+            }
+        }
+    }
+
+    private static void ensureUserProfile(Connection connection) throws SQLException {
+        String roleType = columnType(connection, "app_users", "role");
+        if (!roleType.contains("RESIDENT")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE app_users MODIFY role "
+                        + "ENUM('ADMIN', 'ACCOUNTANT', 'RESIDENT') NOT NULL");
+            }
+        }
+        if (!hasColumn(connection, "app_users", "apartment_id")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE app_users ADD COLUMN apartment_id BIGINT NULL AFTER role");
             }
         }
     }

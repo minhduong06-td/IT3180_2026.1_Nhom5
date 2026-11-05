@@ -18,15 +18,24 @@ public final class ResidentRequestService {
     }
 
     public List<ResidentRequest> list(AppUser user) throws SQLException {
-        AccessRules.requireRole(user, Role.ADMIN);
-        return repository.listResidentRequests();
+        AccessRules.requireAnyRole(user, Role.ADMIN, Role.RESIDENT);
+        List<ResidentRequest> requests = repository.listResidentRequests();
+        if (user.role() != Role.RESIDENT) return requests;
+        if (user.apartmentId() == null) return List.of();
+        return requests.stream().filter(request -> request.apartmentId() == user.apartmentId()).toList();
     }
 
     public void save(AppUser user, ResidentRequestInput request) throws SQLException {
-        AccessRules.requireRole(user, Role.ADMIN);
+        AccessRules.requireAnyRole(user, Role.ADMIN, Role.RESIDENT);
         if (request == null || request.apartmentId() <= 0 || request.category() == null || request.status() == null
                 || request.id() != null && request.id() <= 0) {
             throw new IllegalArgumentException("Chọn căn hộ, nhóm yêu cầu và trạng thái hợp lệ.");
+        }
+        if (user.role() == Role.RESIDENT) {
+            if (request.id() != null || user.apartmentId() == null || request.apartmentId() != user.apartmentId()
+                    || request.status() != RequestStatus.RECEIVED) {
+                throw new SecurityException("Người dùng chỉ được gửi yêu cầu mới cho căn hộ của mình.");
+            }
         }
         if (request.id() == null && request.status() != RequestStatus.RECEIVED) {
             throw new IllegalArgumentException("Yêu cầu mới phải ở trạng thái vừa tiếp nhận.");
@@ -34,7 +43,7 @@ public final class ResidentRequestService {
         String reporter = clean(request.reporterName());
         String subject = clean(request.subject());
         String description = clean(request.description());
-        String handlingNote = clean(request.handlingNote());
+        String handlingNote = user.role() == Role.RESIDENT ? "" : clean(request.handlingNote());
         if (reporter.length() < 2 || reporter.length() > 100 || subject.length() < 3 || subject.length() > 120
                 || description.isEmpty() || description.length() > 1500
                 || handlingNote.length() > 1000) {

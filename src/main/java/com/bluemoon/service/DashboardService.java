@@ -15,6 +15,6 @@ public final class DashboardService {
 
     public DashboardSummary summary(AppUser user) throws SQLException {
         AccessRules.requireSignedIn(user);
-        return repository.dashboard();
+        return repository.dashboard(user);
     }
 }
