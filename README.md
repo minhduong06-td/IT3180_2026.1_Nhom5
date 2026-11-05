@@ -1,208 +1,99 @@
 # BlueMoon
 
-BlueMoon là ứng dụng desktop hỗ trợ ban quản trị và kế toán quản lý căn hộ, nhân khẩu, khoản thu và thanh toán của chung cư. Luồng chính đi từ hồ sơ hộ đến phát hành kỳ thu, theo dõi công nợ và đối soát lịch sử thu.
+Ứng dụng desktop quản lý căn hộ, cư dân và thu phí chung cư cho ban quản trị và kế toán.
+
+![Tổng quan BlueMoon trên database mới](docs/images/tong-quan.png)
 
 ## Chức năng
 
-| Phạm vi | Chức năng đã có trong mã nguồn |
-|---|---|
-| Luồng Sprint 1 theo bộ tài liệu trong repo | Đăng nhập, tạo tài khoản, đổi mật khẩu; quản lý căn hộ và nhân khẩu; danh mục khoản thu, lịch sử đơn giá; phát hành kỳ thu; bảng kê, in thông báo; thu tiền, nộp dư, công nợ và tổng quan. |
-| Phần mở rộng | Đăng ký phương tiện, phí gửi xe; hóa đơn điện/nước/internet; yêu cầu cư dân; đóng góp tự nguyện; lịch sử biến động cư trú; xuất CSV. |
+- Quản lý căn hộ, nhân khẩu, phương tiện và biến động cư trú.
+- Thiết lập khoản thu, đơn giá và phát hành kỳ thu theo tháng.
+- Tra cứu bảng kê, in thông báo, thu tiền, theo dõi công nợ và số dư nộp trước.
+- Quản lý hóa đơn điện, nước, internet, đóng góp tự nguyện và yêu cầu cư dân.
+- Quản lý tài khoản, phân quyền, đổi mật khẩu và xuất CSV.
 
-Các chức năng mở rộng đã có code nhưng được theo dõi riêng với phạm vi nghiệm thu Sprint 1. Trạng thái hiện thực và các điểm còn phải xử lý nằm trong [Đối chiếu Sprint 1](docs/SPRINT1_COVERAGE_REVIEW.md).
+## Cài đặt và chạy
 
-## Công nghệ và yêu cầu cài đặt
-
-| Thành phần | Phiên bản/cấu hình của dự án |
-|---|---|
-| JDK | **25**; `pom.xml` đặt `maven.compiler.release=25` |
-| JavaFX | 25.0.2 |
-| Maven | 3.9.16, chạy bằng Maven Wrapper trong repo |
-| MySQL | 8.4, cấu hình sẵn trong `compose.yaml` |
-| Truy cập dữ liệu | JDBC và MySQL Connector/J 26.10.0 |
-| Mật khẩu | BCrypt, thư viện jBCrypt 0.4 |
-| Kiểm thử | JUnit Jupiter 5.13.4 |
-
-Trên Windows, cần cài Git, JDK 25 và Docker Desktop. Bật Docker Desktop trước khi khởi động MySQL. Lần chạy Maven đầu tiên cần mạng để tải Maven và các dependency; không cần cài Maven riêng.
-
-## Khởi động trên Windows
-
-### 1. Lấy mã nguồn và kiểm tra Java
+Cần **JDK 25**, Git và Docker Desktop đang chạy. Dự án dùng Maven Wrapper, không cần cài Maven riêng. Lần chạy đầu cần mạng để tải các thư viện.
 
 ```powershell
 git clone https://github.com/minhduong06-td/IT3180_2026.1_Nhom5.git
 Set-Location IT3180_2026.1_Nhom5
-java -version
-javac -version
 .\mvnw.cmd -version
-docker version
-docker compose version
-```
-
-Cả `javac` và Java mà Maven sử dụng phải là phiên bản 25. Nếu đang dùng JDK khác, đặt lại `JAVA_HOME` và `PATH`. Ví dụ dưới đây cần thay đường dẫn bằng thư mục JDK 25 thực tế trên máy:
-
-```powershell
-$env:JAVA_HOME = 'C:\Program Files\Java\jdk-25'
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-.\mvnw.cmd -version
-```
-
-### 2. Khởi động MySQL và ứng dụng
-
-```powershell
 docker compose up -d
 docker compose ps
 ```
 
-Chờ dịch vụ `mysql` có trạng thái `healthy`, sau đó chạy:
+Kiểm tra Maven đang dùng Java 25 và chờ MySQL chuyển sang `healthy`, rồi mở ứng dụng:
 
 ```powershell
 .\mvnw.cmd javafx:run
 ```
 
-Khi tạo volume mới, Docker tự chạy `01-schema.sql` rồi `02-demo-data.sql`. File seed nằm ở
-`database/demo-data.sql` và chứa dữ liệu mẫu đa dạng theo nhiều tầng, diện tích, trạng thái
-đang ở/cho thuê/trống, quy mô hộ, quan hệ nhân khẩu, phương tiện, tiện ích, đóng góp và yêu cầu cư dân.
-Ứng dụng Java tiếp tục kiểm tra/cập nhật tương thích schema khi khởi động.
+Docker Compose chạy MySQL; cửa sổ desktop được chạy bằng Java trên máy.
 
-Tài khoản demo:
+Khi tạo volume mới, Docker nạp cấu trúc bảng và dữ liệu khởi tạo từ `database/demo-data.sql`. Ứng dụng mở màn hình đăng nhập với các tài khoản dưới đây; hãy đổi mật khẩu sau lần đăng nhập đầu.
 
-| Vai trò | Tên đăng nhập | Mật khẩu |
+| Vai trò | Tên đăng nhập | Mật khẩu ban đầu |
 |---|---|---|
 | Ban quản trị | `admin` | `admin123` |
 | Kế toán | `accountant` | `accountant123` |
 
-### 3. Dừng hoặc tạo lại database
+Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Ứng dụng vẫn chạy được với database rỗng: tạo database MySQL riêng và đặt các biến kết nối bên dưới. Java tự tạo bảng và yêu cầu tạo quản trị đầu tiên nếu chưa có tài khoản.
 
-Dừng MySQL và giữ dữ liệu:
+### Bắt đầu sử dụng
 
-```powershell
-docker compose down
-```
+1. Ban quản trị thêm căn hộ và cư dân.
+2. Tạo khoản thu, cách tính và đơn giá có ngày hiệu lực.
+3. Tạo tài khoản kế toán, nhập hóa đơn tiện ích nếu có.
+4. Phát hành kỳ thu và kiểm tra bảng kê.
+5. Kế toán ghi nhận thanh toán, đối chiếu công nợ và lịch sử thu.
 
-Chỉ khi chấp nhận xóa toàn bộ dữ liệu local, dùng lệnh sau để xóa volume của dự án rồi tạo lại:
-
-```powershell
-docker compose down -v
-docker compose up -d
-```
-
-Lệnh `down -v` xóa toàn bộ dữ liệu trong volume của cấu hình Compose đang dùng và là bước cần thiết
-để Docker nạp lại bộ seed mới. Khi cần nâng cấp database cũ, sao lưu và thử trên bản sao.
-
-Kiểm tra nhanh dữ liệu mẫu trong Docker:
-
-```powershell
-docker exec bluemoon-nhom5-mysql mysql -h 127.0.0.1 -u bluemoon_app -pbluemoon_dev bluemoon -e "SELECT code, household_name, occupancy_status, active FROM apartments ORDER BY code;"
-```
-
-## Khởi tạo tài khoản và dữ liệu
-
-Database demo đã có sẵn tài khoản, căn hộ, nhân khẩu, kỳ thu tháng 11/2026, trạng thái thanh toán,
-công nợ, số dư nộp trước, phương tiện, hóa đơn tiện ích, đóng góp, lịch sử cư trú và yêu cầu cư dân.
-Các khoản Phí dịch vụ và Phí quản lý được dùng cho kỳ thu mẫu; các khoản mở rộng vẫn được lưu trong
-danh mục nhưng không tự cộng vào kỳ Sprint 1.
-
-Nếu muốn quay về database sạch và nạp lại toàn bộ dữ liệu mẫu, chạy `docker compose down -v` rồi
-`docker compose up -d`. Nếu database đã có tài khoản, ứng dụng chuyển thẳng tới màn hình đăng nhập
-và giữ nguyên dữ liệu hiện có.
+Ban quản trị thiết lập và phát hành kỳ; kế toán thu tiền cho khoản phải thu. Cả hai vai trò được xem tổng quan, tự đổi mật khẩu và ghi nhận đóng góp tự nguyện.
 
 ## Cấu hình
 
-### Kết nối database ứng dụng
+Cấu hình mặc định khớp với `compose.yaml`:
 
-| Biến môi trường | Giá trị mặc định |
+| Biến | Giá trị mặc định |
 |---|---|
 | `BLUEMOON_DB_URL` | `jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh` |
 | `BLUEMOON_DB_USER` | `bluemoon_app` |
 | `BLUEMOON_DB_PASSWORD` | `bluemoon_dev` |
 
-Ví dụ dùng database đã được tạo với tài khoản tương ứng:
+Để dùng MySQL riêng, tạo database và cấp quyền cho user trước, sau đó đặt các biến trên trong cùng cửa sổ PowerShell chạy ứng dụng. Thay biến kết nối không đổi mật khẩu của MySQL trong Docker.
 
-```powershell
-$env:BLUEMOON_DB_URL = 'jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh'
-$env:BLUEMOON_DB_USER = 'bluemoon_app'
-$env:BLUEMOON_DB_PASSWORD = 'bluemoon_dev'
-.\mvnw.cmd javafx:run
-```
+Thông tin chuyển khoản trên thông báo thu phí lấy từ `BLUEMOON_BANK_NAME`, `BLUEMOON_BANK_ACCOUNT`, `BLUEMOON_BANK_HOLDER`. Khi thiếu thông tin, thông báo hướng dẫn liên hệ ban quản trị.
 
-Đặt biến ở đây chỉ thay cấu hình kết nối của ứng dụng, không đổi mật khẩu MySQL trong Docker. JDBC URL dùng múi giờ kết nối `Asia/Ho_Chi_Minh`; các ngày mặc định trên giao diện còn phụ thuộc ngày hệ thống của máy chạy ứng dụng.
+Dừng MySQL và giữ dữ liệu bằng `docker compose down`. Volume lưu dữ liệu qua các lần khởi động; `docker compose down -v` sẽ xóa toàn bộ dữ liệu trong volume.
 
-### Thông tin chuyển khoản
+## Xử lý lỗi khởi động
 
-Đặt `BLUEMOON_BANK_NAME`, `BLUEMOON_BANK_ACCOUNT` và `BLUEMOON_BANK_HOLDER` trước khi mở ứng dụng. Nếu thiếu một trong ba biến, thông báo thu phí hướng dẫn liên hệ Ban quản trị.
-
-## Chạy kiểm thử
-
-### Các test không cần MySQL
-
-Chạy tại thư mục repo, với JDK 25:
-
-```powershell
-.\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest" test
-```
-
-Nhóm này hiện có 13 phương thức test. `FeeNoticePrinterTest` kiểm tra nội dung chuyển khoản; việc xem trước, bố cục trang in và phản hồi giao diện vẫn cần kiểm tra thủ công.
-
-### Kiểm thử tích hợp MySQL
-
-`MySqlBillingFlowTest` có sửa schema và xóa dữ liệu fixture trong quá trình chạy. Dùng **database kiểm thử riêng, có thể bỏ đi**, không trỏ vào database demo đang dùng hoặc dữ liệu thật.
-
-Ví dụ tạo MySQL kiểm thử ở cổng 3308 để tách khỏi ứng dụng ở cổng 3307:
-
-```powershell
-docker run --name bluemoon-it-mysql -d `
-  -p 127.0.0.1:3308:3306 `
-  -e MYSQL_DATABASE=bluemoon_it `
-  -e MYSQL_USER=bluemoon_it `
-  -e MYSQL_PASSWORD=bluemoon_it_dev `
-  -e MYSQL_ROOT_PASSWORD=bluemoon_it_root_dev `
-  mysql:8.4
-```
-
-Chờ MySQL sẵn sàng. Có thể kiểm tra nhiều lần bằng lệnh sau; chỉ chạy test khi truy vấn trả về `1`:
-
-```powershell
-docker exec bluemoon-it-mysql mysql -h 127.0.0.1 -u bluemoon_it -pbluemoon_it_dev bluemoon_it -e 'SELECT 1;'
-```
-
-Trong cùng cửa sổ PowerShell:
-
-```powershell
-$env:BLUEMOON_IT_DB_URL = 'jdbc:mysql://localhost:3308/bluemoon_it?connectionTimeZone=Asia/Ho_Chi_Minh'
-$env:BLUEMOON_IT_DB_USER = 'bluemoon_it'
-$env:BLUEMOON_IT_DB_PASSWORD = 'bluemoon_it_dev'
-Remove-Item Env:BLUEMOON_IT_DB_LEGACY -ErrorAction SilentlyContinue
-.\mvnw.cmd test
-```
-
-`BLUEMOON_IT_DB_*` được test đọc riêng, không dùng thay cho `BLUEMOON_DB_*` của ứng dụng. Khi chưa đặt `BLUEMOON_IT_DB_URL`, test tích hợp bị bỏ qua; một lần build thành công có test bị bỏ qua chưa chứng minh luồng MySQL đã đạt.
-
-Chế độ `BLUEMOON_IT_DB_LEGACY=true` tạo fixture database cũ để kiểm tra bootstrap trên schema có dữ liệu một phần. Chỉ dùng chế độ đó trên database kiểm thử mới, riêng biệt.
-
-Sau khi lấy log, có thể xóa riêng container và volume kiểm thử:
-
-```powershell
-docker rm -f -v bluemoon-it-mysql
-```
-
-Log kết quả từng lớp nằm ở `target/surefire-reports/`. Ghi commit, môi trường, lệnh chạy, số test đạt/lỗi/bỏ qua vào [Biên bản kiểm thử](docs/QA_TEST_REPORT.md).
-
-## Các giới hạn đang theo dõi
-
-| Mã | Nội dung |
+| Hiện tượng | Kiểm tra |
 |---|---|
-| R-02 | Chưa có cơ chế chống ghi trùng cùng một yêu cầu thu tiền/mã giao dịch. |
-| R-03 | Code chọn đơn giá theo ngày phát hành; yêu cầu nghiệp vụ đầu kỳ chưa được đáp ứng. |
-| R-04 | Mã căn và tên hộ trên chứng từ cũ còn lấy từ hồ sơ hiện tại. |
-| R-05 | Tên liên hệ của căn hộ và chủ hộ trong danh sách nhân khẩu có thể không khớp. |
-| R-06 | Nhiều thao tác JDBC còn chạy trên luồng giao diện, có thể làm giao diện chờ khi MySQL chậm. |
+| `release version 25 not supported`, `Unsupported major.minor version` | Chạy `.\mvnw.cmd -version`; đặt `JAVA_HOME` và `PATH` về JDK 25. Sau đó chạy `.\mvnw.cmd clean javafx:run`. |
+| Không kết nối được MySQL | Kiểm tra Docker Desktop, `docker compose ps`, cổng 3307 và các biến `BLUEMOON_DB_*`. Cấu hình user/mật khẩu trong Compose chỉ được áp dụng khi tạo volume lần đầu. |
+| Cảnh báo `restricted method` của JavaFX | Cảnh báo native access không phải lỗi kết nối MySQL. Xem thông báo và nguyên nhân lỗi kết nối riêng trên ứng dụng. |
 
-Chi tiết, cách kiểm tra lại và thứ tự xử lý: [Đối chiếu Sprint 1](docs/SPRINT1_COVERAGE_REVIEW.md). Việc cập nhật tài liệu không thay thế việc sửa các điểm này trong code.
+## Công nghệ
 
-## Tài liệu dự án
+Java 25, JavaFX 25.0.2, JDBC, MySQL 8.4, BCrypt và JUnit 5. Maven Wrapper dùng Maven 3.9.16. Phiên bản thư viện được khai báo trong `pom.xml`.
 
-- [Hướng dẫn nghiệp vụ và quyền sử dụng](docs/NGHIEP_VU.md)
-- [Phạm vi Sprint 1 và các điểm cần hoàn thiện](docs/SPRINT1_COVERAGE_REVIEW.md)
-- [Kế hoạch kiểm thử, fixture và số liệu đối chiếu](docs/QA_TEST_PLAN.md)
-- [Lịch sử và trạng thái kiểm thử](docs/QA_TEST_REPORT.md)
+## Kiểm tra và tài liệu
+
+Chạy các test không cần MySQL:
+
+```powershell
+.\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
+```
+
+Test tích hợp cần database riêng, rỗng và có thể xóa. Xem [hướng dẫn QA](docs/QA.md) trước khi chạy; thiếu `BLUEMOON_IT_DB_URL` sẽ làm test tích hợp bị bỏ qua.
+
+- [PM: quyết định merge và điều kiện nghiệm thu](docs/PM.md)
+- [QA: cách kiểm tra và căn cứ đạt](docs/QA.md)
+- [Dev: cấu trúc, nghiệp vụ và cách sửa](docs/DEV.md)
+- [Quy tắc nghiệp vụ chi tiết](docs/NGHIEP_VU.md)
+- [Ma trận kiểm tra](docs/QA_TEST_PLAN.md)
+- [Kết quả đã ghi nhận](docs/QA_TEST_REPORT.md)
+
+Các lỗi còn mở gồm chống ghi trùng thanh toán, ngày chọn đơn giá, thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chi tiết tại [đối chiếu yêu cầu](docs/SPRINT1_COVERAGE_REVIEW.md).

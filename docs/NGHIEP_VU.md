@@ -56,7 +56,7 @@ Tên ở trường `apartments.household_name` được nhập dưới nhãn Ng�
 
 Phí định kỳ được làm tròn đến đồng bằng `HALF_UP`. Phí theo số người/số xe có thể bằng 0 khi số lượng bằng 0; khoản 0 đồng có trạng thái Đã thanh toán. Các biến động thường trú/tạm trú/tạm vắng hiện chỉ được lưu lịch sử, chưa được dùng để cộng/trừ số người tính phí.
 
-Khi phát hành, code chọn các căn có `active=TRUE` và các khoản thu có `active=TRUE`, `required=TRUE`. Cờ này độc lập với tình trạng căn hộ trống/đang ở/cho thuê. Hóa đơn tiện ích đã nhập cho tháng đó được đưa vào kỳ riêng; chỉ tắt phí xe/vệ sinh chưa đủ giữ fixture Sprint 1 nếu đã nhập hóa đơn tiện ích.
+Khi phát hành, code chọn các căn có `active=TRUE` và các khoản thu có `active=TRUE`, `required=TRUE`. Cờ này độc lập với tình trạng căn hộ trống/đang ở/cho thuê. Hóa đơn tiện ích đã nhập cho tháng đó vẫn được đưa vào kỳ, kể cả khi các khoản phí định kỳ khác bị tắt.
 
 ### Ngày chốt đơn giá - yêu cầu còn phải sửa (R-03)
 
@@ -69,7 +69,7 @@ Code hiện tại trong `AppRepository.issuePeriod()` lại lấy mốc `issueDa
 | Theo yêu cầu ngày đầu kỳ | 480.000 đồng |
 | Code hiện tại dùng ngày phát hành | 576.000 đồng |
 
-Không dùng hành vi hiện tại làm kết quả đạt cho quy tắc đầu kỳ. Cần sửa truy vấn chọn giá và expected của test tích hợp cùng lúc. Fixture demo thông thường chưa thay đơn giá giữa tháng nên không thể phát hiện điểm lệch này.
+Không dùng hành vi hiện tại làm kết quả đạt cho quy tắc đầu kỳ. Cần sửa truy vấn chọn giá và expected của test tích hợp cùng lúc. Bộ dữ liệu không có thay đổi giá giữa tháng sẽ không phát hiện được điểm lệch này.
 
 ### Dữ liệu được giữ sau phát hành
 
@@ -90,22 +90,21 @@ Ví dụ A102 có phí dịch vụ 525.000 đồng, kế toán nhận 600.000 đ
 
 **Chống ghi trùng chưa hoàn thành (R-02):** mã giao dịch hiện là thông tin đối chiếu, chưa phải khóa duy nhất. Gửi lại cùng một khoản thu một phần có thể tạo thêm phiếu. Yêu cầu cần đạt là mỗi yêu cầu thu tiền có mã định danh duy nhất và việc gửi lại không làm tăng tổng đã thu. Mã giao dịch ngân hàng cần có quy tắc duy nhất phù hợp trước khi thêm ràng buộc.
 
-## Quy trình Sprint 1
+## Quy trình sử dụng
 
-1. Khởi động database demo mới theo [README](../README.md), đăng nhập admin.
-2. Kiểm tra căn hộ và nhân khẩu; khi cần thêm hồ sơ, dùng mã căn/mã hộ và số giấy tờ chưa có.
-3. Kiểm tra Phí dịch vụ và Phí quản lý đang áp dụng; phí xe/vệ sinh tắt, không có hóa đơn tiện ích của kỳ.
-4. Phát hành kỳ 10/2026 với ngày phát hành 01/10/2026, hạn nộp 15/11/2026.
-5. Kiểm tra công thức, xem bảng kê căn hộ và in thông báo; đối chiếu với số liệu trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md).
-6. Đăng xuất, đăng nhập accountant; thử thu một phần, thu đủ, nộp dư trên các khoản khác nhau.
-7. Đối chiếu công nợ, tổng quan và lịch sử. Phát hành kỳ 11/2026 bằng admin để kiểm tra cấn trừ số dư.
-8. Kiểm tra quyền bị từ chối tại service theo kế hoạch QA. Việc không thấy menu chưa đủ chứng minh service đã chặn quyền.
+1. Mở ứng dụng; nếu chưa có tài khoản, tạo quản trị đầu tiên. Nếu đã có tài khoản, đăng nhập.
+2. Ban quản trị thêm căn hộ, cư dân và phương tiện cần quản lý.
+3. Tạo khoản thu, chọn cách tính và thiết lập đơn giá có ngày hiệu lực. Không có khoản thu hoặc mức giá khởi tạo sẵn.
+4. Nhập hóa đơn tiện ích của tháng nếu có, rồi phát hành kỳ với hạn nộp phù hợp.
+5. Kiểm tra bảng kê, công thức và thông báo trước khi thu tiền.
+6. Kế toán đăng nhập bằng tài khoản được quản trị tạo, ghi nhận tiền nộp cho từng khoản phải thu.
+7. Đối chiếu công nợ, lịch sử thu và số dư. Số dư được xét cấn khi phát hành kỳ sau.
 
-Kịch bản trên phục vụ demo luồng đã có; không thay thế các case lỗi, migration và chốt giá giữa tháng.
+Các bước và số liệu kiểm tra cụ thể nằm trong [hướng dẫn QA](QA.md).
 
 ## Phần mở rộng
 
-- **Phương tiện:** admin đăng ký/ngừng đăng ký xe; bật loại phí xe khi muốn đưa vào kỳ mới. Mức khởi tạo là 70.000 đồng/xe máy và 1.200.000 đồng/ô tô.
+- **Phương tiện:** admin đăng ký/ngừng đăng ký xe; bật loại phí xe khi muốn đưa vào kỳ mới. Đơn giá do ban quản trị thiết lập, không có mức khởi tạo sẵn.
 - **Tiện ích:** admin nhập hóa đơn trước phát hành. Một căn/kỳ/loại dịch vụ có một hóa đơn; lưu lại cùng bộ khóa có thể cập nhật số tiền thay vì tạo bản ghi thứ hai.
 - **Yêu cầu cư dân:** admin tiếp nhận, phân loại, cập nhật trạng thái và ghi chú; tra cứu bản ghi hoàn tất vẫn được.
 - **Biến động cư trú:** admin ghi người, trạng thái, khoảng ngày và lý do; chưa tác động đến công thức phí nhân khẩu.
