@@ -11,6 +11,8 @@ public final class Domain {
     public enum CalculationBasis { PER_M2, PER_RESIDENT, PER_MOTORCYCLE, PER_CAR, FIXED, EXTERNAL_BILL, VOLUNTARY }
     public enum VehicleType { MOTORCYCLE, CAR }
     public enum UtilityType { ELECTRICITY, WATER, INTERNET }
+    public enum RequestCategory { MAINTENANCE, CLEANING, SECURITY, NOISE, OTHER }
+    public enum RequestStatus { RECEIVED, IN_PROGRESS, RESOLVED }
     public enum OccupancyStatus { OCCUPIED, VACANT, RENTED }
     public enum Gender { MALE, FEMALE }
     public enum HouseholdRelationship { HEAD, WIFE, HUSBAND, CHILD, PARENT, TENANT, OTHER }
@@ -49,6 +51,15 @@ public final class Domain {
 
     public record UtilityBillInput(Long id, int year, int month, long apartmentId, UtilityType type,
                                    BigDecimal amount, String provider, String reference) {}
+
+    public record ResidentRequest(long id, long apartmentId, String apartmentCode, String reporterName,
+                                  RequestCategory category, String subject, String description,
+                                  RequestStatus status, String handlingNote,
+                                  LocalDateTime createdAt, LocalDateTime updatedAt) {}
+
+    public record ResidentRequestInput(Long id, long apartmentId, String reporterName,
+                                      RequestCategory category, String subject, String description,
+                                      RequestStatus status, String handlingNote) {}
 
     public record FeeType(long id, String code, String name, boolean required,
                           CalculationBasis basis, BigDecimal unitPrice,
