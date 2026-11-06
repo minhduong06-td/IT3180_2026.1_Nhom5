@@ -40,6 +40,7 @@ final class ChargesView extends VBox {
     private final javafx.scene.control.TextField search = Ui.textField("Tìm mã căn, chủ hộ, khoản thu");
     private final TableView<ChargeSummary> table = new TableView<>();
     private final Button printAll = Ui.button("In cả kỳ", false);
+    private final Button exportCsv = Ui.button("Xuất CSV", false);
 
     ChargesView(AppServices services, AppUser user) {
         this(services, user, null);
@@ -65,6 +66,8 @@ final class ChargesView extends VBox {
         printNotice.setOnAction(event -> printSelectedNotice());
         printAll.setDisable(true);
         printAll.setOnAction(event -> printAllNotices());
+        exportCsv.setDisable(true);
+        exportCsv.setOnAction(event -> exportVisibleRows());
         var pay = Ui.button("Ghi nhận thanh toán", true);
         pay.setDisable(true);
         pay.setVisible(user.role() == Role.ACCOUNTANT);
@@ -79,7 +82,7 @@ final class ChargesView extends VBox {
         periodFilter.valueProperty().addListener((observable, oldValue, value) ->
                 printAll.setDisable(value == null || periodIds.get(value) == null));
         getChildren().addAll(Ui.pageHeader("Bảng kê phải thu", "Tra cứu từng khoản, công thức tính và số dư của căn hộ."),
-                Ui.toolbar(periodFilter, search, refresh, Ui.spacer(), statement, printNotice, printAll, pay), table);
+                Ui.toolbar(periodFilter, search, refresh, Ui.spacer(), statement, printNotice, printAll, exportCsv, pay), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         loadPeriods();
@@ -144,9 +147,25 @@ final class ChargesView extends VBox {
         try {
             Long periodId = periodIds.get(periodFilter.getValue());
             table.getItems().setAll(services.collections().charges(user, periodId, search.getText()));
+            exportCsv.setDisable(table.getItems().isEmpty());
         } catch (SQLException exception) {
             Ui.error("Không tải được bảng kê", exception);
         }
+    }
+
+    private void exportVisibleRows() {
+        if (table.getItems().isEmpty()) return;
+        String period = periodFilter.getValue();
+        String fileName = periodIds.containsKey(period) ? "bang-ke-" + period.replace('/', '-') + ".csv"
+                : "bang-ke-phai-thu.csv";
+        List<List<String>> rows = table.getItems().stream().map(charge -> List.of(
+                charge.period(), charge.apartmentCode(), charge.householdName(), charge.feeName(),
+                formula(charge), charge.quantity().stripTrailingZeros().toPlainString(),
+                charge.unitPrice().toPlainString(), charge.amount().toPlainString(), charge.paid().toPlainString(),
+                charge.balance().toPlainString(), status(charge.status()), Ui.date(charge.dueDate()))).toList();
+        CsvExporter.save(getScene().getWindow(), "Xuất bảng kê", fileName,
+                List.of("Kỳ", "Căn hộ", "Chủ hộ", "Khoản thu", "Cách tính", "Số lượng", "Đơn giá (VND)",
+                        "Phải thu (VND)", "Đã thanh toán (VND)", "Còn nợ (VND)", "Trạng thái", "Hạn nộp"), rows);
     }
 
     private void showStatement() {
