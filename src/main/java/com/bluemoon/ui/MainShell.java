@@ -106,7 +106,7 @@ final class MainShell extends BorderPane {
         current.setPromptText("Mật khẩu hiện tại");
         current.getStyleClass().add("form-field");
         var next = new PasswordField();
-        next.setPromptText("Ít nhất 8 ký tự, tối đa 72 byte UTF-8");
+        next.setPromptText("Mật khẩu mới");
         next.getStyleClass().add("form-field");
         var confirmation = new PasswordField();
         confirmation.setPromptText("Nhập lại mật khẩu mới");
@@ -118,7 +118,9 @@ final class MainShell extends BorderPane {
         addPasswordRow(form, 0, "Mật khẩu hiện tại", current);
         addPasswordRow(form, 1, "Mật khẩu mới", next);
         addPasswordRow(form, 2, "Xác nhận mật khẩu", confirmation);
-        dialog.getDialogPane().setContent(form);
+        Label error = Ui.label("", "inline-error");
+        error.setWrapText(true);
+        dialog.getDialogPane().setContent(new VBox(8, form, error));
         dialog.getDialogPane().setMinWidth(480);
         var saveButton = (Button) dialog.getDialogPane().lookupButton(save);
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
@@ -126,7 +128,9 @@ final class MainShell extends BorderPane {
                 services.accounts().changePassword(user, current.getText(), next.getText(), confirmation.getText());
             } catch (Exception exception) {
                 event.consume();
-                Ui.error("Không đổi được mật khẩu", exception);
+                error.setText(exception.getMessage() == null
+                        ? "Không đổi được mật khẩu. Vui lòng kiểm tra lại thông tin."
+                        : exception.getMessage());
             }
         });
         if (dialog.showAndWait().filter(save::equals).isPresent()) {
