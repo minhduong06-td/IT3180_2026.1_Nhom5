@@ -20,14 +20,24 @@ public final class Domain {
     public enum PaymentMethod { CASH, BANK_TRANSFER }
     public enum ChargeStatus { UNPAID, PARTIALLY_PAID, PAID }
 
-    public record AppUser(long id, String username, String displayName, Role role, Long apartmentId) {
+    public record AppUser(long id, String username, String displayName, Role role, Long apartmentId,
+                          String email, String phone) {
         public AppUser(long id, String username, String displayName, Role role) {
-            this(id, username, displayName, role, null);
+            this(id, username, displayName, role, null, null, null);
+        }
+
+        public AppUser(long id, String username, String displayName, Role role, Long apartmentId) {
+            this(id, username, displayName, role, apartmentId, null, null);
         }
     }
 
     public record UserAccount(long id, String username, String displayName, Role role,
-                              boolean active, boolean loginLocked) {}
+                              boolean active, boolean loginLocked, String email, String phone) {
+        public UserAccount(long id, String username, String displayName, Role role,
+                           boolean active, boolean loginLocked) {
+            this(id, username, displayName, role, active, loginLocked, null, null);
+        }
+    }
 
     public record LoginCredential(AppUser user, String passwordHash, boolean loginLocked) {}
 

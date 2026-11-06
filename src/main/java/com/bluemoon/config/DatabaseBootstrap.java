@@ -98,6 +98,24 @@ public final class DatabaseBootstrap {
                 statement.executeUpdate("ALTER TABLE app_users ADD COLUMN apartment_id BIGINT NULL AFTER role");
             }
         }
+        if (!hasColumn(connection, "app_users", "email")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE app_users ADD COLUMN email VARCHAR(254) NULL AFTER display_name");
+            }
+        }
+        if (!hasColumn(connection, "app_users", "phone")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE app_users ADD COLUMN phone VARCHAR(20) NULL AFTER email");
+            }
+        }
+        try (Statement statement = connection.createStatement()) {
+            if (!hasIndex(connection, "app_users", "uq_app_users_email")) {
+                statement.executeUpdate("ALTER TABLE app_users ADD UNIQUE KEY uq_app_users_email (email)");
+            }
+            if (!hasIndex(connection, "app_users", "uq_app_users_phone")) {
+                statement.executeUpdate("ALTER TABLE app_users ADD UNIQUE KEY uq_app_users_phone (phone)");
+            }
+        }
     }
 
     private static String columnType(Connection connection, String table, String column) throws SQLException {
