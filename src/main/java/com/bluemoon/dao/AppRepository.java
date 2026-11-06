@@ -703,7 +703,7 @@ public final class AppRepository {
 
                 List<ChargeInput> inputs = new ArrayList<>();
                 try (PreparedStatement query = connection.prepareStatement(loadInputs)) {
-                    query.setDate(1, Date.valueOf(LocalDate.of(year, month, 1)));
+                    query.setDate(1, Date.valueOf(issueDate));
                     try (ResultSet result = query.executeQuery()) {
                         while (result.next()) {
                             inputs.add(new ChargeInput(result.getLong("apartment_id"), result.getBigDecimal("area_m2"),
