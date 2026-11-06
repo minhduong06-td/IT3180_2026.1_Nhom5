@@ -14,6 +14,7 @@ public final class Domain {
     public enum RequestCategory { MAINTENANCE, CLEANING, SECURITY, NOISE, OTHER }
     public enum RequestStatus { RECEIVED, IN_PROGRESS, RESOLVED }
     public enum OccupancyStatus { OCCUPIED, VACANT, RENTED }
+    public enum ResidenceStatus { PERMANENT_RESIDENCE, TEMPORARY_RESIDENCE, TEMPORARY_ABSENCE }
     public enum Gender { MALE, FEMALE }
     public enum HouseholdRelationship { HEAD, WIFE, HUSBAND, CHILD, PARENT, TENANT, OTHER }
     public enum PaymentMethod { CASH, BANK_TRANSFER }
@@ -41,6 +42,10 @@ public final class Domain {
                            LocalDate moveInDate) {}
 
     public record ResidentDirectoryEntry(Apartment apartment, Resident resident) {}
+
+    public record ResidenceChange(long id, long residentId, String residentName, String apartmentCode,
+                                  ResidenceStatus status, LocalDate startDate, LocalDate endDate,
+                                  String reason, LocalDateTime recordedAt, String recordedBy) {}
 
     public record Vehicle(long id, long apartmentId, String apartmentCode, String householdName,
                           VehicleType type, String licensePlate, boolean active) {}

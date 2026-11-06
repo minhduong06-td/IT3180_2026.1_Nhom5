@@ -10,6 +10,7 @@ import com.bluemoon.service.DashboardService;
 import com.bluemoon.service.FeeService;
 import com.bluemoon.service.ResidentService;
 import com.bluemoon.service.ResidentRequestService;
+import com.bluemoon.service.ResidenceChangeService;
 import com.bluemoon.service.VehicleService;
 import com.bluemoon.service.UtilityService;
 
@@ -18,4 +19,4 @@ record AppServices(AuthService auth, AccountService accounts, ApartmentService a
                    BillingService billing, CollectionService collections,
                    ContributionService contributions, DashboardService dashboard,
                    VehicleService vehicles, UtilityService utilities,
-                   ResidentRequestService residentRequests) {}
+                   ResidentRequestService residentRequests, ResidenceChangeService residenceChanges) {}

@@ -50,6 +50,21 @@ CREATE TABLE IF NOT EXISTS residents (
     CONSTRAINT fk_resident_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS residence_changes (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    resident_id BIGINT NOT NULL,
+    status ENUM('PERMANENT_RESIDENCE', 'TEMPORARY_RESIDENCE', 'TEMPORARY_ABSENCE') NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NULL,
+    reason VARCHAR(500) NOT NULL,
+    recorded_by BIGINT NOT NULL,
+    recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY ix_residence_change_resident_dates (resident_id, start_date, end_date),
+    CONSTRAINT chk_residence_change_dates CHECK (end_date IS NULL OR end_date >= start_date),
+    CONSTRAINT fk_residence_change_resident FOREIGN KEY (resident_id) REFERENCES residents(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_residence_change_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
 CREATE TABLE IF NOT EXISTS vehicles (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     apartment_id BIGINT NOT NULL,
