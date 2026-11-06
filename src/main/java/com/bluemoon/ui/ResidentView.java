@@ -23,6 +23,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -52,24 +53,12 @@ final class ResidentView extends VBox {
             search.clear();
             load();
         });
-        var details = Ui.button("Chi tiết căn hộ", false);
-        details.setDisable(true);
-        details.setOnAction(event -> showDetails());
-        var edit = Ui.button("Sửa nhân khẩu", false);
-        edit.setVisible(user.role() == Role.ADMIN);
-        edit.setManaged(user.role() == Role.ADMIN);
-        edit.setDisable(true);
-        edit.setOnAction(event -> editSelected());
         Button add = Ui.button("Thêm nhân khẩu", true);
         add.setVisible(user.role() == Role.ADMIN);
         add.setManaged(user.role() == Role.ADMIN);
         add.setOnAction(event -> edit(null));
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, value) -> {
-            details.setDisable(value == null);
-            edit.setDisable(value == null || value.resident() == null);
-        });
         getChildren().addAll(Ui.pageHeader("Cư dân", ""),
-                Ui.toolbar(search, find, clear, details, edit, add), table);
+                Ui.toolbar(search, find, clear, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -88,13 +77,15 @@ final class ResidentView extends VBox {
                 ? "" : entry.resident().nationalId()));
         table.getColumns().add(column("Liên hệ", entry -> entry.apartment().contactPhone()));
         table.getColumns().add(column("Tình trạng", entry -> occupancyName(entry.apartment().occupancyStatus())));
-        table.setRowFactory(view -> {
-            var row = new javafx.scene.control.TableRow<ResidentDirectoryEntry>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) showDetails(row.getItem());
-            });
-            return row;
-        });
+        table.getColumns().add(Ui.actionColumn("Thao tác", entry -> {
+            Button details = Ui.button("Chi tiết", false);
+            details.setOnAction(event -> showDetails(entry));
+            if (user.role() != Role.ADMIN || entry.resident() == null) return new HBox(details);
+            Button edit = Ui.button("Sửa", false);
+            edit.setOnAction(event -> edit(entry));
+            return new HBox(8, details, edit);
+        }));
+        table.setSelectionModel(null);
     }
 
     private void load() {
@@ -103,11 +94,6 @@ final class ResidentView extends VBox {
         } catch (SQLException exception) {
             Ui.error("Không tải được hồ sơ cư dân", exception);
         }
-    }
-
-    private void editSelected() {
-        ResidentDirectoryEntry selected = table.getSelectionModel().getSelectedItem();
-        if (selected != null && selected.resident() != null) edit(selected);
     }
 
     private void edit(ResidentDirectoryEntry selected) {
@@ -215,11 +201,6 @@ final class ResidentView extends VBox {
         load();
     }
 
-    private void showDetails() {
-        ResidentDirectoryEntry selected = table.getSelectionModel().getSelectedItem();
-        if (selected != null) showDetails(selected);
-    }
-
     private void showDetails(ResidentDirectoryEntry selected) {
         try {
             Apartment apartment = selected.apartment();
@@ -227,6 +208,7 @@ final class ResidentView extends VBox {
             TableView<Resident> members = new TableView<>();
             members.setPlaceholder(new Label("Chưa có nhân khẩu trong căn hộ này."));
             members.setPrefHeight(210);
+            members.setSelectionModel(null);
             members.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
             members.getColumns().add(column("Họ tên", Resident::fullName));
             members.getColumns().add(column("Giới tính", resident -> resident.gender() == Gender.MALE ? "Nam" : "Nữ"));

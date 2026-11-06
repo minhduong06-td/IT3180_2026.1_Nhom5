@@ -16,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -39,16 +40,11 @@ final class VehicleView extends VBox {
         getStyleClass().add("page");
         Button add = Ui.button("Đăng ký phương tiện", true);
         add.setOnAction(event -> register());
-        Button deactivate = Ui.button("Ngừng đăng ký", false);
-        deactivate.setDisable(true);
-        deactivate.setOnAction(event -> deactivateSelected());
         Button refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
         search.setOnAction(event -> load());
-        getChildren().addAll(Ui.pageHeader("Phương tiện", "Thay đổi này chỉ ảnh hưởng các kỳ thu chưa phát hành."),
-                Ui.toolbar(search, refresh, deactivate, add), table);
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldVehicle, vehicle) ->
-                deactivate.setDisable(vehicle == null || !vehicle.active()));
+        getChildren().addAll(Ui.pageHeader("Phương tiện", ""),
+                Ui.toolbar(search, refresh, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -62,6 +58,13 @@ final class VehicleView extends VBox {
         table.getColumns().add(column("Căn hộ", Vehicle::apartmentCode));
         table.getColumns().add(column("Chủ hộ", Vehicle::householdName));
         table.getColumns().add(column("Trạng thái", vehicle -> vehicle.active() ? "Đang đăng ký" : "Đã ngừng"));
+        table.getColumns().add(Ui.actionColumn("Thao tác", vehicle -> {
+            Button deactivate = Ui.button("Ngừng", false);
+            deactivate.setDisable(!vehicle.active());
+            deactivate.setOnAction(event -> deactivate(vehicle));
+            return new HBox(deactivate);
+        }));
+        table.setSelectionModel(null);
     }
 
     private void load() {
@@ -141,9 +144,8 @@ final class VehicleView extends VBox {
         load();
     }
 
-    private void deactivateSelected() {
-        Vehicle vehicle = table.getSelectionModel().getSelectedItem();
-        if (vehicle == null || !vehicle.active()) return;
+    private void deactivate(Vehicle vehicle) {
+        if (!vehicle.active()) return;
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
                 "Ngừng tính phí phương tiện này từ các kỳ thu được phát hành sau đó?",
                 ButtonType.OK, ButtonType.CANCEL);

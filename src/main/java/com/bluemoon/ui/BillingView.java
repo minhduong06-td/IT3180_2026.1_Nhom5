@@ -13,8 +13,8 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -42,17 +42,10 @@ final class BillingView extends VBox {
         getStyleClass().add("page");
         var create = Ui.button("Phát hành kỳ thu", true);
         create.setOnAction(event -> issue());
-        var details = Ui.button("Xem bảng kê", false);
-        details.setOnAction(event -> {
-            BillingPeriod selected = table.getSelectionModel().getSelectedItem();
-            if (selected == null) Ui.info("Chọn kỳ thu", "Chọn một kỳ để mở bảng kê.");
-            else viewCharges.accept(selected.id());
-        });
         var refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
-        getChildren().addAll(Ui.pageHeader("Kỳ thu", "Phát hành mỗi tháng một lần. Các khoản đã tạo không thể phát hành trùng."),
-                Ui.toolbar(Ui.label("Phí và diện tích được chụp lại tại thời điểm phát hành.", "muted"),
-                        refresh, details, create), table);
+        getChildren().addAll(Ui.pageHeader("Kỳ thu", ""),
+                Ui.toolbar(refresh, create), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -66,13 +59,12 @@ final class BillingView extends VBox {
         table.getColumns().add(column("Hạn nộp", period -> Ui.date(period.dueDate())));
         table.getColumns().add(column("Số khoản", period -> Integer.toString(period.chargeCount())));
         table.getColumns().add(column("Tổng phải thu", period -> Ui.money(period.totalAmount())));
-        table.setRowFactory(view -> {
-            TableRow<BillingPeriod> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) viewCharges.accept(row.getItem().id());
-            });
-            return row;
-        });
+        table.getColumns().add(Ui.actionColumn("Thao tác", period -> {
+            Button details = Ui.button("Bảng kê", false);
+            details.setOnAction(event -> viewCharges.accept(period.id()));
+            return new HBox(details);
+        }));
+        table.setSelectionModel(null);
     }
 
     private void load() {
