@@ -38,8 +38,18 @@ Khi tạo volume mới, Docker nạp cấu trúc bảng và dữ liệu khởi t
 |---|---|---|
 | Ban quản trị | `admin` | `admin123` |
 | Kế toán | `accountant` | `accountant123` |
+| Người dùng căn hộ A101 | `resident` | `resident123` |
 
-Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Ứng dụng vẫn chạy được với database rỗng: tạo database MySQL riêng và đặt các biến kết nối bên dưới. Java tự tạo bảng và yêu cầu tạo quản trị đầu tiên nếu chưa có tài khoản.
+Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Tài khoản `resident` chỉ xem được căn hộ A101, nhân khẩu trong hộ, bảng kê/công nợ/lịch sử thu của hộ và gửi yêu cầu mới; không thấy màn hình quản trị, tài khoản hay dữ liệu các hộ khác.
+
+Nếu đã có volume cũ trước khi thêm vai trò `RESIDENT`, cần sao lưu dữ liệu rồi chạy một lần sau để Docker nạp lại schema và seed:
+
+```powershell
+docker compose down -v
+docker compose up -d
+```
+
+Lệnh `down -v` xóa dữ liệu trong volume hiện tại. Với database cần giữ dữ liệu, hãy nâng cấp cột `app_users.role` và thêm `app_users.apartment_id` thủ công thay vì dùng lệnh trên. Ứng dụng vẫn chạy được với database rỗng: tạo database MySQL riêng và đặt các biến kết nối bên dưới. Java tự tạo bảng và yêu cầu tạo quản trị đầu tiên nếu chưa có tài khoản.
 
 ### Bắt đầu sử dụng
 
@@ -48,8 +58,9 @@ Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Ứ
 3. Tạo tài khoản kế toán, nhập hóa đơn tiện ích nếu có.
 4. Phát hành kỳ thu và kiểm tra bảng kê.
 5. Kế toán ghi nhận thanh toán, đối chiếu công nợ và lịch sử thu.
+6. Người dùng đăng nhập để kiểm tra thông tin hộ, khoản phải thu của mình và gửi yêu cầu cư dân.
 
-Ban quản trị thiết lập và phát hành kỳ; kế toán thu tiền cho khoản phải thu. Cả hai vai trò được xem tổng quan, tự đổi mật khẩu và ghi nhận đóng góp tự nguyện.
+Ban quản trị thiết lập và phát hành kỳ; kế toán thu tiền cho khoản phải thu. Ban quản trị và kế toán xem dữ liệu nghiệp vụ theo quyền; người dùng chỉ xem dữ liệu của căn hộ được gắn với tài khoản. Mọi vai trò đều có thể xem tổng quan và tự đổi mật khẩu; chỉ Ban quản trị/kế toán được ghi nhận đóng góp.
 
 ## Cấu hình
 

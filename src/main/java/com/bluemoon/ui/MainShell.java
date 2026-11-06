@@ -2,6 +2,7 @@ package com.bluemoon.ui;
 
 import com.bluemoon.model.Domain.AppUser;
 import com.bluemoon.model.Domain.Role;
+import com.bluemoon.model.RoleLabels;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
@@ -59,9 +60,13 @@ final class MainShell extends BorderPane {
             addNavigation("Đóng góp", () -> new ContributionView(services, user));
             addNavigation("Tài khoản", () -> new AccountView(services, user));
             addNavigation("Kỳ thu", () -> new BillingView(services, user, this::showCharges));
-        } else {
+        } else if (user.role() == Role.ACCOUNTANT) {
             addNavigation("Cư dân", () -> new ResidentView(services, user));
             addNavigation("Đóng góp", () -> new ContributionView(services, user));
+        } else {
+            addNavigation("Căn hộ của tôi", () -> new ApartmentView(services, user));
+            addNavigation("Cư dân trong hộ", () -> new ResidentView(services, user));
+            addNavigation("Yêu cầu cư dân", () -> new ResidentRequestView(services, user));
         }
         addNavigation("Công nợ", () -> new DebtView(services, user));
         addNavigation("Bảng kê phải thu", () -> new ChargesView(services, user));
@@ -72,7 +77,7 @@ final class MainShell extends BorderPane {
         navScroll.getStyleClass().add("sidebar-scroll");
         VBox.setVgrow(navScroll, Priority.ALWAYS);
         VBox account = new VBox(5, Ui.label(user.displayName(), ""),
-                Ui.label(user.role() == Role.ADMIN ? "Ban quản trị" : "Kế toán", "sidebar-role"));
+                Ui.label(RoleLabels.displayName(user.role()), "sidebar-role"));
         account.getStyleClass().add("sidebar-user");
         sidebar.getChildren().addAll(navScroll, account);
         return sidebar;

@@ -63,9 +63,27 @@ final class LoginView extends StackPane {
         username.setOnAction(event -> password.requestFocus());
         password.setOnAction(event -> signIn(username.getText(), password.getText(), error));
 
+        HBox demoAccounts = new HBox(8);
+        demoAccounts.getStyleClass().add("demo-accounts");
+        Label demoLabel = new Label("Dùng nhanh");
+        demoLabel.getStyleClass().add("muted");
+        var adminDemo = Ui.button("Ban quản trị", false);
+        var accountantDemo = Ui.button("Kế toán", false);
+        var residentDemo = Ui.button("Người dùng", false);
+        adminDemo.setOnAction(event -> fillDemo(username, password, "admin", "admin123"));
+        accountantDemo.setOnAction(event -> fillDemo(username, password, "accountant", "accountant123"));
+        residentDemo.setOnAction(event -> fillDemo(username, password, "resident", "resident123"));
+        demoAccounts.getChildren().addAll(demoLabel, adminDemo, accountantDemo, residentDemo);
+
         panel.getChildren().addAll(logo, title, usernameLabel, username,
-                passwordLabel, password, error, submit);
+                passwordLabel, password, demoAccounts, error, submit);
         return panel;
+    }
+
+    private static void fillDemo(TextField username, PasswordField password, String demoUsername, String demoPassword) {
+        username.setText(demoUsername);
+        password.setText(demoPassword);
+        password.requestFocus();
     }
 
     private void signIn(String username, String password, Label error) {
