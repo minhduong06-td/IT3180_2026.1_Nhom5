@@ -13,6 +13,7 @@ VALUES
     ('accountant', '$2a$10$zBuNJQo8bdNgn5A8qZApaexDXi9CxM01bY943w3/ZLy8YAVFZFN7G', 'Lê Thu Ngân', 'ACCOUNTANT', NULL),
     ('resident', '$2a$10$Vgtp/jmFwlRZsuxvkwO1PepcgQB8LsSa3Ss98bGa47OVEnjoEBpny', 'Nguyễn Minh An', 'RESIDENT', NULL)
 ON DUPLICATE KEY UPDATE
+    password_hash = VALUES(password_hash),
     display_name = VALUES(display_name),
     role = VALUES(role),
     apartment_id = VALUES(apartment_id),

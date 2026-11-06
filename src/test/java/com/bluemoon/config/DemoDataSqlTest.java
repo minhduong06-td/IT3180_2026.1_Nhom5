@@ -45,4 +45,12 @@ class DemoDataSqlTest {
         org.junit.jupiter.api.Assertions.assertFalse(sql.contains("'coquan'"), "Không được seed tài khoản coquan");
         org.junit.jupiter.api.Assertions.assertFalse(sql.contains("AUTHORITY"), "Không được seed role Authority trong bản demo này");
     }
+
+    @Test
+    void demoAccountUpsertRefreshesAStalePasswordHash() throws IOException {
+        String sql = Files.readString(DEMO_DATA);
+
+        assertTrue(sql.contains("password_hash = VALUES(password_hash)"),
+                "Seed phải sửa lại hash cũ hoặc hỏng khi tài khoản demo đã tồn tại");
+    }
 }
