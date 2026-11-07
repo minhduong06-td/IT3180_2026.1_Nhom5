@@ -31,6 +31,7 @@ public final class DatabaseBootstrap {
             }
             ensureApartmentProfile(connection);
             ensureFeeCalculationBasis(connection);
+            ensureFeeProfile(connection);
             ensurePaymentProfile(connection);
             seedInitialData(connection);
         }
@@ -74,6 +75,14 @@ public final class DatabaseBootstrap {
             try (Statement statement = connection.createStatement()) {
                 statement.executeUpdate("ALTER TABLE charges MODIFY calculation_basis_snapshot "
                         + "ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL') NOT NULL");
+            }
+        }
+    }
+
+    private static void ensureFeeProfile(Connection connection) throws SQLException {
+        if (!hasColumn(connection, "fee_types", "active")) {
+            try (Statement statement = connection.createStatement()) {
+                statement.executeUpdate("ALTER TABLE fee_types ADD COLUMN active BOOLEAN NOT NULL DEFAULT TRUE");
             }
         }
     }
@@ -170,6 +179,7 @@ public final class DatabaseBootstrap {
             seedUsers(connection);
             seedLoginState(connection);
             seedApartments(connection);
+            seedResidents(connection);
             seedFees(connection);
             connection.commit();
         } catch (SQLException | RuntimeException exception) {
@@ -209,9 +219,14 @@ public final class DatabaseBootstrap {
         try (PreparedStatement insert = connection.prepareStatement(
                 "INSERT INTO apartments(code, household_code, area_m2, household_name, contact_phone, move_in_date, occupancy_status) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?)")) {
-            addApartment(insert, "A101", "HK-000101", "65.00", "Nguyễn Minh An", "0900000101");
-            addApartment(insert, "A102", "HK-000102", "78.50", "Trần Gia Bảo", "0900000102");
-            addApartment(insert, "A103", "HK-000103", "92.00", "Lê Thu Hà", "0900000103");
+            addApartment(insert, "A101", "HK-000101", "48.00", "Nguyễn Minh An", "0900000101");
+            addApartment(insert, "A102", "HK-000102", "52.50", "Trần Gia Bảo", "0900000102");
+            addApartment(insert, "A103", "HK-000103", "65.00", "Lê Thu Hà", "0900000103");
+            addApartment(insert, "A104", "HK-000104", "70.00", "Phạm Quốc Huy", "0900000104");
+            addApartment(insert, "A105", "HK-000105", "78.50", "Đỗ Mai Anh", "0900000105");
+            addApartment(insert, "A106", "HK-000106", "86.25", "Vũ Hoàng Nam", "0900000106");
+            addApartment(insert, "A107", "HK-000107", "92.00", "Nguyễn Lan Chi", "0900000107");
+            addApartment(insert, "A108", "HK-000108", "105.50", "Bùi Đức Long", "0900000108");
         }
     }
 
@@ -227,6 +242,53 @@ public final class DatabaseBootstrap {
         insert.executeUpdate();
     }
 
+    private static void seedResidents(Connection connection) throws SQLException {
+        if (count(connection, "residents") != 0) return;
+        try (PreparedStatement insert = connection.prepareStatement(
+                "INSERT INTO residents(apartment_id, full_name, date_of_birth, gender, national_id, relationship, move_in_date) "
+                        + "SELECT id, ?, ?, ?, ?, ?, ? FROM apartments WHERE code = ?")) {
+            addResident(insert, "Nguyễn Minh An", "1985-03-12", "MALE", "001085000101", "HEAD", "2021-08-01", "A101");
+            addResident(insert, "Phạm Ngọc Mai", "1987-09-24", "FEMALE", "001087000102", "WIFE", "2021-08-01", "A101");
+            addResident(insert, "Nguyễn Minh Khôi", "2015-06-18", "MALE", "015115000103", "CHILD", "2021-08-01", "A101");
+
+            addResident(insert, "Trần Gia Bảo", "1979-01-30", "MALE", "001079000201", "HEAD", "2022-02-15", "A102");
+            addResident(insert, "Lê Thanh Hương", "1982-11-07", "FEMALE", "001082000202", "WIFE", "2022-02-15", "A102");
+
+            addResident(insert, "Lê Thu Hà", "1990-04-22", "FEMALE", "001090000301", "HEAD", "2022-05-20", "A103");
+            addResident(insert, "Lê Minh Quân", "1960-12-03", "MALE", "001060000302", "PARENT", "2022-05-20", "A103");
+
+            addResident(insert, "Phạm Quốc Huy", "1988-07-11", "MALE", "001088000401", "HEAD", "2023-01-10", "A104");
+            addResident(insert, "Đặng Ngọc Linh", "1991-02-16", "FEMALE", "001091000402", "WIFE", "2023-01-10", "A104");
+            addResident(insert, "Phạm Gia Minh", "2018-10-29", "MALE", "018118000403", "CHILD", "2023-01-10", "A104");
+
+            addResident(insert, "Đỗ Mai Anh", "1986-05-09", "FEMALE", "001086000501", "HEAD", "2021-11-03", "A105");
+            addResident(insert, "Đỗ Khánh Ngân", "2012-08-21", "FEMALE", "012112000502", "CHILD", "2021-11-03", "A105");
+
+            addResident(insert, "Vũ Hoàng Nam", "1983-10-14", "MALE", "001083000601", "HEAD", "2024-03-12", "A106");
+            addResident(insert, "Nguyễn Hải Yến", "1985-08-05", "FEMALE", "001085000602", "WIFE", "2024-03-12", "A106");
+
+            addResident(insert, "Nguyễn Lan Chi", "1994-06-27", "FEMALE", "001094000701", "HEAD", "2024-06-01", "A107");
+            addResident(insert, "Nguyễn Văn Lâm", "1965-03-15", "MALE", "001065000702", "PARENT", "2024-06-01", "A107");
+            addResident(insert, "Bùi Đức Long", "1976-09-19", "MALE", "001076000801", "HEAD", "2022-09-18", "A108");
+            addResident(insert, "Bùi Đức Anh", "2004-01-08", "MALE", "004104000802", "TENANT", "2024-09-01", "A108");
+        }
+    }
+
+    private static void addResident(PreparedStatement insert, String fullName, String dateOfBirth,
+                                    String gender, String nationalId, String relationship,
+                                    String moveInDate, String apartmentCode) throws SQLException {
+        insert.setString(1, fullName);
+        insert.setDate(2, java.sql.Date.valueOf(dateOfBirth));
+        insert.setString(3, gender);
+        insert.setString(4, nationalId);
+        insert.setString(5, relationship);
+        insert.setDate(6, java.sql.Date.valueOf(moveInDate));
+        insert.setString(7, apartmentCode);
+        if (insert.executeUpdate() != 1) {
+            throw new SQLException("Không tìm thấy căn hộ mẫu " + apartmentCode + " khi tạo nhân khẩu mẫu.");
+        }
+    }
+
     private static void seedFees(Connection connection) throws SQLException {
         boolean missingDefaults = !hasFeeCode(connection, "SERVICE") || !hasFeeCode(connection, "MANAGEMENT")
                 || !hasFeeCode(connection, "SANITATION") || !hasFeeCode(connection, "MOTORCYCLE_PARKING")
@@ -234,11 +296,11 @@ public final class DatabaseBootstrap {
                 || !hasFeeCode(connection, "UTILITY_WATER") || !hasFeeCode(connection, "UTILITY_INTERNET");
         if (!missingDefaults) return;
         long adminId = findAdminId(connection);
-        if (!hasFeeCode(connection, "SERVICE")) addFee(connection, "SERVICE", "Phí dịch vụ", "10000", "PER_M2", adminId);
-        if (!hasFeeCode(connection, "MANAGEMENT")) addFee(connection, "MANAGEMENT", "Phí quản lý", "7000", "PER_M2", adminId);
-        if (!hasFeeCode(connection, "SANITATION")) addFee(connection, "SANITATION", "Phí vệ sinh", "6000", "PER_RESIDENT", adminId);
-        if (!hasFeeCode(connection, "MOTORCYCLE_PARKING")) addFee(connection, "MOTORCYCLE_PARKING", "Phí gửi xe máy", "70000", "PER_MOTORCYCLE", adminId);
-        if (!hasFeeCode(connection, "CAR_PARKING")) addFee(connection, "CAR_PARKING", "Phí gửi ô tô", "1200000", "PER_CAR", adminId);
+        if (!hasFeeCode(connection, "SERVICE")) addFee(connection, "SERVICE", "Phí dịch vụ", true, "10000", "PER_M2", adminId);
+        if (!hasFeeCode(connection, "MANAGEMENT")) addFee(connection, "MANAGEMENT", "Phí quản lý", true, "7000", "PER_M2", adminId);
+        if (!hasFeeCode(connection, "SANITATION")) addFee(connection, "SANITATION", "Phí vệ sinh", false, "6000", "PER_RESIDENT", adminId);
+        if (!hasFeeCode(connection, "MOTORCYCLE_PARKING")) addFee(connection, "MOTORCYCLE_PARKING", "Phí gửi xe máy", false, "70000", "PER_MOTORCYCLE", adminId);
+        if (!hasFeeCode(connection, "CAR_PARKING")) addFee(connection, "CAR_PARKING", "Phí gửi ô tô", false, "1200000", "PER_CAR", adminId);
         if (!hasFeeCode(connection, "UTILITY_ELECTRICITY")) addExternalFee(connection, "UTILITY_ELECTRICITY", "Tiền điện");
         if (!hasFeeCode(connection, "UTILITY_WATER")) addExternalFee(connection, "UTILITY_WATER", "Tiền nước");
         if (!hasFeeCode(connection, "UTILITY_INTERNET")) addExternalFee(connection, "UTILITY_INTERNET", "Internet");
@@ -253,14 +315,15 @@ public final class DatabaseBootstrap {
         }
     }
 
-    private static long addFee(Connection connection, String code, String name,
+    private static long addFee(Connection connection, String code, String name, boolean active,
                                String unitPrice, String basis, long adminId) throws SQLException {
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO fee_types(code, name, required, calculation_basis) VALUES (?, ?, TRUE, ?)",
+                "INSERT INTO fee_types(code, name, required, calculation_basis, active) VALUES (?, ?, TRUE, ?, ?)",
                 Statement.RETURN_GENERATED_KEYS)) {
             insert.setString(1, code);
             insert.setString(2, name);
             insert.setString(3, basis);
+            insert.setBoolean(4, active);
             insert.executeUpdate();
             long id;
             try (ResultSet keys = insert.getGeneratedKeys()) {
