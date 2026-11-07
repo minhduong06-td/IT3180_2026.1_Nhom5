@@ -39,7 +39,7 @@ Quyền được kiểm tra tại service, đồng thời giao diện chỉ hi�
 | CSV | Xuất các dòng của bảng đang hiển thị. Tệp UTF-8 có BOM và dòng `sep=,` để hỗ trợ Excel; số tiền lưu dạng số không kèm ký hiệu tiền. Có xác nhận trước khi ghi đè. |
 | Tài khoản | Tên tài khoản nội bộ 3-64 ký tự, tên hiển thị 2-120 ký tự; tài khoản mới phải có email hoặc số điện thoại duy nhất để đăng nhập và khôi phục. Email được chuẩn hóa chữ thường, số điện thoại Việt Nam được chuẩn hóa về dạng 10 số. Mật khẩu ít nhất 8 ký tự và không quá 72 byte UTF-8; lưu bằng BCrypt. Đổi mật khẩu cần mật khẩu cũ đúng, xác nhận khớp và mật khẩu mới khác mật khẩu cũ; quên mật khẩu chỉ tra cứu bằng email/số điện thoại đã đăng ký. |
 
-Tên ở trường `apartments.household_name` được nhập dưới nhãn Người liên hệ nhưng cũng xuất hiện dưới nhãn Chủ hộ trên các bảng tài chính. Khi lưu nhân khẩu là chủ hộ, hệ thống ghi tên này sang căn hộ; sửa căn hộ độc lập có thể làm hai nguồn tên lệch nhau. Đây là R-05, cần thống nhất mô hình và nhãn trước khi nghiệm thu.
+Trường `apartments.household_name` được nhập dưới nhãn Người liên hệ nhưng cũng xuất hiện dưới nhãn Chủ hộ trên các bảng tài chính. Khi lưu nhân khẩu là chủ hộ, hệ thống ghi tên này sang căn hộ; sửa căn hộ độc lập có thể làm hai nguồn tên lệch nhau. Đây là R-05, cần thống nhất mô hình và nhãn trước khi nghiệm thu.
 
 ## Tính phí
 
@@ -58,37 +58,37 @@ Phí định kỳ được làm tròn đến đồng bằng `HALF_UP`. Phí theo
 
 Khi phát hành, code chọn các căn có `active=TRUE` và các khoản thu có `active=TRUE`, `required=TRUE`. Cờ này độc lập với tình trạng căn hộ trống/đang ở/cho thuê. Hóa đơn tiện ích đã nhập cho tháng đó vẫn được đưa vào kỳ, kể cả khi các khoản phí định kỳ khác bị tắt.
 
-### Ngày chốt đơn giá - yêu cầu còn phải sửa (R-03)
+### Ngày chốt đơn giá (R-03)
 
 Yêu cầu nghiệp vụ được giữ là: **lấy đơn giá có hiệu lực tại ngày 01 của tháng kỳ thu**, chọn bản ghi có ngày hiệu lực gần nhất nhưng không sau ngày đầu kỳ.
 
-Code hiện tại trong `AppRepository.issuePeriod()` lại lấy mốc `issueDate` (ngày phát hành). Ví dụ phí dịch vụ 10.000 đồng/m² từ 01/01/2026, tăng lên 12.000 đồng/m² từ 15/10/2026, phát hành kỳ 10 vào 20/10:
+Mốc chọn giá nằm trong `AppRepository.issuePeriod()`. Ví dụ phí dịch vụ 10.000 đồng/m² từ 01/01/2026, tăng lên 12.000 đồng/m² từ 15/10/2026, phát hành kỳ 10 vào 20/10:
 
 | Trường hợp A101, 48 m² | Phí dịch vụ |
 |---|---:|
 | Theo yêu cầu ngày đầu kỳ | 480.000 đồng |
-| Code hiện tại dùng ngày phát hành | 576.000 đồng |
+| Nếu lấy theo ngày phát hành | 576.000 đồng |
 
-Không dùng hành vi hiện tại làm kết quả đạt cho quy tắc đầu kỳ. Cần sửa truy vấn chọn giá và expected của test tích hợp cùng lúc. Bộ dữ liệu không có thay đổi giá giữa tháng sẽ không phát hiện được điểm lệch này.
+Không lấy kết quả theo ngày phát hành làm kết quả đạt cho quy tắc đầu kỳ. Truy vấn chọn giá và expected của test tích hợp phải sửa cùng lúc. Bộ dữ liệu không có thay đổi giá giữa tháng sẽ không phát hiện được điểm lệch này.
 
 ### Dữ liệu được giữ sau phát hành
 
-Cách tính, số lượng, đơn giá và số tiền của từng khoản không bị tính lại khi sửa hồ sơ hoặc thêm đơn giá. Chỉ số lượng liên quan đến cách tính của khoản đó được lưu trong `quantity_snapshot`, không phải một bản chụp đầy đủ mọi trường của hộ. Mã căn và tên hộ chưa được snapshot nên chứng từ in lại có thể đổi thông tin nhận diện theo hồ sơ mới (R-04).
+Cách tính, số lượng, đơn giá và số tiền của từng khoản không bị tính lại khi sửa hồ sơ hoặc thêm đơn giá. Chỉ số lượng liên quan đến cách tính của khoản đó được lưu trong `quantity_snapshot`, không phải một bản chụp đầy đủ mọi trường của hộ. Mã căn và tên hộ không nằm trong snapshot nên chứng từ in lại lấy thông tin nhận diện theo hồ sơ tại thời điểm đọc (R-04).
 
 ## Thu tiền, công nợ và nộp dư
 
 1. Chọn một khoản phải thu còn nợ trong Bảng kê phải thu, đăng nhập bằng tài khoản kế toán.
 2. Nhập người nộp, ngày thu, số tiền nhận, hình thức và thông tin đối chiếu.
 3. Số cấn vào khoản thu bằng `min(số tiền nhận, số còn nợ)`. Phần còn lại lưu thành số dư nộp trước của căn hộ.
-4. Có thể thu nhiều lần cho một khoản. Khoản đã đủ tiền không nhận thêm phiếu thu; hiện chưa có màn hình nộp trước độc lập.
+4. Có thể thu nhiều lần cho một khoản. Khoản đã đủ tiền không nhận thêm phiếu thu; chưa có màn hình nộp trước độc lập.
 5. Số đã thanh toán của khoản gồm phần cấn từ phiếu thu và phần cấn từ số dư. Trạng thái lần lượt là Chưa thu, Thu một phần hoặc Đã thanh toán.
-6. Số dư được tự động dùng khi phát hành một kỳ có tháng/năm sau kỳ nguồn của phiếu thu. Code xử lý theo thứ tự các khoản và các bản ghi số dư; không tự phân bổ lại sang kỳ đã phát hành trước đó nếu sau này mới thu thêm tiền dư.
-7. Trên màn hình công nợ, số dư nộp trước là số còn lại hiện tại của hộ, kể cả khi đang chọn xem kỳ cũ. Cột Đã thanh toán là số cấn vào kỳ đang chọn, không phải toàn bộ tiền mặt/chuyển khoản đã nhận.
+6. Số dư được tự động dùng khi phát hành một kỳ có tháng/năm sau kỳ nguồn của phiếu thu. Thứ tự xử lý theo danh sách khoản và bản ghi số dư; số dư phát sinh sau không được phân bổ ngược vào kỳ đã phát hành.
+7. Trên màn hình công nợ, số dư nộp trước là số còn lại của hộ tại thời điểm xem, kể cả khi đang chọn kỳ cũ. Cột Đã thanh toán là số cấn vào kỳ đang chọn, không phải toàn bộ tiền mặt/chuyển khoản đã nhận.
 8. Phiếu thu lưu ngày thu do người dùng chọn; thời điểm `paid_at` được ghi ở đầu ngày. Không dùng giờ 00:00 này làm bằng chứng về giờ thực tế nhận tiền.
 
 Ví dụ A102 có phí dịch vụ 525.000 đồng, kế toán nhận 600.000 đồng: cấn 525.000 đồng, lưu dư 75.000 đồng. Phần dư không tự thanh toán khoản phí quản lý cùng kỳ; nó được dùng khi phát hành kỳ sau theo điều kiện trên.
 
-**Chống ghi trùng chưa hoàn thành (R-02):** mã giao dịch hiện là thông tin đối chiếu, chưa phải khóa duy nhất. Gửi lại cùng một khoản thu một phần có thể tạo thêm phiếu. Yêu cầu cần đạt là mỗi yêu cầu thu tiền có mã định danh duy nhất và việc gửi lại không làm tăng tổng đã thu. Mã giao dịch ngân hàng cần có quy tắc duy nhất phù hợp trước khi thêm ràng buộc.
+**Chống ghi trùng (R-02):** mã giao dịch là thông tin đối chiếu, không phải khóa duy nhất. Gửi lại cùng một khoản thu một phần có thể tạo thêm phiếu. Yêu cầu cần đạt là mỗi yêu cầu thu tiền có mã định danh duy nhất và việc gửi lại không làm tăng tổng đã thu. Mã giao dịch ngân hàng cần có quy tắc duy nhất phù hợp trước khi thêm ràng buộc.
 
 ## Quy trình sử dụng
 

@@ -2,7 +2,7 @@
 
 ## Intent
 
-Apply the recent BlueMoon UI and demo-data changes to the JavaFX/MySQL repository,
+Define role-aware behavior for the BlueMoon JavaFX/MySQL desktop client.
 
 ## Goals
 
@@ -17,7 +17,6 @@ Apply the recent BlueMoon UI and demo-data changes to the JavaFX/MySQL repositor
 ## Non-goals
 
 - No new payment gateway, notification channel, or Sprint 2 module.
-- No replacement of the JavaFX application with React.
 - No `AUTHORITY`/`coquan` account.
 
 ## Implementation approach

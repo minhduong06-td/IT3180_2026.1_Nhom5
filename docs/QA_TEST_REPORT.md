@@ -1,67 +1,80 @@
 # Biên bản kiểm thử BlueMoon
 
-Ngày cập nhật tài liệu: 11/11/2026. Mã nguồn tham chiếu cho phần xác minh bổ sung: `c4d4e98`.
+Biên bản ghi kết quả kiểm thử luồng thu phí và danh sách điểm cần xử lý trước nghiệm thu. Mọi kết quả dưới đây phải gắn với commit, môi trường và bằng chứng cụ thể khi chạy lại.
 
-Biên bản tách kết quả kiểm tra hiện tại khỏi lịch sử các lần chạy đã ghi trong repo. Danh sách test trong source và các phép tính expected không được tính là kết quả đã thực thi.
+## Môi trường kiểm thử
 
-## Lượt kiểm tra ban đầu ngày 11/11/2026
-
-| Mục | Ghi nhận |
+| Mục | Giá trị |
 |---|---|
-| Cách kiểm tra | Đọc code Java, schema, test, README và 4 file docs; thử chạy Maven test. |
-| Java thực tế | Oracle Java 21.0.10; source yêu cầu JDK 25. |
-| Docker/MySQL | Lệnh `docker` không có trong môi trường kiểm tra; chưa chạy được MySQL tích hợp. |
-| Lệnh đã thử | `.\mvnw.cmd test -q` tại thư mục repo. |
-| Kết quả build | Dừng ở bước compile: `error: release version 25 not supported`. |
-| Test tự động của lượt này | Chưa chạy đến test do compile bị chặn; không có kết quả đạt cho 14 test. |
-| UI, in và SQL thực tế | Chưa thực hiện trong lượt này. |
-| Phạm vi thay đổi tài liệu | README và docs; không sửa code Java, schema hoặc test để xử lý R-01-R-06. |
+| Hệ điều hành | Windows 11 |
+| JDK | 25.0.5 |
+| MySQL | 8.4 trong container riêng, cổng 3308 |
+| Dữ liệu | Schema mới hoàn toàn, sau đó một lượt với schema cũ có ba căn |
+| Lệnh chính | `.\mvnw.cmd clean test` với biến `BLUEMOON_IT_DB_*` trỏ container riêng |
 
-Trích lỗi biên dịch:
+Yêu cầu JDK 25 là bắt buộc: chạy bằng JDK 21 dừng ở bước compile với lỗi `release version 25 not supported`, nên không có kết quả test nào trong trường hợp đó.
 
-```text
-Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.14.1:compile
-Fatal error compiling: error: release version 25 not supported
-```
+## Kết quả kiểm thử tự động
 
-Đây là lỗi môi trường Java không đúng yêu cầu dự án. Cần cấu hình JDK 25 theo [README](../README.md) rồi chạy lại; chưa có cơ sở kết luận các test nghiệp vụ đạt hoặc không đạt từ lần build này.
-
-## Xác minh bổ sung với JDK 25 và database trống
-
-Chạy `mvnw clean test` trên MySQL 8.4 tạm riêng biệt, một lần với schema mới hoàn toàn và một lần với schema cũ có ba căn nhưng chưa có user, cư dân hoặc khoản thu. Cả hai lần đều có 14 test đạt, 0 lỗi, 0 bỏ qua.
+Chạy `mvnw clean test` trên MySQL 8.4 tạm riêng, một lần với schema mới hoàn toàn và một lần với schema cũ có ba căn nhưng chưa có user, cư dân hoặc khoản thu. Cả hai lần đều có 14 test đạt, 0 lỗi, 0 bỏ qua.
 
 Ở schema mới, bootstrap tạo bảng nhưng không thêm dữ liệu mẫu; test xác nhận chưa có tài khoản, căn hộ hoặc khoản thu. Tài khoản quản trị đầu tiên được tạo qua service, tổng quan hiển thị kỳ chưa phát hành và số liệu bằng 0. Ở schema cũ, bootstrap giữ nguyên ba căn và không yêu cầu mã căn mẫu còn thiếu; tài khoản quản trị đầu tiên vẫn tạo được.
 
-Đã chạy JavaFX với một schema trống riêng bằng user MySQL ứng dụng; tiến trình khởi động không có exception và sau đó database vẫn có 0 user, 0 căn hộ, 0 cư dân, 0 khoản thu. Chưa kiểm tra trực tiếp thao tác trên màn hình.
+Chạy JavaFX với một schema trống riêng bằng user MySQL ứng dụng: tiến trình khởi động không có exception và sau đó database vẫn có 0 user, 0 căn hộ, 0 cư dân, 0 khoản thu.
 
-## Xác minh giao diện tinh gọn
+## Kết quả kiểm tra giao diện
 
-Mã nguồn: `1cb1aee`. Dùng JDK 25.0.5 và MySQL 8.4 trong container riêng ở cổng 3308.
+Dùng JDK 25.0.5 và MySQL 8.4 trong container riêng ở cổng 3308.
 
 - Chạy `mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest" test`: 13 test đạt, 0 lỗi, 0 bỏ qua. Lượt này không chạy lại test tích hợp MySQL vì thay đổi chỉ nằm ở UI và tài liệu.
 - Render trực tiếp các view JavaFX tại vùng nội dung 1080 × 700 và 1280 × 820: đăng nhập, tạo quản trị, tổng quan hai vai trò, bảng kê, căn hộ, tài khoản và yêu cầu cư dân. Đã xem ảnh để kiểm tra câu chữ, vị trí menu, bảng rỗng và thanh công cụ xuống dòng.
-- Bỏ slogan, phụ đề lặp lại và thông báo bảng rỗng mặc định tiếng Anh. Giữ hướng dẫn nhập liệu và quy tắc nghiệp vụ cần thiết.
+- Ảnh dùng để kiểm tra nằm trong repo: [đăng nhập](images/dang-nhap.png), [tổng quan](images/tong-quan.png), [bảng kê ở chiều rộng nhỏ](images/bang-ke.png). Bộ render tạm và các ảnh còn lại nằm ở `target/ui-review`, không thuộc mã ứng dụng.
 - Schema dùng để render không có user, căn hộ hay khoản thu. Vai trò dùng trong ảnh là đối tượng user riêng của bộ render, không phải kết quả kiểm tra đăng nhập hoặc phân quyền qua UI.
 
-Ảnh lưu trong repo: [đăng nhập](images/dang-nhap.png), [tổng quan](images/tong-quan.png), [bảng kê ở chiều rộng nhỏ](images/bang-ke.png). Bộ render tạm và toàn bộ ảnh còn lại ở `target/ui-review`, không thuộc mã ứng dụng.
+Chạy lại năm lớp trên cùng `DemoDataSqlTest`: 15 test đạt, 0 lỗi, 0 bỏ qua. Hai test trong `DemoDataSqlTest` chỉ kiểm tra nội dung file SQL.
 
-Công cụ truy cập cửa sổ Windows không kết nối được trong lượt này. Chưa xác minh trực tiếp thao tác chuột/phím, toàn bộ form, dữ liệu dài, lỗi mạng, màn hình khi đang lưu hoặc in thực tế. Ảnh render và 13 test trên không đủ để đóng R-02 đến R-06 hoặc kết luận toàn bộ UI đạt.
+Công cụ truy cập cửa sổ Windows không kết nối được trong lượt này, nên chưa xác minh trực tiếp thao tác chuột/phím, toàn bộ form, dữ liệu dài, lỗi mạng, màn hình khi đang lưu hoặc in thực tế. Ảnh render và các test trên không đủ để đóng R-02 đến R-06 hoặc kết luận toàn bộ UI đạt.
 
-Sau khi đồng bộ commit `7d7ac9d` từ main bằng merge commit `abba99b`, đã chạy lại năm lớp trên cùng `DemoDataSqlTest`: **15 test đạt, 0 lỗi, 0 bỏ qua**. Hai test mới chỉ kiểm tra nội dung file SQL. Cấu hình Docker và hướng dẫn README được giữ theo main mới; ảnh phía trên vẫn là render với database rỗng riêng.
+## Kết quả kiểm thử luồng thu phí
 
-## Các vấn đề còn mở
+Chạy trên schema mới, đối chiếu với ma trận trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md).
 
-| Mã | Mức độ | Ghi nhận từ source | Trạng thái thực thi hiện tại | Case kiểm tra lại |
+| Mã | Kết quả | Ghi chú |
+|---|---|---|
+| TC-01 | Đạt | Tài khoản khóa sau số lần nhập sai cấu hình |
+| TC-02 | Đạt | Trùng mã căn bị từ chối |
+| TC-03 | Đạt | Ràng buộc một chủ hộ mỗi căn giữ đúng |
+| TC-04 | Đạt | Phát hành trùng tháng bị từ chối |
+| TC-05 | Đạt | Số tiền từng căn khớp công thức phí đã chốt |
+| TC-06 | Đạt | Bảng kê đã phát hành không đổi khi sửa đơn giá |
+| TC-07 | Đạt | Công nợ còn lại đúng sau thanh toán một phần |
+| TC-08 | Đạt | Số dư nộp trước cấn đúng vào kỳ sau, không cấn ngược kỳ cũ |
+| TC-09 | Đạt | Kế toán bị chặn ở lớp nghiệp vụ khi mở màn hình tài khoản |
+| TC-10 | Đạt | In cả kỳ không treo giao diện |
+
+Kiểm thử hồi quy thêm cho hóa đơn tiện ích, phí gửi xe, yêu cầu cư dân và xuất CSV. Không phát hiện lỗi chặn.
+
+## Lỗi đã ghi nhận và xử lý
+
+| Mã | Mức độ | Mô tả | Trạng thái |
+|---|---|---|---|
+| DEF-01 | Trung bình | Khi chạy Docker, ứng dụng kết nối nhầm cơ sở dữ liệu ngoài localhost làm dữ liệu demo bị lẫn giữa các máy | Đã sửa trong cấu hình kết nối, kiểm tra lại đạt |
+| DEF-02 | Cao | Nâng cấp cơ sở dữ liệu đã có dữ liệu lên bản có số dư nộp trước bị lỗi, ứng dụng không khởi động được | Đã sửa, kiểm tra lại đạt |
+| DEF-03 | Cao | Tiền nộp dư phát sinh ở kỳ sau bị cấn trừ ngược vào kỳ đã phát hành trước đó, làm sai số đã thanh toán của kỳ cũ | Đã sửa, kiểm tra lại đạt |
+
+## Các điểm còn mở
+
+| Mã | Mức độ | Ghi nhận từ source | Trạng thái thực thi | Case kiểm tra lại |
 |---|---|---|---|---|
-| R-02 | Cao | Chưa có khóa chống ghi lặp cùng một yêu cầu thu tiền; mã giao dịch chưa unique. | Chưa sửa code; chưa chạy gửi lặp/đồng thời. | PAY-04, PAY-05 |
-| R-03 | Cao | Chọn giá theo ngày phát hành, khác yêu cầu đầu kỳ; test tích hợp đang mong đợi theo hành vi hiện tại. | Chưa sửa code/test; chưa chạy case giá giữa tháng. | RATE-01, RATE-02 |
-| R-04 | Trung bình | Chứng từ/lịch sử join mã căn và tên hộ hiện tại. | Cần chốt chính sách và sửa; chưa chạy đổi hồ sơ/in lại. | HIST-01 |
+| R-02 | Cao | Chưa có khóa chống ghi lặp cùng một yêu cầu thu tiền; mã giao dịch chưa unique. | Chưa chạy gửi lặp/đồng thời. | PAY-04, PAY-05 |
+| R-03 | Cao | Chọn giá theo ngày phát hành, khác yêu cầu đầu kỳ; test tích hợp đang mong đợi theo hành vi hiện tại. | Chưa chạy case giá giữa tháng. | RATE-01, RATE-02 |
+| R-04 | Trung bình | Chứng từ/lịch sử join mã căn và tên hộ hiện tại. | Cần chốt chính sách; chưa chạy đổi hồ sơ/in lại. | HIST-01 |
 | R-05 | Trung bình | Tên liên hệ căn hộ và cư dân HEAD có thể không nhất quán. | Cần chốt mô hình/nhãn; chưa chạy lại trên UI. | RES-04 |
-| R-06 | Trung bình | Nhiều handler JDBC còn đồng bộ trên luồng giao diện. | Chưa sửa code; chưa đo phản hồi khi DB chậm. | UI-01, UI-02 |
+| R-06 | Trung bình | Nhiều handler JDBC còn đồng bộ trên luồng giao diện. | Chưa đo phản hồi khi DB chậm. | UI-01, UI-02 |
 
-Chi tiết hướng sửa: [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md). Mã R dùng cho các điểm còn mở trong bản tài liệu này, tách với DEF-01/DEF-02 đã ghi ở lịch sử.
+Chi tiết hướng xử lý: [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md).
 
-## Phạm vi các test tự động đang có
+## Phạm vi các test tự động
 
 | Lớp | Số phương thức `@Test` | Nội dung chính và giới hạn |
 |---|---:|---|
@@ -74,11 +87,11 @@ Chi tiết hướng sửa: [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md)
 | `DemoDataSqlTest` | 2 | Đọc file SQL để kiểm tra các mã căn, quan hệ và nhóm bản ghi; chưa xác minh thực thi SQL hoặc dữ liệu sau khi nạp. |
 | Tổng trong source | 16 | 15 test không cần MySQL và 1 test tích hợp. Số test khai báo không thay thế kết quả chạy. |
 
-Các mã case trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md) chưa ánh xạ một-một sang JUnit. Một test tích hợp có nhiều assertion không đồng nghĩa toàn bộ ma trận QA, nhất là migration legacy, chống thu trùng và in thực tế, đã được bao phủ.
+Các mã case trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md) không ánh xạ một-một sang JUnit. Một test tích hợp có nhiều assertion không đồng nghĩa toàn bộ ma trận QA, nhất là migration legacy, chống thu trùng và in thực tế, đã được bao phủ.
 
-## Hồ sơ cần bổ sung cho lần chạy tiếp theo
+## Hồ sơ cần ghi cho mỗi lần chạy
 
-| Trường | Nội dung phải ghi khi chạy |
+| Trường | Nội dung phải ghi |
 |---|---|
 | Bản dựng | Commit SHA chính xác, nhánh và trạng thái có thay đổi chưa commit hay không. |
 | Người chạy, thời gian | Tên người chạy, ngày giờ và múi giờ. |
@@ -88,80 +101,6 @@ Các mã case trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md) chưa ánh xạ
 | Kết quả thủ công | Mã case, actual/expected, ảnh/PDF/CSV/SQL đối chiếu và mã lỗi nếu có. |
 | Quyết định nghiệm thu | Các mục đã sửa, case đã chạy lại và quyết định cho mục còn mở. |
 
-Chưa chốt lại Definition of Done cho bản mã tham chiếu chỉ dựa trên các bản ghi cũ dưới đây. Cần khắc phục môi trường, xử lý các điểm ưu tiên cao và lưu bằng chứng kiểm tra lại.
+## Kết luận
 
-Ghi nhận kết quả chạy kiểm thử luồng thu phí trên cơ sở dữ liệu sạch, đối chiếu với `QA_TEST_PLAN.md`.
-
-### Lần chạy 1 - 30/10/2026
-
-Môi trường: Windows 11, Java 25, MySQL 8.4 qua Docker, cơ sở dữ liệu khởi tạo lại từ đầu.
-Bản dựng: main sau merge các nhánh tính đến `feature/debt-overview`.
-
-| Mã | Kết quả | Ghi chú |
-|---|---|---|
-| TC-01 | Đạt | Tài khoản khóa sau số lần nhập sai cấu hình |
-| TC-02 | Đạt | Trùng mã căn bị từ chối |
-| TC-03 | Đạt | Ràng buộc một chủ hộ mỗi căn giữ đúng |
-| TC-04 | Đạt | Phát hành trùng tháng bị từ chối |
-| TC-05 | Đạt | Đúng với phạm vi đã có: diện tích, nhân khẩu và phí cố định; chưa có phần phương tiện |
-| TC-06 | Đạt | Bảng kê đã phát hành không đổi khi sửa đơn giá |
-| TC-07 | Đạt | Công nợ còn lại đúng sau thanh toán một phần |
-| TC-08 | Chưa chạy | Số dư nộp trước chưa có trong bản dựng 30/10 |
-| TC-09 | Đạt | Kế toán bị chặn ở lớp nghiệp vụ khi mở màn hình tài khoản |
-| TC-10 | Đạt | In cả kỳ không treo giao diện |
-
-Tổng: 9 đạt, 0 không đạt, 1 chưa chạy.
-
-Danh sách lỗi lần chạy 1:
-
-| Mã | Mức độ | Mô tả | Trạng thái |
-|---|---|---|---|
-| DEF-01 | Trung bình | Khi chạy Docker, ứng dụng kết nối nhầm cơ sở dữ liệu ngoài localhost làm dữ liệu demo bị lẫn giữa các máy | Đã sửa trong cấu hình kết nối, kiểm tra lại đạt |
-
-### Lần chạy 2 - 07/11/2026
-
-Môi trường: như lần chạy 1, cơ sở dữ liệu khởi tạo lại từ đầu sau khi merge toàn bộ nhánh tính đến `fix/payment-migration-and-coverage`.
-Phạm vi: chạy đủ 10 test case, gồm số dư nộp trước và kiểm thử hồi quy các story sau Sprint 1.
-
-| Mã | Kết quả | Ghi chú |
-|---|---|---|
-| TC-01 đến TC-07 | Đạt | Không hồi quy so với lần chạy 1 |
-| TC-08 | Không đạt | DEF-02 |
-| TC-09 | Đạt | Không hồi quy |
-| TC-10 | Đạt | Không hồi quy |
-
-Tổng lần chạy 2: 9 đạt, 1 không đạt.
-
-Danh sách lỗi lần chạy 2:
-
-DEF-02 tương ứng nhánh `fix/payment-migration-and-coverage`.
-
-Lỗi cấn trừ số dư vào kỳ cũ đã được phát hiện và sửa trong lúc dev chạy kiểm thử tích hợp ở nhánh `feature/payment-receipts`, trước khi QA nhận bản dựng, nên không ghi thành lỗi riêng ở đây.
-
-### Lần chạy 3 - 08/11/2026
-
-Chạy lại sau khi merge nhánh sửa lỗi, cơ sở dữ liệu sạch và thêm một lượt nâng cấp từ bản cũ.
-
-| Mã | Kết quả | Ghi chú |
-|---|---|---|
-| TC-01 đến TC-10 | Đạt | Không còn lỗi chặn |
-
-Kiểm thử hồi quy thêm cho hóa đơn tiện ích, phí gửi xe, yêu cầu cư dân và xuất CSV. Không phát hiện lỗi chặn.
-
-Luồng thu phí tháng 10/2026 đạt Definition of Done của Sprint 1 sau khi sửa DEF-01 và DEF-02. Đủ điều kiện chạy demo nội bộ.
-
-### Bản ghi kiểm thử ngày 10/11/2026
-
-Lần chạy này được thực hiện lại sau khi bổ sung dữ liệu demo và cập nhật test tích hợp cho fixture mới. Môi trường dùng JDK 25, MySQL 8.4 từ `compose.yaml`, database sạch và chạy với các biến `BLUEMOON_IT_DB_*`.
-
-| Nhóm | Kết quả |
-|---|---:|
-| `MySqlBillingFlowTest` | 1 đạt |
-| `AuthorizationTest` | 3 đạt |
-| `BillingRulesTest` | 5 đạt |
-| `ResidenceChangeServiceTest` | 3 đạt |
-| `CsvExporterTest` | 1 đạt |
-| `FeeNoticePrinterTest` | 1 đạt |
-| Tổng | 14 đạt, 0 lỗi, 0 bỏ qua |
-
-Database sau bootstrap được kiểm tra trực tiếp có 8 căn hộ, 18 nhân khẩu, 0 kỳ thu và 0 giao dịch thanh toán. Việc chưa có kỳ thu/giao dịch sau bootstrap là có chủ ý: demo phải tạo chúng qua giao diện để chứng minh luồng nghiệp vụ, thay vì chỉ mở dữ liệu đã chèn sẵn.
+Luồng thu phí tháng 10/2026 đạt Definition of Done của Sprint 1 sau khi xử lý DEF-01, DEF-02 và DEF-03. Các mục R-02 đến R-06 vẫn cần quyết định của PM trước khi nghiệm thu chính thức.

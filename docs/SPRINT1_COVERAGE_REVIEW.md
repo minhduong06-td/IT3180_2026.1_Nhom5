@@ -1,12 +1,14 @@
 # Đối chiếu phạm vi Sprint 1
 
-## Phạm vi và nguồn đối chiếu
+Tài liệu đối chiếu phạm vi Sprint 1 với mã nguồn hiện có, dùng làm căn cứ cho PM quyết định nghiệm thu.
 
-Luồng Sprint 1 trong bộ tài liệu này là:
+## Phạm vi đối chiếu
+
+Luồng Sprint 1:
 
 `đăng nhập → căn hộ/nhân khẩu → khoản thu/đơn giá → kỳ thu → bảng kê/thông báo → thanh toán → công nợ/lịch sử`.
 
-Nguồn có thể kiểm tra ngay trong repo:
+Nguồn đối chiếu:
 
 - [Hướng dẫn nghiệp vụ](NGHIEP_VU.md), [Kế hoạch kiểm thử](QA_TEST_PLAN.md), [Biên bản kiểm thử](QA_TEST_REPORT.md) và [README](../README.md).
 - Các lớp trong [service](../src/main/java/com/bluemoon/service), [UI](../src/main/java/com/bluemoon/ui), [AppRepository](../src/main/java/com/bluemoon/dao/AppRepository.java), [DatabaseBootstrap](../src/main/java/com/bluemoon/config/DatabaseBootstrap.java) và [schema SQL](../src/main/resources/db/schema.sql).
@@ -14,14 +16,14 @@ Nguồn có thể kiểm tra ngay trong repo:
 
 ## Coverage trong mã nguồn
 
-“Đã có luồng” là nhận xét về hiện thực trong source, không đồng nghĩa với test đã đạt hoặc đủ điều kiện nghiệm thu.
+“Có luồng” là nhận xét về hiện thực trong source, không đồng nghĩa test đã đạt hoặc đủ điều kiện nghiệm thu.
 
 | Năng lực | Bằng chứng | Trạng thái và phần cần hoàn thiện |
 |---|---|---|
 | Đăng nhập | `AuthService`, `LoginView`, `account_login_state` | Có BCrypt, ngưỡng 5 lần sai và khóa 5 phút. Cần kiểm tra cả thời điểm hết khóa; thao tác DB vẫn đồng bộ trên UI. |
-| Tài khoản/quyền | `AccountService`, `AccountView`, `AccessRules` | Có tạo tài khoản, xem trạng thái và tự đổi mật khẩu; chưa có quản trị khóa/mở tài khoản hoặc đổi role sau tạo. Các test quyền hiện tại chưa bao phủ toàn bộ service. |
+| Tài khoản/quyền | `AccountService`, `AccountView`, `AccessRules` | Có tạo tài khoản, xem trạng thái và tự đổi mật khẩu; chưa có quản trị khóa/mở tài khoản hoặc đổi role sau tạo. Các test quyền chưa bao phủ toàn bộ service. |
 | Căn hộ/hộ | `ApartmentService`, `ApartmentView`, `apartments` | Có tạo/sửa, mã duy nhất, diện tích, ngày và cờ tính phí. Cần thống nhất tên liên hệ/chủ hộ (R-05). |
-| Nhân khẩu | `ResidentService`, `ResidentView`, `residents` | Có quan hệ, giấy tờ, tra cứu không dấu và thay chủ hộ có xác nhận; database mới không được thêm cư dân mẫu. |
+| Nhân khẩu | `ResidentService`, `ResidentView`, `residents` | Có quan hệ, giấy tờ, tra cứu không dấu và thay chủ hộ có xác nhận; database mới không thêm cư dân mẫu. |
 | Loại phí/đơn giá | `FeeService`, `FeeView`, `fee_types`, `fee_rates` | Có lịch sử giá và trạng thái áp dụng; mốc chọn giá chưa đúng yêu cầu đầu kỳ (R-03). |
 | Kỳ thu | `BillingService`, `AppRepository.issuePeriod`, `charges` | Có transaction, unique kỳ và snapshot số lượng/giá/tiền; cần hồi quy R-03 và kiểm tra thiếu đơn giá. |
 | Bảng kê/thông báo | `ChargesView`, `FeeNoticePrinter` | Có xem bảng kê, in riêng/in cả kỳ. Test tự động chỉ kiểm tra chuỗi chuyển khoản; cần thử bố cục/in thật và giữ đúng thông tin lịch sử (R-04). |
@@ -35,18 +37,16 @@ Nguồn có thể kiểm tra ngay trong repo:
 Database mới sau bootstrap không có tài khoản hoặc dữ liệu nghiệp vụ; lần mở đầu tiên yêu cầu tạo tài khoản quản trị. Bộ kiểm thử tính phí tự tạo fixture riêng:
 
 - 8 căn A101-A108, tổng diện tích 597,75 m²; 18 nhân khẩu, gồm HEAD/WIFE/CHILD/PARENT/TENANT.
-- Tài khoản quản trị và kế toán do test tạo. Chưa có kỳ thu hoặc thanh toán.
+- Tài khoản quản trị và kế toán do test tạo. Không có kỳ thu hoặc thanh toán.
 - Chỉ `SERVICE` (10.000 đồng/m²) và `MANAGEMENT` (7.000 đồng/m²) đang áp dụng trong nhóm bắt buộc, hiệu lực từ 01/01/2026.
 - Phí vệ sinh và phí xe do test tạo nhưng tắt. Loại tiện ích được tạo khi nhập hóa đơn đầu tiên.
 - Một kỳ trên fixture nguyên trạng sinh 16 khoản, tổng 10.161.750 đồng. A101 phải thu 816.000 đồng, A102 phải thu 892.500 đồng.
 
 Fixture này không được nạp vào database ứng dụng. Database cũ được giữ nguyên, không tự thêm các căn hộ, cư dân hoặc khoản thu còn thiếu.
 
-## Các điểm cần sửa code
+## Các điểm cần xử lý
 
-Các mục dưới đây được xác định qua đối chiếu source. Chưa đánh dấu là đã tái hiện trên MySQL trong lần kiểm tra 11/11/2026; trạng thái chạy thực tế ghi riêng trong [Biên bản kiểm thử](QA_TEST_REPORT.md).
-
-R-01 đã xử lý: bootstrap chỉ tạo/cập nhật cấu trúc, không seed dữ liệu mẫu. Kiểm thử MySQL xác nhận database trống và database cũ có ba căn nhưng không có cư dân đều khởi động được.
+Các mục dưới đây xác định qua đối chiếu source; trạng thái chạy thực tế ghi riêng trong [Biên bản kiểm thử](QA_TEST_REPORT.md).
 
 | Mã | Ưu tiên | Hiện trạng và hướng xử lý | Kiểm tra lại |
 |---|---|---|---|
@@ -56,7 +56,7 @@ R-01 đã xử lý: bootstrap chỉ tạo/cập nhật cấu trúc, không seed 
 | R-05 | Trung bình | `household_name` vừa là tên liên hệ vừa được dùng như chủ hộ; lưu HEAD có cập nhật sang căn hộ nhưng sửa căn hộ có thể ghi khác. Chốt một nguồn chủ hộ hoặc tách trường liên hệ và sửa nhãn. | RES-04 |
 | R-06 | Trung bình | Handler đăng nhập, tải dữ liệu, lưu phiếu và phát hành kỳ gọi JDBC đồng bộ. Chuyển sang `Task`/executor, hiển thị tiến trình, chặn thao tác lặp trong khi chạy và cập nhật UI trên đúng luồng. | UI-01, UI-02 |
 
-R-04/R-05 cần chốt thêm mô hình dữ liệu và cách trình bày; hành vi hiện tại chưa bảo đảm đối soát lịch sử theo thông tin hộ lúc phát hành. Việc cập nhật bộ tài liệu này chưa sửa các lớp Java hoặc schema.
+R-04/R-05 cần chốt thêm mô hình dữ liệu và cách trình bày; hành vi hiện tại chưa bảo đảm đối soát lịch sử theo thông tin hộ lúc phát hành.
 
 ## Phần mở rộng được theo dõi riêng
 
@@ -67,14 +67,14 @@ R-04/R-05 cần chốt thêm mô hình dữ liệu và cách trình bày; hành 
 - Xuất CSV.
 - Lịch sử biến động cư trú.
 
-Các chức năng này có thể kiểm thử hồi quy riêng. Menu hiện vẫn hiển thị theo role; source chưa có chế độ tự ẩn các mục “Sprint 2”. Trong kịch bản demo, giới thiệu rõ phần mở rộng và không tính các case mở rộng thay cho luồng Sprint 1.
+Các chức năng này có thể kiểm thử hồi quy riêng. Menu hiển thị theo role; source chưa có chế độ tự ẩn các mục ngoài Sprint 1. Trong kịch bản demo, giới thiệu rõ phần mở rộng và không tính các case mở rộng thay cho luồng Sprint 1.
 
 ## Điều kiện chốt nghiệm thu
 
-1. Bổ sung baseline kế hoạch có phiên bản để xác nhận phạm vi và các yêu cầu chưa rõ.
+1. Chốt phạm vi Sprint 1 và các yêu cầu còn chưa rõ với PM.
 2. Xử lý R-02 và R-03; chạy lại các case liên quan và hồi quy luồng thu phí.
 3. Chốt chính sách R-04/R-05, kiểm tra chứng từ cũ sau khi đổi hồ sơ; xử lý hoặc ghi nhận quyết định chấp nhận có giới hạn cho các mục trung bình còn mở.
-4. Chạy với JDK 25 và MySQL 8.4 trên database kiểm thử riêng; báo cáo rõ đạt/lỗi/bỏ qua. Test tích hợp bị skip không được tính là đã xác minh MySQL.
+4. Chạy với JDK 25 và MySQL 8.4 trên database kiểm thử riêng; báo cáo rõ đạt/lỗi/bỏ qua. Test tích hợp bị skip không tính là đã xác minh MySQL.
 5. Có bằng chứng thủ công cho UI, phân quyền tại service và in thực tế; lưu log, ảnh/CSV, SQL đối chiếu theo kế hoạch QA.
 
 ## Kịch bản demo luồng chính

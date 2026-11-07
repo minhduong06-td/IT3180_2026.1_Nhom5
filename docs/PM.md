@@ -14,15 +14,17 @@ Lịch sử nhánh và commit không tự chứng minh có nhiều người revi
 
 ## Tại sao merge thay đổi khởi động với database rỗng?
 
-[PR #15](https://github.com/minhduong06-td/IT3180_2026.1_Nhom5/pull/15) chuyển bootstrap về tạo và nâng cấp schema. Nếu chưa có user, ứng dụng cho tạo quản trị đầu tiên; nếu đã có user thì đăng nhập. Người clone repo không phải nhập dữ liệu nghiệp vụ có sẵn.
+Bootstrap chỉ tạo và nâng cấp schema. Dữ liệu mẫu do Docker nạp từ `database/demo-data.sql` khi tạo volume mới. Cách tách này tránh trường hợp dữ liệu cố định không đủ mã căn mà bước thêm cư dân yêu cầu, khiến ứng dụng báo lỗi khởi động.
 
-Căn cứ kỹ thuật đã ghi ở [biên bản QA](QA_TEST_REPORT.md): các lượt kiểm tra với JDK 25 và MySQL 8.4 có 14 test đạt trên schema mới và schema cũ có ba căn. Với chế độ legacy, test tích hợp chỉ đi qua nhánh nâng cấp và tạo quản trị, không chạy toàn bộ luồng tính phí. JavaFX đã khởi động với database trống; thao tác trực tiếp trên màn hình chưa được xác nhận trong lượt đó. PR không có CI checks.
+Nếu chưa có user, ứng dụng cho tạo quản trị đầu tiên; nếu đã có user thì đăng nhập. Người clone repo không phải nhập dữ liệu nghiệp vụ có sẵn.
 
-Quyết định merge này tích hợp cách khởi tạo mới. Nó không đóng các lỗi tài chính còn mở hoặc đồng nghĩa toàn bộ sản phẩm được nghiệm thu.
+Căn cứ kỹ thuật đã ghi ở [biên bản QA](QA_TEST_REPORT.md): các lượt kiểm tra với JDK 25 và MySQL 8.4 có 14 test đạt trên schema mới và schema cũ có ba căn. Với chế độ legacy, test tích hợp chỉ đi qua nhánh nâng cấp và tạo quản trị, không chạy toàn bộ luồng tính phí. JavaFX khởi động được với database trống; thao tác trực tiếp trên màn hình chưa được xác nhận.
+
+Cách khởi tạo mới không đóng các lỗi tài chính còn mở và không đồng nghĩa toàn bộ sản phẩm được nghiệm thu.
 
 ## Vì sao cần tinh gọn giao diện?
 
-Màn hình làm việc cần giúp người dùng tìm hồ sơ, kiểm tra số tiền và thực hiện thao tác. Slogan ở màn hình đăng nhập và phụ đề lặp lại tên trang chiếm chỗ nhưng không hỗ trợ các quyết định đó. Bản tinh gọn giữ lại hướng dẫn nhập liệu, quy tắc phát hành, cảnh báo và các con số cần đối soát.
+Màn hình làm việc cần giúp người dùng tìm hồ sơ, kiểm tra số tiền và thực hiện thao tác. Slogan ở màn hình đăng nhập và phụ đề lặp lại tên trang chiếm chỗ nhưng không hỗ trợ các quyết định đó. Giao diện giữ lại hướng dẫn nhập liệu, quy tắc phát hành, cảnh báo và các con số cần đối soát.
 
 Menu cuộn và thanh công cụ xuống dòng giúp các thao tác vẫn truy cập được ở cửa sổ nhỏ. Khi review, PM cần xem cả ảnh render và khả năng sử dụng thật; việc bỏ chữ chỉ hợp lý nếu người dùng vẫn hiểu trạng thái và hành động tiếp theo.
 
@@ -47,7 +49,7 @@ Các con số trên cần đối chiếu cả bảng kê, lịch sử thu và c�
 
 ## Có thể kết luận bản hiện tại đạt toàn bộ chưa?
 
-Chưa có căn cứ kết luận như vậy. Các điểm cần quyết định trước khi nghiệm thu:
+Các điểm cần quyết định trước khi nghiệm thu:
 
 | Điểm | Ý nghĩa với PM |
 |---|---|

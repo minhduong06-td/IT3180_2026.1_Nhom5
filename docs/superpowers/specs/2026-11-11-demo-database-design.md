@@ -24,3 +24,4 @@ Provide a repeatable Docker database for BlueMoon demonstrations with varied apa
 
 - Do not add a floor column or change billing rules.
 - Do not make Java insert the same demo records on every launch.
+
