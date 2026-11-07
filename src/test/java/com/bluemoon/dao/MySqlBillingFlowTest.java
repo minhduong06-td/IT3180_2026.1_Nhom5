@@ -13,16 +13,28 @@ import com.bluemoon.model.Domain.OccupancyStatus;
 import com.bluemoon.model.Domain.PaymentMethod;
 import com.bluemoon.model.Domain.PaymentReceipt;
 import com.bluemoon.model.Domain.Resident;
+import com.bluemoon.model.Domain.ResidentRequest;
+import com.bluemoon.model.Domain.ResidentRequestInput;
+import com.bluemoon.model.Domain.RequestCategory;
+import com.bluemoon.model.Domain.RequestStatus;
 import com.bluemoon.model.Domain.Role;
+import com.bluemoon.model.Domain.UtilityBillInput;
+import com.bluemoon.model.Domain.UtilityType;
+import com.bluemoon.model.Domain.Vehicle;
+import com.bluemoon.model.Domain.VehicleType;
 import com.bluemoon.service.AccountLockedException;
 import com.bluemoon.service.AccountService;
 import com.bluemoon.service.ApartmentService;
 import com.bluemoon.service.AuthService;
 import com.bluemoon.service.ContributionService;
 import com.bluemoon.service.CollectionService;
+import com.bluemoon.service.DashboardService;
 import com.bluemoon.service.FeeService;
 import com.bluemoon.service.HouseholdHeadExistsException;
 import com.bluemoon.service.ResidentService;
+import com.bluemoon.service.ResidentRequestService;
+import com.bluemoon.service.UtilityService;
+import com.bluemoon.service.VehicleService;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
@@ -33,6 +45,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -60,9 +73,14 @@ class MySqlBillingFlowTest {
         String contributionCode = "FUND_IT_CHECK";
         removeFee(database, contributionCode);
         LocalDate laterRateDate = LocalDate.of(2098, 1, 15);
+        String plateSuffix = "%05d".formatted(System.currentTimeMillis() % 100_000);
+        String motorcyclePlate = "30A-" + plateSuffix;
+        String carPlate = "30B-" + plateSuffix;
         removePeriod(database, 2097, 12);
         removePeriod(database, 2098, 2);
         removePeriod(database, 2098, 1);
+        removeUtilityBill(database, 2098, 1, firstApartment.id());
+        removeVehicles(database, motorcyclePlate, carPlate);
         removeRate(database, serviceFeeId, laterRateDate);
         addRate(database, serviceFeeId, new BigDecimal("9999"), laterRateDate, adminId);
 
@@ -74,6 +92,7 @@ class MySqlBillingFlowTest {
             verifyAccountManagement(database, repository, auth, admin);
             verifyApartmentManagement(database, repository, admin);
             verifyResidentManagement(database, repository, admin);
+            verifyResidentRequestManagement(database, repository, admin);
             FeeService fees = new FeeService(repository);
             fees.create(admin, contributionCode, "Quỹ kiểm tra", false,
                     CalculationBasis.VOLUNTARY, null, null);
@@ -88,17 +107,41 @@ class MySqlBillingFlowTest {
             contributions.record(admin, contribution);
             assertTrue(repository.listContributions().stream().anyMatch(row -> row.feeName().equals("Quỹ kiểm tra")
                     && row.amount().compareTo(new BigDecimal("50000")) == 0));
+            UtilityService utilities = new UtilityService(repository);
+            utilities.save(admin, new UtilityBillInput(null, 2098, 1, apartment.id(), UtilityType.ELECTRICITY,
+                    new BigDecimal("350000"), "EVN", "EVN-2098-A101"));
+            UtilityBillInput savedBill = utilities.list(admin).stream()
+                    .filter(bill -> bill.year() == 2098 && bill.month() == 1 && bill.apartmentId() == apartment.id())
+                    .map(bill -> new UtilityBillInput(bill.id(), bill.year(), bill.month(), bill.apartmentId(),
+                            bill.type(), bill.amount(), bill.provider(), bill.reference()))
+                    .findFirst().orElseThrow();
+            assertEquals(new BigDecimal("350000"), savedBill.amount());
+            VehicleService vehicles = new VehicleService(repository);
+            vehicles.register(admin, apartment.id(), VehicleType.MOTORCYCLE, motorcyclePlate);
+            vehicles.register(admin, apartment.id(), VehicleType.CAR, carPlate);
+            List<Vehicle> testVehicles = vehicles.list(admin).stream()
+                    .filter(vehicle -> vehicle.licensePlate().equals(motorcyclePlate)
+                            || vehicle.licensePlate().equals(carPlate)).toList();
+            assertEquals(2, testVehicles.size());
+            assertThrows(IllegalArgumentException.class, () -> vehicles.register(admin, apartment.id(),
+                    VehicleType.CAR, motorcyclePlate));
+            assertThrows(IllegalArgumentException.class, () -> vehicles.register(admin, apartment.id(),
+                    VehicleType.MOTORCYCLE, "biển số sai"));
             var period = repository.issuePeriod(2098, 1, LocalDate.of(2098, 1, 20),
                     LocalDate.of(2098, 1, 31), adminId);
-            assertEquals(9, period.chargeCount());
-            assertEquals(new BigDecimal("4003500"), period.totalAmount());
+            assertEquals(16, period.chargeCount());
+            assertEquals(new BigDecimal("5623500"), period.totalAmount());
+            assertTrue(utilities.list(admin).stream().anyMatch(bill -> bill.id() == savedBill.id() && bill.issued()));
+            assertThrows(SQLException.class, () -> utilities.save(admin, new UtilityBillInput(savedBill.id(),
+                    savedBill.year(), savedBill.month(), savedBill.apartmentId(), savedBill.type(),
+                    new BigDecimal("360000"), savedBill.provider(), savedBill.reference())));
             var initialDebts = repository.listHouseholdDebts(period.id());
             assertEquals(3, initialDebts.size());
             var firstDebt = initialDebts.stream().filter(debt -> debt.apartmentCode().equals("A101"))
                     .findFirst().orElseThrow();
             assertEquals(1, firstDebt.floor());
             assertEquals(0, firstDebt.residentCount());
-            assertEquals(new BigDecimal("1105000"), firstDebt.totalDue());
+            assertEquals(new BigDecimal("2725000"), firstDebt.totalDue());
             assertEquals("UNPAID", firstDebt.status().name());
             CollectionService collections = new CollectionService(repository);
             assertEquals(3, collections.debts(admin, period.id(), 1, 1, null).size());
@@ -114,9 +157,29 @@ class MySqlBillingFlowTest {
                     .filter(charge -> "Phí vệ sinh".equals(charge.feeName())).findFirst().orElseThrow();
             assertEquals(BigDecimal.ZERO, sanitationCharge.amount());
             assertEquals("PAID", sanitationCharge.status().name());
+            ChargeSummary electricityCharge = repository.listCharges(period.id(), "A101").stream()
+                    .filter(charge -> "Tiền điện".equals(charge.feeName())).findFirst().orElseThrow();
+            assertEquals(new BigDecimal("350000"), electricityCharge.amount());
+            assertEquals(CalculationBasis.EXTERNAL_BILL, electricityCharge.basis());
+            ChargeSummary motorcycleCharge = repository.listCharges(period.id(), "A101").stream()
+                    .filter(charge -> "Phí gửi xe máy".equals(charge.feeName())).findFirst().orElseThrow();
+            assertEquals(new BigDecimal("70000"), motorcycleCharge.amount());
+            ChargeSummary carCharge = repository.listCharges(period.id(), "A101").stream()
+                    .filter(charge -> "Phí gửi ô tô".equals(charge.feeName())).findFirst().orElseThrow();
+            assertEquals(new BigDecimal("1200000"), carCharge.amount());
+            for (Vehicle vehicle : testVehicles) vehicles.deactivate(admin, vehicle.id());
+            assertTrue(vehicles.list(admin).stream().filter(vehicle -> testVehicles.stream()
+                    .anyMatch(testVehicle -> testVehicle.id() == vehicle.id())).noneMatch(Vehicle::active));
+            assertEquals(new BigDecimal("70000"), repository.listCharges(period.id(), "A101").stream()
+                    .filter(charge -> "Phí gửi xe máy".equals(charge.feeName())).findFirst().orElseThrow().amount());
+            var dashboard = new DashboardService(repository).summary(admin);
+            assertEquals("01/2098", dashboard.period());
+            assertEquals(new BigDecimal("5623500"), dashboard.totalAmount());
+            assertEquals(3, dashboard.apartmentCount());
             AppUser accountant = new AppUser(accountantId, "accountant", "Kế toán", Role.ACCOUNTANT);
             simulateLegacyPayment(database, serviceCharge.id(), LocalDate.now().minusDays(1),
                     new BigDecimal("100000"), accountantId);
+            assertTrue(hasCheckConstraint(database, "payments", "chk_payment_applied"));
             var migratedReceipt = repository.listPayments("A101").getFirst();
             assertEquals("Chưa ghi nhận", migratedReceipt.payerName());
             assertEquals(new BigDecimal("100000"), migratedReceipt.appliedAmount());
@@ -128,7 +191,7 @@ class MySqlBillingFlowTest {
             var updatedDebt = repository.listHouseholdDebts(period.id()).stream()
                     .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
             assertEquals(new BigDecimal("100000"), updatedDebt.paid());
-            assertEquals(new BigDecimal("1005000"), updatedDebt.balance());
+            assertEquals(new BigDecimal("2625000"), updatedDebt.balance());
             assertEquals("PARTIALLY_PAID", updatedDebt.status().name());
             assertNotNull(updatedDebt.lastPaidAt());
             PaymentReceipt receipt = collections.recordPayment(accountant, serviceCharge.id(),
@@ -155,6 +218,9 @@ class MySqlBillingFlowTest {
             assertEquals(new BigDecimal("550000"), receipts.getFirst().appliedAmount());
             assertEquals(LocalDate.now(), receipts.getFirst().paidAt().toLocalDate());
             assertEquals("Chưa ghi nhận", receipts.getLast().payerName());
+            var paidDashboard = new DashboardService(repository).summary(admin);
+            assertEquals(new BigDecimal("650000"), paidDashboard.paidAmount());
+            assertEquals(new BigDecimal("4973500"), paidDashboard.balance());
 
             var previousPeriod = repository.issuePeriod(2097, 12, LocalDate.of(2097, 12, 20),
                     LocalDate.of(2097, 12, 31), adminId);
@@ -175,6 +241,8 @@ class MySqlBillingFlowTest {
             removePeriod(database, 2097, 12);
             removePeriod(database, 2098, 2);
             removePeriod(database, 2098, 1);
+            removeUtilityBill(database, 2098, 1, firstApartment.id());
+            removeVehicles(database, motorcyclePlate, carPlate);
             removeRate(database, serviceFeeId, laterRateDate);
             removeFee(database, contributionCode);
         }
@@ -263,6 +331,42 @@ class MySqlBillingFlowTest {
                          "UPDATE apartments SET household_name = 'Nguyễn Minh An' WHERE id = ?")) {
                 update.setLong(1, apartment.id());
                 update.executeUpdate();
+            }
+        }
+    }
+
+    private static void verifyResidentRequestManagement(Database database, AppRepository repository,
+                                                        AppUser admin) throws Exception {
+        var apartment = repository.listApartments().getFirst();
+        ResidentRequestService requests = new ResidentRequestService(repository);
+        String subject = "Yêu cầu bảo trì " + System.currentTimeMillis();
+        try {
+            requests.save(admin, new ResidentRequestInput(null, apartment.id(), "Nguyễn Minh An",
+                    RequestCategory.MAINTENANCE, subject, "Vòi bếp nhỏ nước liên tục.", RequestStatus.RECEIVED, null));
+            ResidentRequest created = requests.list(admin).stream()
+                    .filter(request -> request.subject().equals(subject)).findFirst().orElseThrow();
+            assertEquals(apartment.code(), created.apartmentCode());
+            assertEquals(RequestStatus.RECEIVED, created.status());
+            assertNotNull(created.createdAt());
+            assertThrows(IllegalArgumentException.class, () -> requests.save(admin,
+                    new ResidentRequestInput(null, apartment.id(), "Nguyễn Minh An", RequestCategory.MAINTENANCE,
+                            subject + " mới", "Yêu cầu mới không thể được đánh dấu đang xử lý.",
+                            RequestStatus.IN_PROGRESS, null)));
+            requests.save(admin, new ResidentRequestInput(created.id(), apartment.id(), created.reporterName(),
+                    created.category(), created.subject(), created.description(), RequestStatus.IN_PROGRESS,
+                    "Đã phân công kỹ thuật viên."));
+            ResidentRequest updated = requests.list(admin).stream()
+                    .filter(request -> request.id() == created.id()).findFirst().orElseThrow();
+            assertEquals(RequestStatus.IN_PROGRESS, updated.status());
+            assertEquals("Đã phân công kỹ thuật viên.", updated.handlingNote());
+            assertNotNull(updated.updatedAt());
+        } finally {
+            try (Connection connection = database.openConnection();
+                 PreparedStatement delete = connection.prepareStatement(
+                         "DELETE FROM resident_requests WHERE apartment_id = ? AND subject = ?")) {
+                delete.setLong(1, apartment.id());
+                delete.setString(2, subject);
+                delete.executeUpdate();
             }
         }
     }
@@ -422,6 +526,41 @@ class MySqlBillingFlowTest {
             } catch (SQLException exception) {
                 connection.rollback();
                 throw exception;
+            }
+        }
+    }
+
+    private static void removeUtilityBill(Database database, int year, int month, long apartmentId) throws SQLException {
+        try (Connection connection = database.openConnection();
+             PreparedStatement delete = connection.prepareStatement(
+                     "DELETE FROM utility_bills WHERE period_year = ? AND period_month = ? AND apartment_id = ? AND utility_type = 'ELECTRICITY'")) {
+            delete.setInt(1, year);
+            delete.setInt(2, month);
+            delete.setLong(3, apartmentId);
+            delete.executeUpdate();
+        }
+    }
+
+    private static void removeVehicles(Database database, String motorcyclePlate, String carPlate) throws SQLException {
+        try (Connection connection = database.openConnection();
+             PreparedStatement delete = connection.prepareStatement(
+                     "DELETE FROM vehicles WHERE license_plate IN (?, ?)")) {
+            delete.setString(1, motorcyclePlate);
+            delete.setString(2, carPlate);
+            delete.executeUpdate();
+        }
+    }
+
+    private static boolean hasCheckConstraint(Database database, String table, String constraint) throws SQLException {
+        try (Connection connection = database.openConnection();
+             PreparedStatement query = connection.prepareStatement(
+                     "SELECT 1 FROM information_schema.table_constraints "
+                             + "WHERE constraint_schema = DATABASE() AND table_name = ? "
+                             + "AND constraint_name = ? AND constraint_type = 'CHECK'")) {
+            query.setString(1, table);
+            query.setString(2, constraint);
+            try (ResultSet result = query.executeQuery()) {
+                return result.next();
             }
         }
     }
