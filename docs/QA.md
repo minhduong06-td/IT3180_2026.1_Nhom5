@@ -56,6 +56,7 @@ Dùng một database riêng khác với database vừa chạy integration test. 
 |---|---|---|
 | Khởi tạo | Mở app với schema chưa có bảng | Màn hình tạo quản trị, không có user/căn/phí tự thêm. Kiểm tra bảng và ảnh màn hình. |
 | Tạo quản trị | Thử username sai, mật khẩu ngắn, xác nhận lệch; sau đó nhập hợp lệ | Sai thì không tạo user; đúng thì có một ADMIN và mở app. Đóng/mở lại phải vào đăng nhập. |
+| Đăng nhập/khôi phục | Dùng email và số điện thoại của từng tài khoản mẫu; thử Quên mật khẩu bằng username, contact sai và contact đúng; sau đó đổi mật khẩu trong ứng dụng | Email/số điện thoại đúng vào đúng role; username chỉ còn là tương thích cũ; contact sai không đổi mật khẩu; đổi/khôi phục thành công thì mật khẩu cũ không còn đăng nhập được. |
 | Hồ sơ | Tạo A101, mã hộ riêng, diện tích 48 m², ngày nhận nhà hợp lệ; thêm chủ hộ hợp lệ | Lưu được, mở lại không mất. Mã căn/mã hộ/giấy tờ trùng bị chặn; không tạo thêm dòng. |
 | Khoản thu | Tạo dịch vụ 10.000 đồng/m² và quản lý 7.000 đồng/m², đang áp dụng, giá hiệu lực từ đầu kỳ | Danh mục và lịch sử giá đúng. Giá không dương hoặc trùng ngày hiệu lực bị chặn. |
 | Kỳ thu | Chọn một tháng, ngày phát hành ngày 01, hạn nộp sau đó | Hai charge cho căn, lần lượt 480.000 và 336.000 đồng, tổng 816.000. Phát hành lại cùng tháng bị chặn. |

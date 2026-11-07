@@ -39,11 +39,24 @@ class DemoDataSqlTest {
     void demoDataContainsAResidentAccountButNoAuthorityAccount() throws IOException {
         String sql = Files.readString(DEMO_DATA);
 
-        assertTrue(sql.contains("'resident'"), "Thiếu tài khoản người dùng mẫu");
+        assertTrue(sql.contains("'nguyen.minh.an'"), "Thiếu tài khoản người dùng mẫu");
         assertTrue(sql.contains("'RESIDENT'"), "Thiếu role RESIDENT");
         assertTrue(sql.contains("apartment_id"), "Tài khoản người dùng chưa được gắn phạm vi căn hộ");
         org.junit.jupiter.api.Assertions.assertFalse(sql.contains("'coquan'"), "Không được seed tài khoản coquan");
         org.junit.jupiter.api.Assertions.assertFalse(sql.contains("AUTHORITY"), "Không được seed role Authority trong bản demo này");
+    }
+
+    @Test
+    void demoAccountsContainLoginContactsForEachRole() throws IOException {
+        String sql = Files.readString(DEMO_DATA);
+
+        assertTrue(sql.contains("email"), "Thiếu cột email cho tài khoản demo");
+        assertTrue(sql.contains("phone"), "Thiếu cột số điện thoại cho tài khoản demo");
+        assertTrue(sql.contains("admin@bluemoon.vn"), "Thiếu email tài khoản quản trị");
+        assertTrue(sql.contains("ngan@bluemoon.vn"), "Thiếu email tài khoản kế toán");
+        assertTrue(sql.contains("minhan@gmail.com"), "Thiếu email tài khoản người dùng");
+        org.junit.jupiter.api.Assertions.assertFalse(sql.contains("('accountant'"), "Không còn username accountant cũ");
+        org.junit.jupiter.api.Assertions.assertFalse(sql.contains("('resident'"), "Không còn username resident cũ");
     }
 
     @Test
@@ -52,5 +65,19 @@ class DemoDataSqlTest {
 
         assertTrue(sql.contains("password_hash = VALUES(password_hash)"),
                 "Seed phải sửa lại hash cũ hoặc hỏng khi tài khoản demo đã tồn tại");
+    }
+
+    @Test
+    void demoPaymentsDoNotAddSyntheticCreditOrConflictingHouseholdPayers() throws IOException {
+        String sql = Files.readString(DEMO_DATA);
+
+        assertTrue(sql.contains("'Nguyễn Minh An', c.amount, c.amount, 'BANK_TRANSFER',\n       'BM-SEED-A101-MANAGEMENT-1'"),
+                "Các khoản thu của A101 phải ghi nhận theo chủ hộ thống nhất");
+        assertTrue(!sql.contains("'Phạm Ngọc Mai', c.amount, c.amount, 'BANK_TRANSFER',\n       'BM-SEED-A101-MANAGEMENT-1'"),
+                "Không tạo thêm người nộp khác cho cùng hộ nếu không cần thiết");
+        assertTrue(!sql.contains("BM-SEED-C1002-CREDIT-1"),
+                "Không seed khoản nộp dư chỉ để tạo trạng thái đa dạng");
+        assertTrue(!sql.contains("INSERT INTO apartment_credits"),
+                "Không seed số dư nộp trước nhân tạo");
     }
 }

@@ -34,13 +34,15 @@ Docker Compose chạy MySQL; cửa sổ desktop được chạy bằng Java trê
 
 Khi tạo volume mới, Docker nạp cấu trúc bảng và dữ liệu khởi tạo từ `database/demo-data.sql`. Ứng dụng mở màn hình đăng nhập với các tài khoản dưới đây; hãy đổi mật khẩu sau lần đăng nhập đầu.
 
-| Vai trò | Tên đăng nhập | Mật khẩu ban đầu |
-|---|---|---|
-| Ban quản trị | `admin` | `admin123` |
-| Kế toán | `accountant` | `accountant123` |
-| Người dùng căn hộ A101 | `resident` | `resident123` |
+| Vai trò | Email | Số điện thoại | Mật khẩu ban đầu |
+|---|---|---|---|
+| Ban quản trị | `admin@bluemoon.vn` | `0901000001` | `admin123` |
+| Kế toán | `ngan@bluemoon.vn` | `0901000002` | `accountant123` |
+| Người dùng căn hộ A101 | `minhan@gmail.com` | `0901000003` | `resident123` |
 
-Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Tài khoản `resident` chỉ xem được căn hộ A101, nhân khẩu trong hộ, bảng kê/công nợ/lịch sử thu của hộ và gửi yêu cầu mới; không thấy màn hình quản trị, tài khoản hay dữ liệu các hộ khác.
+Màn hình đăng nhập nhận email hoặc số điện thoại. Tên tài khoản nội bộ `admin` được giữ cho Ban quản trị; tài khoản kế toán và người dùng sử dụng username gắn với tên người, nhưng người dùng thông thường không cần nhập username. Người dùng có thể chọn **Quên mật khẩu?** ở màn hình đăng nhập để đặt mật khẩu mới bằng email hoặc số điện thoại đã đăng ký; khi đã vào ứng dụng, thao tác **Đổi mật khẩu** yêu cầu mật khẩu hiện tại. Phiên bản desktop hiện tại chưa kết nối dịch vụ gửi OTP qua email/SMS, nên bước xác minh đang dựa trên contact đã lưu trong hệ thống.
+
+Dữ liệu khởi tạo chỉ được nạp khi Docker tạo volume mới. Tài khoản người dùng của căn A101 chỉ xem được căn hộ, nhân khẩu trong hộ, bảng kê/công nợ/lịch sử thu của hộ và gửi yêu cầu mới; không thấy màn hình quản trị, tài khoản hay dữ liệu các hộ khác.
 
 Nếu đã có volume cũ trước khi thêm vai trò `RESIDENT`, cần sao lưu dữ liệu rồi chạy một lần sau để Docker nạp lại schema và seed:
 
