@@ -79,7 +79,12 @@ Test tích hợp cần database riêng, rỗng và có thể xóa. Xem [hướng
 - [QA: cách kiểm tra và căn cứ đạt](docs/QA.md)
 - [Dev: cấu trúc, nghiệp vụ và cách sửa](docs/DEV.md)
 - [Quy tắc nghiệp vụ chi tiết](docs/NGHIEP_VU.md)
-- [Ma trận kiểm tra](docs/QA_TEST_PLAN.md)
-- [Kết quả kiểm thử](docs/QA_TEST_REPORT.md)
+- [Kế hoạch kiểm thử](docs/QA_TEST_PLAN.md)
+- [Kịch bản kiểm thử](docs/QA_TEST_SCENARIO.md)
+- [Test case chức năng](docs/QA_TEST_CASE_FUNCTIONAL.md)
+- [Test case giao diện](docs/QA_TEST_CASE_UI.md)
+- [Test case tích hợp](docs/QA_TEST_CASE_INTEGRATION.md)
+- [Dữ liệu kiểm thử](docs/QA_TEST_DATA.md)
+- [Biên bản kiểm thử](docs/QA_TEST_REPORT.md)
 
 Các điểm còn mở gồm chống ghi trùng thanh toán, ngày chọn đơn giá, thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chi tiết tại [đối chiếu yêu cầu](docs/SPRINT1_COVERAGE_REVIEW.md).
