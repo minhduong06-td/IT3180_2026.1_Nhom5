@@ -84,3 +84,5 @@ $env:BLUEMOON_DB_PASSWORD = 'mat-khau-cua-ban'
 ```
 
 Chi tiết quy trình sử dụng và quy tắc thu phí nằm trong [Hướng dẫn nghiệp vụ](docs/NGHIEP_VU.md).
+
+Ma trận đối chiếu phạm vi Sprint 1 và các điểm cần kiểm tra trước demo nằm trong [Sprint 1 coverage review](docs/SPRINT1_COVERAGE_REVIEW.md). Kế hoạch kiểm thử chi tiết nằm trong [QA test plan](docs/QA_TEST_PLAN.md).
