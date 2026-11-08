@@ -60,6 +60,7 @@ class MySqlBillingFlowTest {
         String contributionCode = "FUND_IT_CHECK";
         removeFee(database, contributionCode);
         LocalDate laterRateDate = LocalDate.of(2098, 1, 15);
+        removePeriod(database, 2097, 12);
         removePeriod(database, 2098, 2);
         removePeriod(database, 2098, 1);
         removeRate(database, serviceFeeId, laterRateDate);
@@ -155,6 +156,14 @@ class MySqlBillingFlowTest {
             assertEquals(LocalDate.now(), receipts.getFirst().paidAt().toLocalDate());
             assertEquals("Chưa ghi nhận", receipts.getLast().payerName());
 
+            var previousPeriod = repository.issuePeriod(2097, 12, LocalDate.of(2097, 12, 20),
+                    LocalDate.of(2097, 12, 31), adminId);
+            var previousDebt = repository.listHouseholdDebts(previousPeriod.id()).stream()
+                    .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
+            assertEquals(BigDecimal.ZERO, previousDebt.paid());
+            assertEquals(previousDebt.totalDue(), previousDebt.balance());
+            assertEquals(new BigDecimal("50000"), previousDebt.creditBalance());
+
             var followingPeriod = repository.issuePeriod(2098, 2, LocalDate.of(2098, 2, 20),
                     LocalDate.of(2098, 2, 28), adminId);
             var followingDebt = repository.listHouseholdDebts(followingPeriod.id()).stream()
@@ -163,6 +172,7 @@ class MySqlBillingFlowTest {
             assertEquals(followingDebt.totalDue().subtract(new BigDecimal("50000")), followingDebt.balance());
             assertEquals(BigDecimal.ZERO, followingDebt.creditBalance());
         } finally {
+            removePeriod(database, 2097, 12);
             removePeriod(database, 2098, 2);
             removePeriod(database, 2098, 1);
             removeRate(database, serviceFeeId, laterRateDate);
