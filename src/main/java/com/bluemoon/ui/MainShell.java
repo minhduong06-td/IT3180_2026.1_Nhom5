@@ -51,11 +51,13 @@ final class MainShell extends BorderPane {
             addNavigation("Căn hộ", () -> new ApartmentView(services, user));
             addNavigation("Cư dân", () -> new ResidentView(services, user));
             addNavigation("Khoản thu", () -> new FeeView(services, user));
+            addNavigation("Đóng góp", () -> new ContributionView(services, user));
             addNavigation("Tài khoản", () -> new AccountView(services, user));
             addNavigation("Kỳ thu", () -> new BillingView(services, user, this::showCharges));
         } else {
             sidebar.getChildren().addAll(brand, Ui.label("THU PHÍ", "sidebar-caption"), navItems);
             addNavigation("Cư dân", () -> new ResidentView(services, user));
+            addNavigation("Đóng góp", () -> new ContributionView(services, user));
         }
         addNavigation("Bảng kê phải thu", () -> new ChargesView(services, user));
         addNavigation("Lịch sử thu", () -> new TransactionsView(services, user));
