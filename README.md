@@ -8,6 +8,7 @@
 - Phân loại khoản bắt buộc, tính phí theo diện tích, nhân khẩu hoặc căn hộ; lưu khoản đóng góp theo số tiền thực nhận.
 - Quản lý đơn giá có ngày hiệu lực và giữ nguyên giá trị của các kỳ đã phát hành.
 - Phát hành kỳ thu, tạo bảng kê chi tiết theo từng căn hộ.
+- Theo dõi công nợ theo hộ, lọc theo kỳ, trạng thái và khoảng tầng.
 - Xem trước và in thông báo thu phí cho từng căn hộ hoặc cả kỳ thu.
 - Ghi nhận thanh toán một phần hoặc toàn bộ bằng tiền mặt hay chuyển khoản.
 - Theo dõi riêng lịch sử đóng góp tự nguyện, không cộng vào công nợ phải thu.
