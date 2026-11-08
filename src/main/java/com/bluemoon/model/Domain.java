@@ -14,6 +14,11 @@ public final class Domain {
 
     public record AppUser(long id, String username, String displayName, Role role) {}
 
+    public record UserAccount(long id, String username, String displayName, Role role,
+                              boolean active, boolean loginLocked) {}
+
+    public record LoginCredential(AppUser user, String passwordHash, boolean loginLocked) {}
+
     public record Apartment(Long id, String code, BigDecimal areaM2, String householdName,
                             String contactPhone, boolean active) {}
 
