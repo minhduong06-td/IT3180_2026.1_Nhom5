@@ -57,8 +57,11 @@ public final class Domain {
 
     public record PaymentRecord(long id, String apartmentCode, String householdName,
                                 String feeName, String period, LocalDateTime paidAt,
-                                BigDecimal amount, PaymentMethod method, String reference,
+                                String payerName, BigDecimal amount, BigDecimal appliedAmount,
+                                PaymentMethod method, String reference,
                                 String note, String recordedBy) {}
+
+    public record PaymentReceipt(BigDecimal received, BigDecimal applied, BigDecimal credit) {}
 
     public record ContributionRecord(long id, String apartmentCode, String householdName,
                                     String feeName, LocalDate receivedOn, BigDecimal amount,
@@ -70,6 +73,7 @@ public final class Domain {
 
     public record HouseholdDebt(String apartmentCode, String householdName, int floor, BigDecimal areaM2,
                                 int residentCount, BigDecimal totalDue, BigDecimal paid, BigDecimal balance,
+                                BigDecimal creditBalance,
                                 ChargeStatus status, LocalDateTime lastPaidAt) {}
 
     public record DashboardSummary(String period, BigDecimal totalAmount, BigDecimal paidAmount,

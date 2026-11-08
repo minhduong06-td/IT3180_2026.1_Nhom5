@@ -109,7 +109,9 @@ CREATE TABLE IF NOT EXISTS payments (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     charge_id BIGINT NOT NULL,
     paid_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    payer_name VARCHAR(50) NOT NULL,
     amount DECIMAL(15, 0) NOT NULL,
+    applied_amount DECIMAL(15, 0) NOT NULL,
     method ENUM('CASH', 'BANK_TRANSFER') NOT NULL,
     reference VARCHAR(120) NULL,
     note VARCHAR(500) NULL,
@@ -117,8 +119,34 @@ CREATE TABLE IF NOT EXISTS payments (
     KEY ix_payment_charge (charge_id),
     KEY ix_payment_paid_at (paid_at),
     CONSTRAINT chk_payment_positive CHECK (amount > 0),
+    CONSTRAINT chk_payment_applied CHECK (applied_amount >= 0 AND applied_amount <= amount),
     CONSTRAINT fk_payment_charge FOREIGN KEY (charge_id) REFERENCES charges(id) ON DELETE RESTRICT,
     CONSTRAINT fk_payment_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS apartment_credits (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    apartment_id BIGINT NOT NULL,
+    source_payment_id BIGINT NOT NULL UNIQUE,
+    amount DECIMAL(15, 0) NOT NULL,
+    remaining_amount DECIMAL(15, 0) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    KEY ix_credit_apartment_balance (apartment_id, remaining_amount),
+    CONSTRAINT chk_credit_amount CHECK (amount > 0 AND remaining_amount >= 0 AND remaining_amount <= amount),
+    CONSTRAINT fk_credit_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_credit_payment FOREIGN KEY (source_payment_id) REFERENCES payments(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS credit_applications (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    credit_id BIGINT NOT NULL,
+    charge_id BIGINT NOT NULL,
+    amount DECIMAL(15, 0) NOT NULL,
+    applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_credit_charge (credit_id, charge_id),
+    CONSTRAINT chk_credit_application_positive CHECK (amount > 0),
+    CONSTRAINT fk_credit_application_credit FOREIGN KEY (credit_id) REFERENCES apartment_credits(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_credit_application_charge FOREIGN KEY (charge_id) REFERENCES charges(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS contributions (
