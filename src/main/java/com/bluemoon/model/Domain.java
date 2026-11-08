@@ -8,7 +8,7 @@ public final class Domain {
     private Domain() {}
 
     public enum Role { ADMIN, ACCOUNTANT }
-    public enum CalculationBasis { PER_M2, FIXED }
+    public enum CalculationBasis { PER_M2, PER_RESIDENT, FIXED, VOLUNTARY }
     public enum OccupancyStatus { OCCUPIED, VACANT, RENTED }
     public enum Gender { MALE, FEMALE }
     public enum HouseholdRelationship { HEAD, WIFE, HUSBAND, CHILD, PARENT, TENANT, OTHER }
@@ -59,6 +59,14 @@ public final class Domain {
                                 String feeName, String period, LocalDateTime paidAt,
                                 BigDecimal amount, PaymentMethod method, String reference,
                                 String note, String recordedBy) {}
+
+    public record ContributionRecord(long id, String apartmentCode, String householdName,
+                                    String feeName, LocalDateTime receivedAt, BigDecimal amount,
+                                    PaymentMethod method, String reference, String note,
+                                    String recordedBy) {}
+
+    public record Contribution(long feeTypeId, long apartmentId, BigDecimal amount,
+                               LocalDate receivedOn, PaymentMethod method, String reference, String note) {}
 
     public record DashboardSummary(String period, BigDecimal totalAmount, BigDecimal paidAmount,
                                    BigDecimal balance, int apartmentCount, int paidCharges,
