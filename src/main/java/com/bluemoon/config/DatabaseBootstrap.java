@@ -31,7 +31,27 @@ public final class DatabaseBootstrap {
             }
             ensureApartmentProfile(connection);
             ensureFeeCalculationBasis(connection);
+            ensurePaymentProfile(connection);
             seedInitialData(connection);
+        }
+    }
+
+    private static void ensurePaymentProfile(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            if (!hasColumn(connection, "payments", "payer_name")) {
+                statement.executeUpdate("ALTER TABLE payments ADD COLUMN payer_name VARCHAR(50) NULL");
+            }
+            if (!hasColumn(connection, "payments", "applied_amount")) {
+                statement.executeUpdate("ALTER TABLE payments ADD COLUMN applied_amount DECIMAL(15, 0) NULL");
+            }
+            if (isNullable(connection, "payments", "payer_name")) {
+                statement.executeUpdate("UPDATE payments SET payer_name = 'Chưa ghi nhận' WHERE payer_name IS NULL OR payer_name = ''");
+                statement.executeUpdate("ALTER TABLE payments MODIFY payer_name VARCHAR(50) NOT NULL");
+            }
+            if (isNullable(connection, "payments", "applied_amount")) {
+                statement.executeUpdate("UPDATE payments SET applied_amount = amount WHERE applied_amount IS NULL");
+                statement.executeUpdate("ALTER TABLE payments MODIFY applied_amount DECIMAL(15, 0) NOT NULL");
+            }
         }
     }
 
