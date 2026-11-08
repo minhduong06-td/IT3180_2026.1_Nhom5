@@ -4,6 +4,7 @@ import com.bluemoon.config.Database;
 import com.bluemoon.config.DatabaseBootstrap;
 import com.bluemoon.dao.AppRepository;
 import com.bluemoon.service.ApartmentService;
+import com.bluemoon.service.AccountService;
 import com.bluemoon.service.AuthService;
 import com.bluemoon.service.BillingService;
 import com.bluemoon.service.CollectionService;
@@ -25,7 +26,7 @@ public final class BlueMoonApplication extends Application {
         this.stage = stage;
         Database database = new Database();
         AppRepository repository = new AppRepository(database);
-        services = new AppServices(new AuthService(repository), new ApartmentService(repository),
+        services = new AppServices(new AuthService(repository), new AccountService(repository), new ApartmentService(repository),
                 new FeeService(repository), new BillingService(repository),
                 new CollectionService(repository), new DashboardService(repository));
         stage.setTitle("BlueMoon | Quản lý thu phí");
