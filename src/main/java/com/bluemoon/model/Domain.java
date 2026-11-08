@@ -68,6 +68,10 @@ public final class Domain {
     public record Contribution(long feeTypeId, long apartmentId, BigDecimal amount,
                                LocalDate receivedOn, PaymentMethod method, String reference, String note) {}
 
+    public record HouseholdDebt(String apartmentCode, String householdName, int floor, BigDecimal areaM2,
+                                int residentCount, BigDecimal totalDue, BigDecimal paid, BigDecimal balance,
+                                ChargeStatus status, LocalDateTime lastPaidAt) {}
+
     public record DashboardSummary(String period, BigDecimal totalAmount, BigDecimal paidAmount,
                                    BigDecimal balance, int apartmentCount, int paidCharges,
                                    int openCharges) {}
