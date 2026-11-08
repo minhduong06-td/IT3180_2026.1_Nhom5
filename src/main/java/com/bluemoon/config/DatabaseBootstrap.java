@@ -29,7 +29,68 @@ public final class DatabaseBootstrap {
             for (String sql : schema.split(";")) {
                 if (!sql.isBlank()) statement.execute(sql);
             }
+            ensureApartmentProfile(connection);
             seedInitialData(connection);
+        }
+    }
+
+    private static void ensureApartmentProfile(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            if (!hasColumn(connection, "apartments", "household_code")) {
+                statement.executeUpdate("ALTER TABLE apartments ADD COLUMN household_code VARCHAR(20) NULL");
+            }
+            if (!hasColumn(connection, "apartments", "move_in_date")) {
+                statement.executeUpdate("ALTER TABLE apartments ADD COLUMN move_in_date DATE NULL");
+            }
+            if (!hasColumn(connection, "apartments", "occupancy_status")) {
+                statement.executeUpdate("ALTER TABLE apartments ADD COLUMN occupancy_status "
+                        + "ENUM('OCCUPIED', 'VACANT', 'RENTED') NOT NULL DEFAULT 'OCCUPIED'");
+            }
+            statement.executeUpdate("UPDATE apartments SET household_code = CONCAT('HK-', LPAD(id, 6, '0')) "
+                    + "WHERE household_code IS NULL OR household_code = ''");
+            statement.executeUpdate("UPDATE apartments SET move_in_date = DATE(created_at) WHERE move_in_date IS NULL");
+            if (isNullable(connection, "apartments", "household_code")) {
+                statement.executeUpdate("ALTER TABLE apartments MODIFY household_code VARCHAR(20) NOT NULL");
+            }
+            if (isNullable(connection, "apartments", "move_in_date")) {
+                statement.executeUpdate("ALTER TABLE apartments MODIFY move_in_date DATE NOT NULL");
+            }
+            if (!hasIndex(connection, "apartments", "uq_apartment_household_code")) {
+                statement.executeUpdate("ALTER TABLE apartments ADD UNIQUE KEY uq_apartment_household_code (household_code)");
+            }
+        }
+    }
+
+    private static boolean hasColumn(Connection connection, String table, String column) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement(
+                "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?")) {
+            query.setString(1, table);
+            query.setString(2, column);
+            try (ResultSet result = query.executeQuery()) {
+                return result.next();
+            }
+        }
+    }
+
+    private static boolean isNullable(Connection connection, String table, String column) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement(
+                "SELECT is_nullable FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?")) {
+            query.setString(1, table);
+            query.setString(2, column);
+            try (ResultSet result = query.executeQuery()) {
+                return result.next() && "YES".equals(result.getString(1));
+            }
+        }
+    }
+
+    private static boolean hasIndex(Connection connection, String table, String index) throws SQLException {
+        try (PreparedStatement query = connection.prepareStatement(
+                "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?")) {
+            query.setString(1, table);
+            query.setString(2, index);
+            try (ResultSet result = query.executeQuery()) {
+                return result.next();
+            }
         }
     }
 
@@ -77,19 +138,23 @@ public final class DatabaseBootstrap {
     private static void seedApartments(Connection connection) throws SQLException {
         if (count(connection, "apartments") != 0) return;
         try (PreparedStatement insert = connection.prepareStatement(
-                "INSERT INTO apartments(code, area_m2, household_name, contact_phone) VALUES (?, ?, ?, ?)")) {
-            addApartment(insert, "A101", "65.00", "Nguyễn Minh An", "0900000101");
-            addApartment(insert, "A102", "78.50", "Trần Gia Bảo", "0900000102");
-            addApartment(insert, "A103", "92.00", "Lê Thu Hà", "0900000103");
+                "INSERT INTO apartments(code, household_code, area_m2, household_name, contact_phone, move_in_date, occupancy_status) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?)")) {
+            addApartment(insert, "A101", "HK-000101", "65.00", "Nguyễn Minh An", "0900000101");
+            addApartment(insert, "A102", "HK-000102", "78.50", "Trần Gia Bảo", "0900000102");
+            addApartment(insert, "A103", "HK-000103", "92.00", "Lê Thu Hà", "0900000103");
         }
     }
 
-    private static void addApartment(PreparedStatement insert, String code, String area,
+    private static void addApartment(PreparedStatement insert, String code, String householdCode, String area,
                                      String household, String phone) throws SQLException {
         insert.setString(1, code);
-        insert.setBigDecimal(2, new java.math.BigDecimal(area));
-        insert.setString(3, household);
-        insert.setString(4, phone);
+        insert.setString(2, householdCode);
+        insert.setBigDecimal(3, new java.math.BigDecimal(area));
+        insert.setString(4, household);
+        insert.setString(5, phone);
+        insert.setDate(6, java.sql.Date.valueOf("2020-01-01"));
+        insert.setString(7, "OCCUPIED");
         insert.executeUpdate();
     }
 

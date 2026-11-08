@@ -18,13 +18,36 @@ CREATE TABLE IF NOT EXISTS account_login_state (
 CREATE TABLE IF NOT EXISTS apartments (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(20) NOT NULL UNIQUE,
+    household_code VARCHAR(20) NOT NULL,
     area_m2 DECIMAL(10, 2) NOT NULL,
     household_name VARCHAR(120) NOT NULL,
     contact_phone VARCHAR(32) NOT NULL,
+    move_in_date DATE NOT NULL,
+    occupancy_status ENUM('OCCUPIED', 'VACANT', 'RENTED') NOT NULL DEFAULT 'OCCUPIED',
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_apartment_household_code (household_code),
     CONSTRAINT chk_apartment_area CHECK (area_m2 > 0)
+);
+
+CREATE TABLE IF NOT EXISTS residents (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    apartment_id BIGINT NOT NULL,
+    full_name VARCHAR(50) COLLATE utf8mb4_0900_ai_ci NOT NULL,
+    date_of_birth DATE NOT NULL,
+    gender ENUM('MALE', 'FEMALE') NOT NULL,
+    national_id VARCHAR(12) NULL UNIQUE,
+    relationship ENUM('HEAD', 'WIFE', 'HUSBAND', 'CHILD', 'PARENT', 'TENANT', 'OTHER') NOT NULL,
+    head_apartment_id BIGINT GENERATED ALWAYS AS (
+        CASE WHEN relationship = 'HEAD' THEN apartment_id ELSE NULL END
+    ) STORED,
+    move_in_date DATE NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_resident_household_head (head_apartment_id),
+    KEY ix_resident_apartment (apartment_id),
+    CONSTRAINT chk_resident_national_id CHECK (national_id IS NULL OR national_id REGEXP '^([0-9]{9}|[0-9]{12})$'),
+    CONSTRAINT fk_resident_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS fee_types (
