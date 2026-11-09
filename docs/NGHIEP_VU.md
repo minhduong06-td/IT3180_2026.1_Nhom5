@@ -26,6 +26,7 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 | Công nợ hộ gia đình | Căn hộ, tầng, diện tích, nhân khẩu, phải thu, đã thanh toán, còn nợ, số dư nộp trước, trạng thái, lần thanh toán cuối | Tổng hợp theo hộ trong kỳ; lọc theo trạng thái và khoảng tầng; số đã thanh toán gồm các khoản đã cấn trừ vào kỳ đó, số dư nộp trước được hiển thị riêng. |
 | Thông báo thu phí | Kỳ thu, căn hộ, thông tin hộ, chi tiết khoản thu, số dư, hạn nộp | Nội dung phải khớp với bảng kê đã phát hành; có thể xem trước, in riêng hoặc in toàn kỳ. |
 | Giao dịch | Ngày thu, người nộp, số tiền nhận, số đã cấn trừ, số dư chuyển kỳ, hình thức, mã tham chiếu, ghi chú, người ghi nhận | Số tiền là số nguyên VND dương; mỗi phiếu thu được lưu riêng trong lịch sử. |
+| Tệp CSV | Bảng kê phải thu, lịch sử giao dịch | Xuất các dòng đang hiển thị sau khi lọc; dữ liệu dùng UTF-8 và tiền giữ dạng số để đối soát. |
 | Đóng góp | Căn hộ, khoản đóng góp, ngày nhận, số tiền thực nhận, hình thức, mã tham chiếu | Ghi nhận riêng từng lần đóng góp; khoản này không tạo công nợ và không được cộng vào phí bắt buộc. |
 | Tài khoản | Tên đăng nhập, tên hiển thị, vai trò, mật khẩu | Ban quản trị tạo tài khoản; mật khẩu được lưu dưới dạng băm và người dùng có thể tự đổi mật khẩu. |
 
@@ -58,8 +59,9 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 12. Kế toán ghi nhận người nộp, ngày thu, số tiền nhận, phương thức thanh toán và thông tin đối chiếu nếu có.
 13. Ghi nhận riêng khoản đóng góp tự nguyện theo số tiền thực nhận.
 14. Xem trước hoặc in thông báo thu phí theo căn hộ hay toàn kỳ.
-15. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
-16. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
+15. Xuất bảng kê hoặc lịch sử thu thành tệp CSV để đối soát.
+16. Theo dõi công nợ theo kỳ, lọc trạng thái và khoảng tầng để tìm các hộ còn số dư.
+17. Xem tổng quan hoặc lịch sử thu để theo dõi kết quả.
 
 ## Tiêu chí chấp nhận
 
@@ -92,6 +94,12 @@ Các quyền được kiểm tra trong xử lý nghiệp vụ, không chỉ dự
 - **Khi bắt đầu:** Khoản phải thu còn số dư.
 - **Khi thực hiện:** Kế toán lưu ngày thu, người nộp, số tiền và phương thức. Khoản nộp dư được tách thành số dư của hộ.
 - **Kết quả:** Phiếu thu xuất hiện trong lịch sử với số đã cấn trừ và số dư nộp trước; số dư được tự động cấn vào kỳ tiếp theo.
+
+### Xuất dữ liệu
+
+- **Khi bắt đầu:** Người dùng đã đăng nhập và bảng kê hoặc lịch sử thu có dữ liệu.
+- **Khi thực hiện:** Người dùng xuất danh sách đang hiển thị thành tệp CSV.
+- **Kết quả:** Tệp giữ đủ cột, dòng sau lọc và dấu tiếng Việt; hệ thống hỏi trước khi ghi đè tệp cùng tên.
 
 ### Phân quyền
 
