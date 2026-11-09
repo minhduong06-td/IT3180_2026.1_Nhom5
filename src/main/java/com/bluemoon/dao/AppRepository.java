@@ -265,11 +265,13 @@ public final class AppRepository {
             connection.setAutoCommit(false);
             try {
                 ensurePeriodUnissued(connection, bill.year(), bill.month());
-                try (PreparedStatement apartment = connection.prepareStatement(
-                        "SELECT 1 FROM apartments WHERE id = ? AND active = TRUE FOR UPDATE")) {
-                    apartment.setLong(1, bill.apartmentId());
-                    try (ResultSet result = apartment.executeQuery()) {
-                        if (!result.next()) throw new SQLException("Không tìm thấy căn hộ đang hoạt động.");
+                if (bill.id() == null) {
+                    try (PreparedStatement apartment = connection.prepareStatement(
+                            "SELECT 1 FROM apartments WHERE id = ? AND active = TRUE FOR UPDATE")) {
+                        apartment.setLong(1, bill.apartmentId());
+                        try (ResultSet result = apartment.executeQuery()) {
+                            if (!result.next()) throw new SQLException("Không tìm thấy căn hộ đang hoạt động.");
+                        }
                     }
                 }
                 if (bill.id() != null) {
