@@ -108,6 +108,24 @@ CREATE TABLE IF NOT EXISTS utility_bills (
     CONSTRAINT fk_utility_bill_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE IF NOT EXISTS resident_requests (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    apartment_id BIGINT NOT NULL,
+    reporter_name VARCHAR(100) NOT NULL,
+    category ENUM('MAINTENANCE', 'CLEANING', 'SECURITY', 'NOISE', 'OTHER') NOT NULL,
+    subject VARCHAR(120) NOT NULL,
+    description VARCHAR(1500) NOT NULL,
+    status ENUM('RECEIVED', 'IN_PROGRESS', 'RESOLVED') NOT NULL DEFAULT 'RECEIVED',
+    handling_note VARCHAR(1000) NULL,
+    created_by BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    KEY ix_resident_request_status_updated (status, updated_at),
+    KEY ix_resident_request_apartment (apartment_id, created_at),
+    CONSTRAINT fk_resident_request_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_resident_request_user FOREIGN KEY (created_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
 CREATE TABLE IF NOT EXISTS billing_periods (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     period_year SMALLINT NOT NULL,
