@@ -8,7 +8,7 @@ public final class Domain {
     private Domain() {}
 
     public enum Role { ADMIN, ACCOUNTANT }
-    public enum CalculationBasis { PER_M2, PER_RESIDENT, PER_MOTORCYCLE, PER_CAR, FIXED, VOLUNTARY }
+    public enum CalculationBasis { PER_M2, PER_RESIDENT, PER_MOTORCYCLE, PER_CAR, FIXED, EXTERNAL_BILL, VOLUNTARY }
     public enum VehicleType { MOTORCYCLE, CAR }
     public enum UtilityType { ELECTRICITY, WATER, INTERNET }
     public enum OccupancyStatus { OCCUPIED, VACANT, RENTED }
