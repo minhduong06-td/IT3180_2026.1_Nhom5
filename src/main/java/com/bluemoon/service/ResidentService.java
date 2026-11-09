@@ -70,6 +70,17 @@ public final class ResidentService {
             throw new IllegalArgumentException("Ngày chuyển đến không được lớn hơn ngày hiện tại.");
         }
 
+        if (resident.moveInDate().isBefore(resident.dateOfBirth())) {
+            throw new IllegalArgumentException("Ngày chuyển đến không được trước ngày sinh.");
+        }
+        var apartment = repository.listApartments().stream()
+                .filter(value -> value.id() == resident.apartmentId())
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy căn hộ."));
+        if (resident.id() == null && !apartment.active()) {
+            throw new IllegalArgumentException("Không thể thêm nhân khẩu vào căn hộ đã ngừng hoạt động.");
+        }
+
         List<Resident> household = repository.listResidents(resident.apartmentId());
         Resident current = household.stream().filter(value -> value.id().equals(resident.id())).findFirst().orElse(null);
         if (resident.id() != null && current == null) throw new IllegalArgumentException("Không tìm thấy nhân khẩu cần cập nhật.");
