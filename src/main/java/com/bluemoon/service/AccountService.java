@@ -18,6 +18,22 @@ public final class AccountService {
         this.repository = repository;
     }
 
+    public AppUser createInitialAdmin(String username, String displayName, String password,
+                                      String confirmation) throws SQLException {
+        String normalizedUsername = normalizeUsername(username);
+        validateDisplayName(displayName);
+        validatePassword(password, confirmation);
+        try {
+            return repository.createInitialAdmin(normalizedUsername, BCrypt.hashpw(password, BCrypt.gensalt(10)),
+                    displayName.trim());
+        } catch (SQLException exception) {
+            if ("23000".equals(exception.getSQLState())) {
+                throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.", exception);
+            }
+            throw exception;
+        }
+    }
+
     public List<UserAccount> list(AppUser user) throws SQLException {
         AccessRules.requireRole(user, Role.ADMIN);
         return repository.listUserAccounts();
@@ -26,13 +42,8 @@ public final class AccountService {
     public void create(AppUser user, String username, String displayName, Role role,
                        String password, String confirmation) throws SQLException {
         AccessRules.requireRole(user, Role.ADMIN);
-        String normalizedUsername = username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
-        if (!normalizedUsername.matches("[a-z0-9._-]{3,64}")) {
-            throw new IllegalArgumentException("Tên đăng nhập gồm 3 đến 64 ký tự chữ thường, số, dấu chấm, gạch ngang hoặc gạch dưới.");
-        }
-        if (displayName == null || displayName.trim().length() < 2 || displayName.trim().length() > 120) {
-            throw new IllegalArgumentException("Tên hiển thị cần có từ 2 đến 120 ký tự.");
-        }
+        String normalizedUsername = normalizeUsername(username);
+        validateDisplayName(displayName);
         validatePassword(password, confirmation);
         if (role == null) throw new IllegalArgumentException("Chọn vai trò cho tài khoản.");
         try {
@@ -42,6 +53,20 @@ public final class AccountService {
                 throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.", exception);
             }
             throw exception;
+        }
+    }
+
+    private static String normalizeUsername(String username) {
+        String normalized = username == null ? "" : username.trim().toLowerCase(Locale.ROOT);
+        if (!normalized.matches("[a-z0-9._-]{3,64}")) {
+            throw new IllegalArgumentException("Tên đăng nhập gồm 3 đến 64 ký tự chữ thường, số, dấu chấm, gạch ngang hoặc gạch dưới.");
+        }
+        return normalized;
+    }
+
+    private static void validateDisplayName(String displayName) {
+        if (displayName == null || displayName.trim().length() < 2 || displayName.trim().length() > 120) {
+            throw new IllegalArgumentException("Tên hiển thị cần có từ 2 đến 120 ký tự.");
         }
     }
 
