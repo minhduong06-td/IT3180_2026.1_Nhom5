@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS fee_types (
     code VARCHAR(32) NOT NULL UNIQUE,
     name VARCHAR(120) NOT NULL,
     required BOOLEAN NOT NULL DEFAULT TRUE,
-    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'VOLUNTARY') NOT NULL,
+    calculation_basis ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL', 'VOLUNTARY') NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -86,6 +86,26 @@ CREATE TABLE IF NOT EXISTS fee_rates (
     CONSTRAINT chk_fee_rate_positive CHECK (unit_price > 0),
     CONSTRAINT fk_fee_rate_type FOREIGN KEY (fee_type_id) REFERENCES fee_types(id) ON DELETE RESTRICT,
     CONSTRAINT fk_fee_rate_user FOREIGN KEY (created_by) REFERENCES app_users(id) ON DELETE RESTRICT
+);
+
+CREATE TABLE IF NOT EXISTS utility_bills (
+    id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    period_year SMALLINT NOT NULL,
+    period_month TINYINT UNSIGNED NOT NULL,
+    apartment_id BIGINT NOT NULL,
+    utility_type ENUM('ELECTRICITY', 'WATER', 'INTERNET') NOT NULL,
+    amount DECIMAL(13, 0) NOT NULL,
+    provider VARCHAR(100) NOT NULL,
+    reference VARCHAR(120) NULL,
+    recorded_by BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_utility_bill_period (apartment_id, period_year, period_month, utility_type),
+    KEY ix_utility_bill_month (period_year, period_month),
+    CONSTRAINT chk_utility_bill_period CHECK (period_year BETWEEN 2000 AND 2200 AND period_month BETWEEN 1 AND 12),
+    CONSTRAINT chk_utility_bill_amount CHECK (amount > 0),
+    CONSTRAINT fk_utility_bill_apartment FOREIGN KEY (apartment_id) REFERENCES apartments(id) ON DELETE RESTRICT,
+    CONSTRAINT fk_utility_bill_user FOREIGN KEY (recorded_by) REFERENCES app_users(id) ON DELETE RESTRICT
 );
 
 CREATE TABLE IF NOT EXISTS billing_periods (
@@ -107,7 +127,7 @@ CREATE TABLE IF NOT EXISTS charges (
     billing_period_id BIGINT NOT NULL,
     apartment_id BIGINT NOT NULL,
     fee_type_id BIGINT NOT NULL,
-    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED') NOT NULL,
+    calculation_basis_snapshot ENUM('PER_M2', 'PER_RESIDENT', 'PER_MOTORCYCLE', 'PER_CAR', 'FIXED', 'EXTERNAL_BILL') NOT NULL,
     quantity_snapshot DECIMAL(10, 2) NOT NULL,
     unit_price_snapshot DECIMAL(15, 2) NOT NULL,
     amount DECIMAL(15, 0) NOT NULL,
