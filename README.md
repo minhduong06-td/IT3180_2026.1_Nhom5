@@ -49,6 +49,10 @@ docker compose down
 docker compose down -v
 ```
 
+Database sạch được nạp dữ liệu demo gồm 8 căn hộ A101–A108 với diện tích khác nhau và 18 nhân khẩu thuộc nhiều quan hệ trong hộ. Dữ liệu này chỉ phục vụ demo và kiểm thử; kỳ thu, bảng kê và thanh toán nên được tạo qua luồng ứng dụng để chứng minh nghiệp vụ. Bootstrap không chèn lại nhân khẩu khi cơ sở dữ liệu đã có dữ liệu.
+
+Ở fixture Sprint 1, chỉ Phí dịch vụ và Phí quản lý được bật để phát hành kỳ thu. Các loại phí vệ sinh, gửi xe và tiện ích được giữ trong danh mục cho phần mở rộng nhưng không tự sinh vào kỳ Sprint 1.
+
 ## Tài khoản khởi tạo
 
 | Vai trò | Tên đăng nhập | Mật khẩu |
