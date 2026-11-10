@@ -65,3 +65,19 @@ Kiểm thử hồi quy thêm cho hóa đơn tiện ích, phí gửi xe, yêu c�
 ## Kết luận
 
 Luồng thu phí tháng 10/2026 đạt Definition of Done của Sprint 1 sau khi sửa DEF-01 và DEF-02. Đủ điều kiện chạy demo nội bộ.
+
+## Lần xác minh hiện tại - 10/11/2026
+
+Lần chạy này được thực hiện lại sau khi bổ sung dữ liệu demo và cập nhật test tích hợp cho fixture mới. Môi trường dùng JDK 25, MySQL 8.4 từ `compose.yaml`, database sạch và chạy với các biến `BLUEMOON_IT_DB_*`.
+
+| Nhóm | Kết quả |
+|---|---:|
+| `MySqlBillingFlowTest` | 1 đạt |
+| `AuthorizationTest` | 3 đạt |
+| `BillingRulesTest` | 5 đạt |
+| `ResidenceChangeServiceTest` | 3 đạt |
+| `CsvExporterTest` | 1 đạt |
+| `FeeNoticePrinterTest` | 1 đạt |
+| Tổng | 14 đạt, 0 lỗi, 0 bỏ qua |
+
+Database sau bootstrap được kiểm tra trực tiếp có 8 căn hộ, 18 nhân khẩu, 0 kỳ thu và 0 giao dịch thanh toán. Việc chưa có kỳ thu/giao dịch sau bootstrap là có chủ ý: demo phải tạo chúng qua giao diện để chứng minh luồng nghiệp vụ, thay vì chỉ mở dữ liệu đã chèn sẵn.
