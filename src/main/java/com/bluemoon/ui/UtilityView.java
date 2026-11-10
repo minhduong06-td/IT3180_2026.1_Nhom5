@@ -63,7 +63,7 @@ final class UtilityView extends VBox {
         });
         getChildren().addAll(Ui.pageHeader("Điện, nước và internet",
                         "Nhập số tiền theo hóa đơn nhà cung cấp trước khi phát hành kỳ thu."),
-                Ui.toolbar(search, refresh, Ui.spacer(), change, remove, exportCsv, add), table);
+                Ui.toolbar(search, refresh, change, remove, exportCsv, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();

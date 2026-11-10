@@ -11,6 +11,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
@@ -45,9 +46,9 @@ final class MainShell extends BorderPane {
         brand.setAlignment(Pos.CENTER_LEFT);
         brand.getStyleClass().add("sidebar-brand");
         navItems.getStyleClass().add("sidebar-nav");
+        sidebar.getChildren().add(brand);
         addNavigation("Tổng quan", () -> new DashboardView(services, user, () -> select("Kỳ thu")));
         if (user.role() == Role.ADMIN) {
-            sidebar.getChildren().addAll(brand, Ui.label("VẬN HÀNH", "sidebar-caption"), navItems);
             addNavigation("Căn hộ", () -> new ApartmentView(services, user));
             addNavigation("Phương tiện", () -> new VehicleView(services, user));
             addNavigation("Điện, nước, internet", () -> new UtilityView(services, user));
@@ -59,31 +60,31 @@ final class MainShell extends BorderPane {
             addNavigation("Tài khoản", () -> new AccountView(services, user));
             addNavigation("Kỳ thu", () -> new BillingView(services, user, this::showCharges));
         } else {
-            sidebar.getChildren().addAll(brand, Ui.label("THU PHÍ", "sidebar-caption"), navItems);
             addNavigation("Cư dân", () -> new ResidentView(services, user));
             addNavigation("Đóng góp", () -> new ContributionView(services, user));
         }
         addNavigation("Công nợ", () -> new DebtView(services, user));
         addNavigation("Bảng kê phải thu", () -> new ChargesView(services, user));
         addNavigation("Lịch sử thu", () -> new TransactionsView(services, user));
-        Region spacer = new Region();
-        VBox.setVgrow(spacer, Priority.ALWAYS);
+        ScrollPane navScroll = new ScrollPane(navItems);
+        navScroll.setFitToWidth(true);
+        navScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        navScroll.getStyleClass().add("sidebar-scroll");
+        VBox.setVgrow(navScroll, Priority.ALWAYS);
         VBox account = new VBox(5, Ui.label(user.displayName(), ""),
                 Ui.label(user.role() == Role.ADMIN ? "Ban quản trị" : "Kế toán", "sidebar-role"));
         account.getStyleClass().add("sidebar-user");
-        sidebar.getChildren().addAll(spacer, account);
+        sidebar.getChildren().addAll(navScroll, account);
         return sidebar;
     }
 
     private HBox topbar() {
-        Label title = new Label("Quản lý thu phí BlueMoon");
-        title.getStyleClass().add("topbar-title");
         Region spacer = Ui.spacer();
         var changePassword = Ui.button("Đổi mật khẩu", false);
         changePassword.setOnAction(event -> changePassword());
         var signOut = Ui.button("Đăng xuất", false);
         signOut.setOnAction(event -> logout.run());
-        HBox bar = new HBox(12, title, spacer, changePassword, signOut);
+        HBox bar = new HBox(12, spacer, changePassword, signOut);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("app-topbar");
         return bar;
@@ -100,7 +101,7 @@ final class MainShell extends BorderPane {
         current.setPromptText("Mật khẩu hiện tại");
         current.getStyleClass().add("form-field");
         var next = new PasswordField();
-        next.setPromptText("Mật khẩu mới từ 8 đến 72 byte");
+        next.setPromptText("Ít nhất 8 ký tự, tối đa 72 byte UTF-8");
         next.getStyleClass().add("form-field");
         var confirmation = new PasswordField();
         confirmation.setPromptText("Nhập lại mật khẩu mới");

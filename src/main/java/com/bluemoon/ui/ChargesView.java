@@ -58,7 +58,7 @@ final class ChargesView extends VBox {
         var refresh = Ui.button("Tìm kiếm", true);
         refresh.setOnAction(event -> load());
         search.setOnAction(event -> load());
-        var statement = Ui.button("Xem bảng kê căn hộ", false);
+        var statement = Ui.button("Bảng kê căn hộ", false);
         statement.setDisable(true);
         statement.setOnAction(event -> showStatement());
         var printNotice = Ui.button("In thông báo", false);
@@ -68,7 +68,7 @@ final class ChargesView extends VBox {
         printAll.setOnAction(event -> printAllNotices());
         exportCsv.setDisable(true);
         exportCsv.setOnAction(event -> exportVisibleRows());
-        var pay = Ui.button("Ghi nhận thanh toán", true);
+        var pay = Ui.button("Thu tiền", true);
         pay.setDisable(true);
         pay.setVisible(user.role() == Role.ACCOUNTANT);
         pay.setManaged(user.role() == Role.ACCOUNTANT);
@@ -81,8 +81,8 @@ final class ChargesView extends VBox {
         });
         periodFilter.valueProperty().addListener((observable, oldValue, value) ->
                 printAll.setDisable(value == null || periodIds.get(value) == null));
-        getChildren().addAll(Ui.pageHeader("Bảng kê phải thu", "Tra cứu từng khoản, công thức tính và số dư của căn hộ."),
-                Ui.toolbar(periodFilter, search, refresh, Ui.spacer(), statement, printNotice, printAll, exportCsv, pay), table);
+        getChildren().addAll(Ui.pageHeader("Bảng kê phải thu", ""),
+                Ui.toolbar(periodFilter, search, refresh, statement, printNotice, printAll, exportCsv, pay), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         loadPeriods();
@@ -179,6 +179,7 @@ final class ChargesView extends VBox {
                     .stream().filter(charge -> charge.apartmentCode().equals(selected.apartmentCode())).toList();
             TableView<ChargeSummary> statement = new TableView<>();
             statement.setPrefHeight(240);
+            statement.setPlaceholder(new Label("Không có khoản thu trong kỳ."));
             statement.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
             statement.getColumns().add(column("Khoản thu", ChargeSummary::feeName));
             statement.getColumns().add(column("Công thức", ChargesView::formula));
