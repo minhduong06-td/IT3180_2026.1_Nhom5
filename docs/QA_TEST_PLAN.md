@@ -1,6 +1,6 @@
 # Kế hoạch kiểm thử BlueMoon — Sprint 1 và hồi quy
 
-Ngày cập nhật: 11/11/2026. Mã nguồn tham chiếu: `7d43b3f1526de62036da1056477019e81c5299ba`.
+Ngày cập nhật: 11/11/2026. Mã nguồn tham chiếu: `c4d4e98`.
 
 Kế hoạch kiểm tra luồng căn hộ–nhân khẩu–khoản thu–kỳ thu–thông báo–thanh toán–công nợ. Phương tiện, tiện ích, phản ánh, đóng góp, CSV và biến động cư trú được theo dõi trong nhóm hồi quy mở rộng. Phạm vi Sprint 1 theo bộ tài liệu trong repo; việc đối chiếu với kế hoạch được phê duyệt còn phụ thuộc baseline nêu ở [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md).
 
@@ -33,13 +33,13 @@ Lệnh test trên giả định đã đặt đủ biến tích hợp nếu muố
 
 | Bộ | Mục đích | Chuẩn bị và giới hạn |
 |---|---|---|
-| A — Demo/Sprint 1 | Tính phí, thanh toán, công nợ, in và KPI | Database mới sau bootstrap: 8 căn, 18 cư dân, chỉ hai phí m² đang bật, không có tiện ích/kỳ/phiếu thu. Giữ nguyên hồ sơ và đơn giá khi chạy luồng chuẩn. |
+| A — Fixture đối chiếu | Tính phí, thanh toán, công nợ, in và KPI | Chỉ tạo riêng cho kiểm tra: 8 căn, 18 cư dân, hai phí m² đang bật. Database mới sau bootstrap để trống; không dùng fixture này làm dữ liệu mặc định của ứng dụng. |
 | B — CRUD | Tạo/sửa hồ sơ, giấy tờ, tài khoản, loại phí | Schema riêng sau bootstrap. Dùng căn `P0508`, mã hộ `HK-QA0508`, phí `QA_SERVICE`, user `qa_accountant`, giấy tờ test chưa dùng. Không dùng tổng tiền bộ A sau khi thêm dữ liệu ở bộ B. |
 | C — Mở rộng | Xe, tiện ích, phản ánh, đóng góp, CSV và cư trú | Schema riêng sau bootstrap; chủ động bật phí mở rộng và ghi lại số người/xe/hóa đơn trước phát hành. Không lấy tổng tiền bộ A làm expected cho bộ C. |
 | D — Migration | Nâng cấp cấu trúc/dữ liệu cũ | Schema riêng mới chứa đúng fixture cũ trước bootstrap; mỗi lượt migration dùng schema mới hoặc khôi phục bản sao ban đầu. Không seed trước rồi mới bật chế độ legacy. |
 | E — Case lỗi và thay đổi giá/hồ sơ | R-02, R-03, R-04, R-05 và thao tác cạnh tranh | Bản sao độc lập của bộ A, khôi phục trước mỗi case làm thay đổi giá, hồ sơ hoặc thanh toán. |
 
-Không tạo A101 ở bước “tạo căn thành công” vì mã này đã có sau bootstrap. Bước tạo phí mới dùng `QA_SERVICE`, không dùng lại mã `SERVICE`. Các fixture trên cho kiểm thử thủ công; test tích hợp hiện có fixture và cleanup riêng, chạy trên database mới dành cho test tự động.
+Fixture A phải được chuẩn bị riêng trước khi chạy các case tính phí; database mới sau bootstrap không có A101 hoặc mã phí mẫu. Các fixture trên dùng cho kiểm thử có kiểm soát, không được tạo tự động khi ứng dụng khởi động. Bộ kiểm tra tích hợp chuẩn bị fixture của nó trên database riêng.
 
 ### Số liệu chuẩn bộ A
 
@@ -123,7 +123,7 @@ Các case có ghi “chưa đáp ứng trong code” vẫn giữ expected nghi�
 | REQ-01 | C | Tạo yêu cầu thiếu nội dung; tạo hợp lệ; cập nhật xử lý/hoàn tất | Chặn thiếu dữ liệu; yêu cầu mới RECEIVED; lưu trạng thái và ghi chú mới, còn tìm được bản ghi hoàn tất. |
 | EXP-01 | C | Xuất 4 loại bảng, gồm dữ liệu có dấu, dấu phẩy, xuống dòng và tiền | Đủ dòng/cột đang hiển thị, UTF-8/BOM, tiền giữ dạng số; cảnh báo ghi đè; thử nội dung bắt đầu bằng dấu công thức. |
 | CHANGE-01 | C | Ghi tạm trú/tạm vắng hợp lệ và khoảng ngày đảo | Lưu lịch sử hợp lệ, chặn ngày kết thúc trước bắt đầu; chưa mong đợi lịch sử này làm thay đổi số người tính phí. |
-| MIG-01 | D | Fixture cũ A101–A103, chưa có cư dân; bootstrap | Yêu cầu nâng cấp thành công, không bắt buộc mã căn demo. Code hiện có đường lỗi khi seed A104 (R-01). |
+| MIG-01 | D | Fixture cũ A101–A103, chưa có cư dân; bootstrap | Giữ nguyên ba căn cũ, không tự thêm tài khoản, cư dân hoặc phí mẫu; vẫn cho phép tạo tài khoản quản trị đầu tiên. |
 | MIG-02 | D riêng | Fixture cũ có dữ liệu thanh toán, thiếu payer_name/applied_amount; nâng cấp hai lần | Giữ giao dịch, bổ sung trường và constraint; lần hai không tạo dữ liệu lặp. Không dùng fixture thiếu căn để che lấp lỗi migration thanh toán. |
 | UI-01 | E | Đăng nhập/tải/lưu/phát hành khi DB có độ trễ trong môi trường test | Có trạng thái đang xử lý, UI phản hồi, không lưu lặp; nhiều handler hiện còn đồng bộ (R-06). |
 | UI-02 | A hoặc C | In toàn kỳ với dữ liệu đủ dài và thử hủy in | Không mất dữ liệu, hủy đúng; kiểm tra cắt chữ, bố cục, phản hồi UI. |
