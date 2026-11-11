@@ -1,10 +1,10 @@
 # Biên bản kiểm thử BlueMoon
 
-Ngày cập nhật tài liệu: 11/11/2026. Mã nguồn tham chiếu: `7d43b3f1526de62036da1056477019e81c5299ba`.
+Ngày cập nhật tài liệu: 11/11/2026. Mã nguồn tham chiếu cho phần xác minh bổ sung: `c4d4e98`.
 
 Biên bản tách kết quả kiểm tra hiện tại khỏi lịch sử các lần chạy đã ghi trong repo. Danh sách test trong source và các phép tính expected không được tính là kết quả đã thực thi.
 
-## Trạng thái xác minh ngày 11/11/2026
+## Lượt kiểm tra ban đầu ngày 11/11/2026
 
 | Mục | Ghi nhận |
 |---|---|
@@ -26,11 +26,18 @@ Fatal error compiling: error: release version 25 not supported
 
 Đây là lỗi môi trường Java không đúng yêu cầu dự án. Cần cấu hình JDK 25 theo [README](../README.md) rồi chạy lại; chưa có cơ sở kết luận các test nghiệp vụ đạt hoặc không đạt từ lần build này.
 
-## Các vấn đề cần xác minh sau khi sửa
+## Xác minh bổ sung với JDK 25 và database trống
+
+Chạy `mvnw clean test` trên MySQL 8.4 tạm riêng biệt, một lần với schema mới hoàn toàn và một lần với schema cũ có ba căn nhưng chưa có user, cư dân hoặc khoản thu. Cả hai lần đều có 14 test đạt, 0 lỗi, 0 bỏ qua.
+
+Ở schema mới, bootstrap tạo bảng nhưng không thêm dữ liệu mẫu; test xác nhận chưa có tài khoản, căn hộ hoặc khoản thu. Tài khoản quản trị đầu tiên được tạo qua service, tổng quan hiển thị kỳ chưa phát hành và số liệu bằng 0. Ở schema cũ, bootstrap giữ nguyên ba căn và không yêu cầu mã căn mẫu còn thiếu; tài khoản quản trị đầu tiên vẫn tạo được.
+
+Đã chạy JavaFX với một schema trống riêng bằng user MySQL ứng dụng; tiến trình khởi động không có exception và sau đó database vẫn có 0 user, 0 căn hộ, 0 cư dân, 0 khoản thu. Chưa kiểm tra trực tiếp thao tác trên màn hình.
+
+## Các vấn đề còn mở
 
 | Mã | Mức độ | Ghi nhận từ source | Trạng thái thực thi hiện tại | Case kiểm tra lại |
 |---|---|---|---|---|
-| R-01 | Cao | Seed cư dân phụ thuộc đủ mã căn demo; fixture DB cũ có thể lỗi ở A104. | Chưa sửa code; chưa tái hiện MySQL trong lượt 11/11. | MIG-01, MIG-02 |
 | R-02 | Cao | Chưa có khóa chống ghi lặp cùng một yêu cầu thu tiền; mã giao dịch chưa unique. | Chưa sửa code; chưa chạy gửi lặp/đồng thời. | PAY-04, PAY-05 |
 | R-03 | Cao | Chọn giá theo ngày phát hành, khác yêu cầu đầu kỳ; test tích hợp đang mong đợi theo hành vi hiện tại. | Chưa sửa code/test; chưa chạy case giá giữa tháng. | RATE-01, RATE-02 |
 | R-04 | Trung bình | Chứng từ/lịch sử join mã căn và tên hộ hiện tại. | Cần chốt chính sách và sửa; chưa chạy đổi hồ sơ/in lại. | HIST-01 |
@@ -69,7 +76,7 @@ Chưa chốt lại Definition of Done cho bản mã tham chiếu chỉ dựa tr�
 
 ## Lịch sử được giữ từ tài liệu trước
 
-Phần dưới giữ lại nội dung các lần chạy mà tài liệu trước đã ghi, gồm cả kết luận tại thời điểm đó. Repo chưa có commit SHA cụ thể và log/ảnh kèm theo để xác minh lại từng lần. Các trạng thái “Đạt”, “Đã sửa” và tổng 14 test đạt là **ghi nhận lịch sử**, không được cộng vào kết quả ngày 11/11/2026 hoặc dùng để đóng R-01–R-06.
+Phần dưới giữ lại nội dung các lần chạy mà tài liệu trước đã ghi, gồm cả kết luận tại thời điểm đó. Repo chưa có commit SHA cụ thể và log/ảnh kèm theo để xác minh lại từng lần. Các trạng thái “Đạt”, “Đã sửa” và tổng 14 test đạt là **ghi nhận lịch sử**, không được cộng vào kết quả ngày 11/11/2026 hoặc dùng để đóng R-02–R-06.
 
 Ghi nhận kết quả chạy kiểm thử luồng thu phí trên cơ sở dữ liệu sạch, đối chiếu với `QA_TEST_PLAN.md`.
 
