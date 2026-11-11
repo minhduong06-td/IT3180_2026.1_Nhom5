@@ -56,7 +56,7 @@ Tên ở trường `apartments.household_name` được nhập dưới nhãn Ng�
 
 Phí định kỳ được làm tròn đến đồng bằng `HALF_UP`. Phí theo số người/số xe có thể bằng 0 khi số lượng bằng 0; khoản 0 đồng có trạng thái Đã thanh toán. Các biến động thường trú/tạm trú/tạm vắng hiện chỉ được lưu lịch sử, chưa được dùng để cộng/trừ số người tính phí.
 
-Khi phát hành, code chọn các căn có `active=TRUE` và các khoản thu có `active=TRUE`, `required=TRUE`. Cờ này độc lập với tình trạng căn hộ trống/đang ở/cho thuê. Hóa đơn tiện ích đã nhập cho tháng đó được đưa vào kỳ riêng; chỉ tắt phí xe/vệ sinh chưa đủ giữ fixture Sprint 1 nếu đã nhập hóa đơn tiện ích.
+Khi phát hành, code chọn các căn có `active=TRUE` và các khoản thu có `active=TRUE`, `required=TRUE`. Cờ này độc lập với tình trạng căn hộ trống/đang ở/cho thuê. Hóa đơn tiện ích đã nhập cho tháng đó vẫn được đưa vào kỳ, kể cả khi các khoản phí định kỳ khác bị tắt.
 
 ### Ngày chốt đơn giá — yêu cầu còn phải sửa (R-03)
 
