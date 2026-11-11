@@ -60,7 +60,17 @@ Chờ dịch vụ `mysql` có trạng thái `healthy`, sau đó chạy:
 .\mvnw.cmd javafx:run
 ```
 
-Ứng dụng tự tạo bảng và cập nhật các cấu trúc được hỗ trợ. Database mới không được nạp dữ liệu mẫu. Nếu chưa có tài khoản, ứng dụng yêu cầu tạo tài khoản quản trị đầu tiên; nếu đã có tài khoản, ứng dụng mở màn hình đăng nhập.
+Khi tạo volume mới, Docker tự chạy `01-schema.sql` rồi `02-demo-data.sql`. File seed nằm ở
+`database/demo-data.sql` và chứa dữ liệu mẫu đa dạng theo nhiều tầng, diện tích, trạng thái
+đang ở/cho thuê/trống, quy mô hộ, quan hệ nhân khẩu, phương tiện, tiện ích, đóng góp và yêu cầu cư dân.
+Ứng dụng Java tiếp tục kiểm tra/cập nhật tương thích schema khi khởi động.
+
+Tài khoản demo:
+
+| Vai trò | Tên đăng nhập | Mật khẩu |
+|---|---|---|
+| Ban quản trị | `admin` | `admin123` |
+| Kế toán | `accountant` | `accountant123` |
 
 ### 3. Dừng hoặc tạo lại database
 
@@ -77,13 +87,25 @@ docker compose down -v
 docker compose up -d
 ```
 
-Lệnh `down -v` xóa toàn bộ dữ liệu trong volume của cấu hình Compose đang dùng. Khi cần nâng cấp database cũ, sao lưu và thử trên bản sao.
+Lệnh `down -v` xóa toàn bộ dữ liệu trong volume của cấu hình Compose đang dùng và là bước cần thiết
+để Docker nạp lại bộ seed mới. Khi cần nâng cấp database cũ, sao lưu và thử trên bản sao.
+
+Kiểm tra nhanh dữ liệu mẫu trong Docker:
+
+```powershell
+docker exec bluemoon-nhom5-mysql mysql -h 127.0.0.1 -u bluemoon_app -pbluemoon_dev bluemoon -e "SELECT code, household_name, occupancy_status, active FROM apartments ORDER BY code;"
+```
 
 ## Khởi tạo tài khoản và dữ liệu
 
-Database mới chỉ có cấu trúc bảng, không có tài khoản hoặc dữ liệu nghiệp vụ mẫu. Lần đầu mở ứng dụng, hãy tạo tài khoản quản trị bằng tên đăng nhập, tên hiển thị và mật khẩu của bạn. Sau đó đăng nhập để thêm căn hộ, cư dân, khoản thu và tài khoản kế toán.
+Database demo đã có sẵn tài khoản, căn hộ, nhân khẩu, kỳ thu tháng 11/2026, trạng thái thanh toán,
+công nợ, số dư nộp trước, phương tiện, hóa đơn tiện ích, đóng góp, lịch sử cư trú và yêu cầu cư dân.
+Các khoản Phí dịch vụ và Phí quản lý được dùng cho kỳ thu mẫu; các khoản mở rộng vẫn được lưu trong
+danh mục nhưng không tự cộng vào kỳ Sprint 1.
 
-Nếu database đã có tài khoản, ứng dụng chuyển thẳng tới màn hình đăng nhập và giữ nguyên dữ liệu hiện có. Cả hai vai trò đều xem tổng quan, tự đổi mật khẩu và ghi nhận đóng góp tự nguyện. Thu tiền cho khoản phải thu bắt buộc chỉ dành cho kế toán. Ban quản trị có thể tạo tài khoản và xem trạng thái; chưa có chức năng chủ động khóa/mở tài khoản hoặc đổi vai trò sau khi tạo. Khóa đăng nhập tạm thời được kích hoạt sau 5 lần sai mật khẩu, kéo dài 5 phút.
+Nếu muốn quay về database sạch và nạp lại toàn bộ dữ liệu mẫu, chạy `docker compose down -v` rồi
+`docker compose up -d`. Nếu database đã có tài khoản, ứng dụng chuyển thẳng tới màn hình đăng nhập
+và giữ nguyên dữ liệu hiện có.
 
 ## Cấu hình
 
