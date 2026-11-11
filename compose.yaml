@@ -1,7 +1,7 @@
 services:
   mysql:
     image: mysql:8.4
-    container_name: bluemoon-se05-mysql
+    container_name: bluemoon-nhom5-mysql
     environment:
       MYSQL_DATABASE: bluemoon
       MYSQL_USER: bluemoon_app
@@ -10,7 +10,9 @@ services:
     ports:
       - "127.0.0.1:3307:3306"
     volumes:
-      - bluemoon-se05-data:/var/lib/mysql
+      - bluemoon-nhom5-data:/var/lib/mysql
+      - ./src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./database/demo-data.sql:/docker-entrypoint-initdb.d/02-demo-data.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
@@ -18,4 +20,4 @@ services:
       retries: 20
 
 volumes:
-  bluemoon-se05-data:
+  bluemoon-nhom5-data:
