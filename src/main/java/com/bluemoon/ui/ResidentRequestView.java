@@ -69,9 +69,8 @@ final class ResidentRequestView extends VBox {
         add.setOnAction(event -> edit(null));
         table.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, value) ->
                 edit.setDisable(value == null));
-        getChildren().addAll(Ui.pageHeader("Yêu cầu cư dân",
-                        "Tiếp nhận và theo dõi phản ánh, sửa chữa, vệ sinh và an ninh."),
-                Ui.toolbar(search, find, clear, statusFilter, refresh, Ui.spacer(), edit, add), table);
+        getChildren().addAll(Ui.pageHeader("Yêu cầu cư dân", ""),
+                Ui.toolbar(search, find, clear, statusFilter, refresh, edit, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();

@@ -26,9 +26,11 @@ final class DashboardView extends VBox {
         try {
             DashboardSummary summary = services.dashboard().summary(user);
             List<PaymentRecord> payments = services.collections().payments(user, "").stream().limit(6).toList();
-            HBox heading = Ui.toolbar(new VBox(4,
-                    Ui.label("Tổng quan thu phí", "page-title"),
-                    Ui.label("Số liệu tổng hợp kỳ " + summary.period(), "page-subtitle")), Ui.spacer());
+            HBox heading = new HBox(12, new VBox(4,
+                    Ui.label("Tổng quan", "page-title"),
+                    Ui.label("Chưa phát hành".equals(summary.period()) ? summary.period() : "Kỳ " + summary.period(),
+                            "page-subtitle")), Ui.spacer());
+            heading.setAlignment(Pos.CENTER_LEFT);
             if (user.role() == com.bluemoon.model.Domain.Role.ADMIN && "Chưa phát hành".equals(summary.period())) {
                 var create = Ui.button("Tạo kỳ thu", true);
                 create.setOnAction(event -> createPeriod.run());
@@ -43,18 +45,15 @@ final class DashboardView extends VBox {
             VBox collection = new VBox(12, Ui.label("Các khoản thu gần đây", "section-title"));
             collection.getStyleClass().add("surface");
             if (payments.isEmpty()) {
-                VBox empty = new VBox(8, Ui.label("Chưa có giao dịch nào", "section-title"),
-                        Ui.label("Sau khi ghi nhận thanh toán, giao dịch mới sẽ xuất hiện ở đây.", "muted"));
+                VBox empty = new VBox(8, Ui.label("Chưa có giao dịch.", "muted"));
                 empty.getStyleClass().add("empty-state");
                 collection.getChildren().add(empty);
             } else {
                 collection.getChildren().add(paymentTable(payments));
             }
-            VBox note = new VBox(6, Ui.label("Kỳ đang theo dõi", "section-title"),
-                    Ui.label(summary.period() + "  ·  " + summary.apartmentCount() + " căn hộ  ·  "
-                            + summary.paidCharges() + " khoản đã hoàn tất  ·  "
-                            + summary.openCharges() + " khoản còn công nợ", "muted"));
-            note.getStyleClass().add("surface");
+            var note = Ui.label(summary.apartmentCount() + " căn hộ  ·  "
+                    + summary.paidCharges() + " khoản hoàn tất  ·  "
+                    + summary.openCharges() + " khoản còn nợ", "muted");
             getChildren().addAll(heading, summaries, note, collection);
         } catch (SQLException exception) {
             Ui.error("Không tải được tổng quan", exception);

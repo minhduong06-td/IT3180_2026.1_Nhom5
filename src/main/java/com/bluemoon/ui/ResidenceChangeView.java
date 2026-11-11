@@ -42,8 +42,8 @@ final class ResidenceChangeView extends VBox {
         refresh.setOnAction(event -> load());
         Button add = Ui.button("Ghi nhận biến động", true);
         add.setOnAction(event -> addChange());
-        getChildren().addAll(Ui.pageHeader("Biến động cư trú", "Theo dõi thường trú, tạm trú và tạm vắng theo từng nhân khẩu."),
-                Ui.toolbar(refresh, Ui.spacer(), add), table);
+        getChildren().addAll(Ui.pageHeader("Biến động cư trú", ""),
+                Ui.toolbar(refresh, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();

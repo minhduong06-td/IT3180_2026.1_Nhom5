@@ -48,14 +48,15 @@ final class ApartmentView extends VBox {
             search.clear();
             load();
         });
-        getChildren().addAll(Ui.pageHeader("Căn hộ", "Thông tin diện tích và liên hệ dùng khi phát hành kỳ thu."),
-                Ui.toolbar(search, find, Ui.spacer(), Ui.label("Diện tích mới áp dụng cho kỳ sau.", "muted"), refresh, add), table);
+        getChildren().addAll(Ui.pageHeader("Căn hộ", ""),
+                Ui.toolbar(search, find, Ui.label("Diện tích mới áp dụng cho kỳ sau.", "muted"), refresh, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
     }
 
     private void configureTable() {
+        table.setPlaceholder(new Label("Chưa có căn hộ. Chọn Thêm căn hộ để bắt đầu."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Mã căn", Apartment::code));
         table.getColumns().add(column("Tầng", apartment -> apartment.floor() == 0 ? "Chưa xác định" : Integer.toString(apartment.floor())));
