@@ -20,6 +20,12 @@ Căn cứ kỹ thuật đã ghi ở [biên bản QA](QA_TEST_REPORT.md): các l�
 
 Quyết định merge này tích hợp cách khởi tạo mới. Nó không đóng các lỗi tài chính còn mở hoặc đồng nghĩa toàn bộ sản phẩm được nghiệm thu.
 
+## Vì sao cần tinh gọn giao diện?
+
+Màn hình làm việc cần giúp người dùng tìm hồ sơ, kiểm tra số tiền và thực hiện thao tác. Slogan ở màn hình đăng nhập và phụ đề lặp lại tên trang chiếm chỗ nhưng không hỗ trợ các quyết định đó. Bản tinh gọn giữ lại hướng dẫn nhập liệu, quy tắc phát hành, cảnh báo và các con số cần đối soát.
+
+Menu cuộn và thanh công cụ xuống dòng giúp các thao tác vẫn truy cập được ở cửa sổ nhỏ. Khi review, PM cần xem cả ảnh render và khả năng sử dụng thật; việc bỏ chữ chỉ hợp lý nếu người dùng vẫn hiểu trạng thái và hành động tiếp theo.
+
 ## PM cần đọc gì trước khi merge một PR?
 
 - Vấn đề có đối chiếu được với yêu cầu hoặc lỗi cụ thể không?
@@ -55,4 +61,4 @@ Nếu quyết định giữ lại một điểm cho lần sau, ghi rõ phạm vi
 
 ## Khi được hỏi về bằng chứng đóng góp
 
-Dùng diff, commit, PR, nhận xét review và báo cáo kiểm tra thực tế. Không suy ra tác giả từ tên nhánh, không sửa lịch sử để tạo bằng chứng phân công. Các giải thích về thiết kế nên chỉ tới lớp xử lý tương ứng trong [tài liệu dev](DEV.md).
+Dùng diff, commit, PR, nhận xét review và báo cáo kiểm tra thực tế. Mô tả phần đóng góp theo thay đổi cụ thể và bằng chứng review tương ứng. Các giải thích về thiết kế nên chỉ tới lớp xử lý tương ứng trong [tài liệu dev](DEV.md).

@@ -34,6 +34,19 @@ Chạy `mvnw clean test` trên MySQL 8.4 tạm riêng biệt, một lần với 
 
 Đã chạy JavaFX với một schema trống riêng bằng user MySQL ứng dụng; tiến trình khởi động không có exception và sau đó database vẫn có 0 user, 0 căn hộ, 0 cư dân, 0 khoản thu. Chưa kiểm tra trực tiếp thao tác trên màn hình.
 
+## Xác minh giao diện tinh gọn
+
+Mã nguồn: `1cb1aee`. Dùng JDK 25.0.5 và MySQL 8.4 trong container riêng ở cổng 3308.
+
+- Chạy `mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest" test`: 13 test đạt, 0 lỗi, 0 bỏ qua. Lượt này không chạy lại test tích hợp MySQL vì thay đổi chỉ nằm ở UI và tài liệu.
+- Render trực tiếp các view JavaFX tại vùng nội dung 1080 × 700 và 1280 × 820: đăng nhập, tạo quản trị, tổng quan hai vai trò, bảng kê, căn hộ, tài khoản và yêu cầu cư dân. Đã xem ảnh để kiểm tra câu chữ, vị trí menu, bảng rỗng và thanh công cụ xuống dòng.
+- Bỏ slogan, phụ đề lặp lại và thông báo bảng rỗng mặc định tiếng Anh. Giữ hướng dẫn nhập liệu và quy tắc nghiệp vụ cần thiết.
+- Schema dùng để render không có user, căn hộ hay khoản thu. Vai trò dùng trong ảnh là đối tượng user riêng của bộ render, không phải kết quả kiểm tra đăng nhập hoặc phân quyền qua UI.
+
+Ảnh lưu trong repo: [đăng nhập](images/dang-nhap.png), [tổng quan](images/tong-quan.png), [bảng kê ở chiều rộng nhỏ](images/bang-ke.png). Bộ render tạm và toàn bộ ảnh còn lại ở `target/ui-review`, không thuộc mã ứng dụng.
+
+Công cụ truy cập cửa sổ Windows không kết nối được trong lượt này. Chưa xác minh trực tiếp thao tác chuột/phím, toàn bộ form, dữ liệu dài, lỗi mạng, màn hình khi đang lưu hoặc in thực tế. Ảnh render và 13 test trên không đủ để đóng R-02 đến R-06 hoặc kết luận toàn bộ UI đạt.
+
 ## Các vấn đề còn mở
 
 | Mã | Mức độ | Ghi nhận từ source | Trạng thái thực thi hiện tại | Case kiểm tra lại |
