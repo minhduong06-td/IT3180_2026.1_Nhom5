@@ -13,10 +13,10 @@ Cần JDK 25, Docker Desktop và một database riêng. Không kiểm tra phá d
 Kiểm tra không cần MySQL:
 
 ```powershell
-.\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest" test
+.\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
 ```
 
-Nhóm này có 13 phương thức test: quyền, công thức tiền, validation cư trú, CSV và nội dung chuyển khoản.
+Nhóm này có 15 phương thức test: quyền, công thức tiền, validation cư trú, CSV, nội dung chuyển khoản và hai kiểm tra nội dung file SQL khởi tạo. Hai kiểm tra SQL chỉ đọc file, không xác minh việc thực thi trên MySQL.
 
 ### Chạy tích hợp với MySQL rỗng
 
@@ -42,7 +42,7 @@ Remove-Item Env:BLUEMOON_IT_DB_LEGACY -ErrorAction SilentlyContinue
 .\mvnw.cmd clean test
 ```
 
-Mong đợi 14 test chạy, 0 lỗi, 0 bỏ qua. Sao chép `target/surefire-reports` trước lần chạy tiếp theo. Test tích hợp tạo fixture, thay schema và dọn một phần dữ liệu; mỗi lượt phải dùng schema mới hoàn toàn.
+Mong đợi 16 test chạy, 0 lỗi, 0 bỏ qua. Sao chép `target/surefire-reports` trước lần chạy tiếp theo. Test tích hợp tạo fixture, thay schema và dọn một phần dữ liệu; mỗi lượt phải dùng schema mới hoàn toàn.
 
 Để chạy nhánh legacy, tạo container khác với database rỗng theo cách trên, dùng cổng khác và đổi URL tương ứng; đặt `$env:BLUEMOON_IT_DB_LEGACY = 'true'` rồi chạy test. Nhánh này tạo schema căn hộ cũ có ba căn và kiểm tra nâng cấp, không chạy toàn bộ phần billing của test tích hợp.
 
