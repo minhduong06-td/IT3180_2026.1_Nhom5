@@ -59,14 +59,44 @@ class MySqlBillingFlowTest {
         String url = System.getenv("BLUEMOON_IT_DB_URL");
         Assumptions.assumeTrue(url != null && !url.isBlank(), "Set BLUEMOON_IT_DB_URL to run MySQL integration checks.");
         Database database = new Database(url, System.getenv("BLUEMOON_IT_DB_USER"), System.getenv("BLUEMOON_IT_DB_PASSWORD"));
-        if (Boolean.parseBoolean(System.getenv("BLUEMOON_IT_DB_LEGACY"))) createLegacyApartments(database);
+        boolean legacy = Boolean.parseBoolean(System.getenv("BLUEMOON_IT_DB_LEGACY"));
+        if (legacy) createLegacyApartments(database);
         new DatabaseBootstrap(database).initialize();
         AppRepository repository = new AppRepository(database);
+        AccountService accounts = new AccountService(repository);
+        if (legacy) {
+            assertEquals(3, repository.listApartments().size());
+            assertEquals(0, residentCount(repository));
+            assertTrue(repository.listFeeTypes().isEmpty());
+            assertTrue(!repository.hasUsers());
+            assertEquals("ADMIN", accounts.createInitialAdmin("admin", "Quản trị", "admin123", "admin123")
+                    .role().name());
+            return;
+        }
+        assertTrue(repository.listApartments().isEmpty());
+        assertTrue(repository.listFeeTypes().isEmpty());
+        assertTrue(!repository.hasUsers());
+        new DatabaseBootstrap(database).initialize();
+        assertTrue(repository.listApartments().isEmpty());
+        assertTrue(repository.listFeeTypes().isEmpty());
+        assertTrue(!repository.hasUsers());
+        assertThrows(IllegalArgumentException.class, () -> accounts.createInitialAdmin(
+                "admin", "Quản trị", "short", "short"));
+        AppUser initialAdmin = accounts.createInitialAdmin("admin", "Quản trị BlueMoon", "admin123", "admin123");
+        assertTrue(repository.hasUsers());
+        assertThrows(IllegalStateException.class, () -> accounts.createInitialAdmin(
+                "second-admin", "Tài khoản khác", "password123", "password123"));
+        accounts.create(initialAdmin, "accountant", "Kế toán BlueMoon", Role.ACCOUNTANT,
+                "accountant123", "accountant123");
+        var emptySummary = new DashboardService(repository).summary(initialAdmin);
+        assertEquals("Chưa phát hành", emptySummary.period());
+        assertEquals(BigDecimal.ZERO, emptySummary.totalAmount());
+        assertEquals(0, emptySummary.apartmentCount());
+        createBillingFixture(database, initialAdmin.id());
         var firstApartment = repository.listApartments().getFirst();
         assertEquals(1, firstApartment.floor());
-        if (Boolean.parseBoolean(System.getenv("BLUEMOON_IT_DB_LEGACY"))) {
-            assertEquals("HK-000001", firstApartment.householdCode());
-        }
+        assertEquals(8, repository.listApartments().size());
+        assertEquals(18, residentCount(repository));
         long adminId = userId(database, "admin");
         long accountantId = userId(database, "accountant");
         long serviceFeeId = feeId(database, "SERVICE");
@@ -130,8 +160,7 @@ class MySqlBillingFlowTest {
                     VehicleType.CAR, motorcyclePlate));
             assertThrows(IllegalArgumentException.class, () -> vehicles.register(admin, apartment.id(),
                     VehicleType.MOTORCYCLE, "biển số sai"));
-            // Sprint 1 keeps the extended fee types out of the default fixture.
-            // This integration test opts into them explicitly to cover the later billing rules.
+            // Enable optional fee types for this billing fixture.
             fees.setActive(admin, feeId(database, "SANITATION"), true);
             fees.setActive(admin, feeId(database, "MOTORCYCLE_PARKING"), true);
             fees.setActive(admin, feeId(database, "CAR_PARKING"), true);
@@ -303,6 +332,85 @@ class MySqlBillingFlowTest {
                     + "('A101', 65.00, 'Nguyễn Minh An', '0900000101'), "
                     + "('A102', 78.50, 'Trần Gia Bảo', '0900000102'), "
                     + "('A103', 92.00, 'Lê Thu Hà', '0900000103')");
+        }
+    }
+
+    private static void createBillingFixture(Database database, long adminId) throws SQLException {
+        Object[][] apartments = {
+                {"A101", "HK-000101", "48.00", "Nguyễn Minh An", "0900000101"},
+                {"A102", "HK-000102", "52.50", "Trần Gia Bảo", "0900000102"},
+                {"A103", "HK-000103", "65.00", "Lê Thu Hà", "0900000103"},
+                {"A104", "HK-000104", "70.00", "Phạm Quốc Huy", "0900000104"},
+                {"A105", "HK-000105", "78.50", "Đỗ Mai Anh", "0900000105"},
+                {"A106", "HK-000106", "86.25", "Vũ Hoàng Nam", "0900000106"},
+                {"A107", "HK-000107", "92.00", "Nguyễn Lan Chi", "0900000107"},
+                {"A108", "HK-000108", "105.50", "Bùi Đức Long", "0900000108"}
+        };
+        try (Connection connection = database.openConnection();
+             PreparedStatement insert = connection.prepareStatement("""
+                     INSERT INTO apartments(code, household_code, area_m2, household_name, contact_phone, move_in_date)
+                     VALUES (?, ?, ?, ?, ?, '2020-01-01')
+                     """)) {
+            for (Object[] apartment : apartments) {
+                for (int index = 0; index < apartment.length; index++) insert.setObject(index + 1, apartment[index]);
+                insert.executeUpdate();
+            }
+        }
+
+        Object[][] residents = {
+                {"A101", "Nguyễn Minh An", "1985-03-12", "MALE", "001085000101", "HEAD", "2021-08-01"},
+                {"A101", "Phạm Ngọc Mai", "1987-09-24", "FEMALE", "001087000102", "WIFE", "2021-08-01"},
+                {"A101", "Nguyễn Minh Khôi", "2015-06-18", "MALE", "015115000103", "CHILD", "2021-08-01"},
+                {"A102", "Trần Gia Bảo", "1979-01-30", "MALE", "001079000201", "HEAD", "2022-02-15"},
+                {"A102", "Lê Thanh Hương", "1982-11-07", "FEMALE", "001082000202", "WIFE", "2022-02-15"},
+                {"A103", "Lê Thu Hà", "1990-04-22", "FEMALE", "001090000301", "HEAD", "2022-05-20"},
+                {"A103", "Lê Minh Quân", "1960-12-03", "MALE", "001060000302", "PARENT", "2022-05-20"},
+                {"A104", "Phạm Quốc Huy", "1988-07-11", "MALE", "001088000401", "HEAD", "2023-01-10"},
+                {"A104", "Đặng Ngọc Linh", "1991-02-16", "FEMALE", "001091000402", "WIFE", "2023-01-10"},
+                {"A104", "Phạm Gia Minh", "2018-10-29", "MALE", "018118000403", "CHILD", "2023-01-10"},
+                {"A105", "Đỗ Mai Anh", "1986-05-09", "FEMALE", "001086000501", "HEAD", "2021-11-03"},
+                {"A105", "Đỗ Khánh Ngân", "2012-08-21", "FEMALE", "012112000502", "CHILD", "2021-11-03"},
+                {"A106", "Vũ Hoàng Nam", "1983-10-14", "MALE", "001083000601", "HEAD", "2024-03-12"},
+                {"A106", "Nguyễn Hải Yến", "1985-08-05", "FEMALE", "001085000602", "WIFE", "2024-03-12"},
+                {"A107", "Nguyễn Lan Chi", "1994-06-27", "FEMALE", "001094000701", "HEAD", "2024-06-01"},
+                {"A107", "Nguyễn Văn Lâm", "1965-03-15", "MALE", "001065000702", "PARENT", "2024-06-01"},
+                {"A108", "Bùi Đức Long", "1976-09-19", "MALE", "001076000801", "HEAD", "2022-09-18"},
+                {"A108", "Bùi Đức Anh", "2004-01-08", "MALE", "004104000802", "TENANT", "2024-09-01"}
+        };
+        try (Connection connection = database.openConnection();
+             PreparedStatement insert = connection.prepareStatement("""
+                     INSERT INTO residents(apartment_id, full_name, date_of_birth, gender, national_id, relationship, move_in_date)
+                     SELECT id, ?, ?, ?, ?, ?, ? FROM apartments WHERE code = ?
+                     """)) {
+            for (Object[] resident : residents) {
+                for (int index = 1; index < resident.length; index++) insert.setObject(index, resident[index]);
+                insert.setObject(7, resident[0]);
+                assertEquals(1, insert.executeUpdate());
+            }
+        }
+
+        Object[][] fees = {
+                {"SERVICE", "Phí dịch vụ", true, "PER_M2", true, "10000"},
+                {"MANAGEMENT", "Phí quản lý", true, "PER_M2", true, "7000"},
+                {"SANITATION", "Phí vệ sinh", true, "PER_RESIDENT", false, "6000"},
+                {"MOTORCYCLE_PARKING", "Phí gửi xe máy", true, "PER_MOTORCYCLE", false, "70000"},
+                {"CAR_PARKING", "Phí gửi ô tô", true, "PER_CAR", false, "1200000"}
+        };
+        try (Connection connection = database.openConnection();
+             PreparedStatement insertFee = connection.prepareStatement(
+                     "INSERT INTO fee_types(code, name, required, calculation_basis, active) VALUES (?, ?, ?, ?, ?)");
+             PreparedStatement insertRate = connection.prepareStatement("""
+                     INSERT INTO fee_rates(fee_type_id, unit_price, effective_from, created_by)
+                     SELECT id, ?, '2026-01-01', ? FROM fee_types WHERE code = ?
+                     """)) {
+            for (Object[] fee : fees) {
+                for (int index = 0; index < 5; index++) insertFee.setObject(index + 1, fee[index]);
+                insertFee.executeUpdate();
+                insertRate.setBigDecimal(1, new BigDecimal((String) fee[5]));
+                insertRate.setLong(2, adminId);
+                insertRate.setString(3, (String) fee[0]);
+                assertEquals(1, insertRate.executeUpdate());
+            }
         }
     }
 
@@ -490,6 +598,14 @@ class MySqlBillingFlowTest {
                 return result.getLong(1);
             }
         }
+    }
+
+    private static int residentCount(AppRepository repository) throws SQLException {
+        int count = 0;
+        for (Apartment apartment : repository.listApartments()) {
+            count += repository.listResidents(apartment.id()).size();
+        }
+        return count;
     }
 
     private static void simulateLegacyPayment(Database database, long chargeId, LocalDate paidOn,
