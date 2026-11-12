@@ -35,10 +35,11 @@ final class AccountView extends VBox {
         create.setOnAction(event -> create());
         var refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
-        getChildren().addAll(Ui.pageHeader("Tài khoản", "Quản lý quyền truy cập của ban quản trị và kế toán."),
+        getChildren().addAll(Ui.pageHeader("Tài khoản", ""),
                 Ui.toolbar(Ui.label("Tài khoản kế toán được phép ghi nhận và tra cứu các khoản thu.", "muted"),
-                        Ui.spacer(), refresh, create), table);
+                        refresh, create), table);
         VBox.setVgrow(table, Priority.ALWAYS);
+        table.setPlaceholder(new Label("Chưa có tài khoản."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Tên hiển thị", UserAccount::displayName));
         table.getColumns().add(column("Tên đăng nhập", UserAccount::username));
@@ -74,7 +75,7 @@ final class AccountView extends VBox {
         });
         role.getStyleClass().add("form-field");
         var password = new PasswordField();
-        password.setPromptText("Mật khẩu từ 8 đến 72 byte");
+        password.setPromptText("Ít nhất 8 ký tự, tối đa 72 byte UTF-8");
         password.getStyleClass().add("form-field");
         var confirmation = new PasswordField();
         confirmation.setPromptText("Nhập lại mật khẩu");

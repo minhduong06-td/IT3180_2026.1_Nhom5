@@ -8,6 +8,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 import java.util.function.Consumer;
@@ -28,13 +29,10 @@ final class InitialAdminView extends StackPane {
 
         Label brand = new Label("BlueMoon");
         brand.getStyleClass().add("brand-title");
-        Label title = new Label("Thiết lập tài khoản quản trị");
+        Label title = new Label("Tạo tài khoản quản trị");
         title.getStyleClass().add("page-title");
-        Label subtitle = new Label("Database chưa có tài khoản. Tạo tài khoản đầu tiên để bắt đầu.");
-        subtitle.getStyleClass().add("page-subtitle");
-        subtitle.setWrapText(true);
 
-        password.setPromptText("Mật khẩu từ 8 đến 72 byte");
+        password.setPromptText("Ít nhất 8 ký tự, tối đa 72 byte UTF-8");
         password.getStyleClass().add("form-field");
         confirmation.setPromptText("Nhập lại mật khẩu");
         confirmation.getStyleClass().add("form-field");
@@ -47,12 +45,13 @@ final class InitialAdminView extends StackPane {
         create.setOnAction(event -> createAccount());
         confirmation.setOnAction(event -> createAccount());
 
-        VBox panel = new VBox(16, brand, title, subtitle,
+        VBox panel = new VBox(16, brand, title,
                 field("Tên đăng nhập", username), field("Tên hiển thị", displayName),
                 field("Mật khẩu", password), field("Xác nhận mật khẩu", confirmation), error, create);
         panel.setPadding(new Insets(40));
-        panel.setMaxWidth(520);
-        panel.getStyleClass().add("login-form-panel");
+        panel.setMaxWidth(440);
+        panel.setMaxHeight(Region.USE_PREF_SIZE);
+        panel.getStyleClass().add("login-card");
         panel.setAlignment(Pos.CENTER_LEFT);
         getChildren().add(panel);
     }

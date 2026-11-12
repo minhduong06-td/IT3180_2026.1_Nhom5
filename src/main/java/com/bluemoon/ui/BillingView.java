@@ -52,13 +52,14 @@ final class BillingView extends VBox {
         refresh.setOnAction(event -> load());
         getChildren().addAll(Ui.pageHeader("Kỳ thu", "Phát hành mỗi tháng một lần. Các khoản đã tạo không thể phát hành trùng."),
                 Ui.toolbar(Ui.label("Phí và diện tích được chụp lại tại thời điểm phát hành.", "muted"),
-                        Ui.spacer(), refresh, details, create), table);
+                        refresh, details, create), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
     }
 
     private void configureTable() {
+        table.setPlaceholder(new Label("Chưa có kỳ thu. Phát hành kỳ thu để bắt đầu."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Kỳ thu", BillingPeriod::label));
         table.getColumns().add(column("Ngày phát hành", period -> Ui.date(period.issueDate())));

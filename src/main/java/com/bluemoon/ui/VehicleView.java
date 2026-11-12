@@ -46,7 +46,7 @@ final class VehicleView extends VBox {
         refresh.setOnAction(event -> load());
         search.setOnAction(event -> load());
         getChildren().addAll(Ui.pageHeader("Phương tiện", "Thay đổi này chỉ ảnh hưởng các kỳ thu chưa phát hành."),
-                Ui.toolbar(search, refresh, Ui.spacer(), deactivate, add), table);
+                Ui.toolbar(search, refresh, deactivate, add), table);
         table.getSelectionModel().selectedItemProperty().addListener((observable, oldVehicle, vehicle) ->
                 deactivate.setDisable(vehicle == null || !vehicle.active()));
         VBox.setVgrow(table, Priority.ALWAYS);
@@ -55,6 +55,7 @@ final class VehicleView extends VBox {
     }
 
     private void configureTable() {
+        table.setPlaceholder(new Label("Chưa có phương tiện đăng ký."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Biển số", Vehicle::licensePlate));
         table.getColumns().add(column("Loại xe", vehicle -> typeName(vehicle.type())));

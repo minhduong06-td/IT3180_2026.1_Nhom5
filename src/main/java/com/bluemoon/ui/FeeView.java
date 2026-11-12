@@ -47,7 +47,7 @@ final class FeeView extends VBox {
         refresh.setOnAction(event -> load());
         getChildren().addAll(Ui.pageHeader("Khoản thu", "Đơn giá mới chỉ áp dụng cho kỳ được phát hành sau ngày hiệu lực."),
                 Ui.toolbar(Ui.label("Khoản đã phát hành luôn giữ nguyên diện tích và đơn giá tại thời điểm tạo.", "muted"),
-                        Ui.spacer(), refresh, toggleStatus, addRate, add), table);
+                        refresh, toggleStatus, addRate, add), table);
         table.getSelectionModel().selectedItemProperty().addListener((observable, oldFee, fee) -> {
             toggleStatus.setDisable(fee == null);
             toggleStatus.setText(fee != null && fee.active() ? "Ngừng áp dụng" : "Áp dụng lại");
@@ -59,6 +59,7 @@ final class FeeView extends VBox {
     }
 
     private void configureTable() {
+        table.setPlaceholder(new Label("Chưa có khoản thu. Chọn Thêm khoản thu để bắt đầu."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Tên khoản thu", FeeType::name));
         table.getColumns().add(column("Mã", FeeType::code));
