@@ -21,7 +21,9 @@ Bootstrap không tìm căn hộ, cư dân, phí hay quản trị có mã cố đ
 
 Repository dùng khóa MySQL `GET_LOCK` và kiểm tra lại trong transaction để hai ứng dụng không cùng tạo hai tài khoản đầu tiên. User và trạng thái đăng nhập được lưu cùng transaction. Khi đã có user, bước thiết lập bị từ chối.
 
-Đơn giá, căn hộ và cư dân do người dùng thêm. Loại phí tiện ích được tạo khi lưu hóa đơn đầu tiên. Dữ liệu phục vụ test nằm trong mã test, không chạy cùng bootstrap.
+Khi dùng database rỗng, đơn giá, căn hộ và cư dân do người dùng thêm. Loại phí tiện ích được tạo khi lưu hóa đơn đầu tiên. Dữ liệu phục vụ test nằm trong mã test, không chạy cùng bootstrap.
+
+Cấu hình Docker hiện nạp `schema.sql` và `database/demo-data.sql` khi tạo volume mới. Đây là bước khởi tạo của Docker, tách khỏi Java bootstrap; kết nối tới một database rỗng khác vẫn dùng luồng tạo quản trị như trên.
 
 ## Tại sao lưu snapshot khi phát hành?
 

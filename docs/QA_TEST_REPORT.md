@@ -47,6 +47,8 @@ Mã nguồn: `1cb1aee`. Dùng JDK 25.0.5 và MySQL 8.4 trong container riêng �
 
 Công cụ truy cập cửa sổ Windows không kết nối được trong lượt này. Chưa xác minh trực tiếp thao tác chuột/phím, toàn bộ form, dữ liệu dài, lỗi mạng, màn hình khi đang lưu hoặc in thực tế. Ảnh render và 13 test trên không đủ để đóng R-02 đến R-06 hoặc kết luận toàn bộ UI đạt.
 
+Sau khi đồng bộ commit `7d7ac9d` từ main bằng merge commit `abba99b`, đã chạy lại năm lớp trên cùng `DemoDataSqlTest`: **15 test đạt, 0 lỗi, 0 bỏ qua**. Hai test mới chỉ kiểm tra nội dung file SQL. Cấu hình Docker và hướng dẫn README được giữ theo main mới; ảnh phía trên vẫn là render với database rỗng riêng.
+
 ## Các vấn đề còn mở
 
 | Mã | Mức độ | Ghi nhận từ source | Trạng thái thực thi hiện tại | Case kiểm tra lại |
@@ -69,7 +71,8 @@ Chi tiết hướng sửa: [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md)
 | `CsvExporterTest` | 1 | UTF-8/BOM, header, escape và chặn tiền tố công thức trong tệp. Chưa kiểm tra UI chọn tệp/ghi đè. |
 | `FeeNoticePrinterTest` | 1 | Chuỗi nội dung chuyển khoản. Chưa kiểm tra bố cục, máy in/PDF hoặc UI không treo. |
 | `MySqlBillingFlowTest` | 1 | Một luồng tích hợp gồm nhiều assertion: hồ sơ, tài khoản, phí, mở rộng, snapshot, migration thanh toán, công nợ và credit. Skip nếu thiếu URL test; có thay schema và xóa fixture. |
-| Tổng trong source | 14 | 13 test không cần MySQL và 1 test tích hợp; đây là số lượng khai báo, không phải số đạt của lượt 11/11. |
+| `DemoDataSqlTest` | 2 | Đọc file SQL để kiểm tra các mã căn, quan hệ và nhóm bản ghi; chưa xác minh thực thi SQL hoặc dữ liệu sau khi nạp. |
+| Tổng trong source | 16 | 15 test không cần MySQL và 1 test tích hợp. Số test khai báo không thay thế kết quả chạy. |
 
 Các mã case trong [Kế hoạch kiểm thử](QA_TEST_PLAN.md) chưa ánh xạ một-một sang JUnit. Một test tích hợp có nhiều assertion không đồng nghĩa toàn bộ ma trận QA, nhất là migration legacy, chống thu trùng và in thực tế, đã được bao phủ.
 
