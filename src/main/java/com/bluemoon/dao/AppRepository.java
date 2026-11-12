@@ -81,7 +81,7 @@ public final class AppRepository {
 
     public LoginCredential findLoginCredential(String username) throws SQLException {
         String sql = """
-                SELECT u.id, u.username, u.display_name, u.role, u.password_hash,
+                SELECT u.id, u.username, u.display_name, u.role, u.apartment_id, u.password_hash,
                        COALESCE(s.locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked
                 FROM app_users u LEFT JOIN account_login_state s ON s.user_id = u.id
                 WHERE u.username = ? AND u.active = TRUE
@@ -91,7 +91,8 @@ public final class AppRepository {
             try (ResultSet result = query.executeQuery()) {
                 if (!result.next()) return null;
                 AppUser user = new AppUser(result.getLong("id"), result.getString("username"),
-                        result.getString("display_name"), Role.valueOf(result.getString("role")));
+                        result.getString("display_name"), Role.valueOf(result.getString("role")),
+                        (Long) result.getObject("apartment_id"));
                 return new LoginCredential(user, result.getString("password_hash"), result.getBoolean("login_locked"));
             }
         }
@@ -115,15 +116,22 @@ public final class AppRepository {
     }
 
     public void createUser(String username, String passwordHash, String displayName, Role role) throws SQLException {
+        createUser(username, passwordHash, displayName, role, null);
+    }
+
+    public void createUser(String username, String passwordHash, String displayName, Role role,
+                           Long apartmentId) throws SQLException {
         try (Connection connection = database.openConnection()) {
             connection.setAutoCommit(false);
             try (PreparedStatement insert = connection.prepareStatement(
-                    "INSERT INTO app_users(username, password_hash, display_name, role) VALUES (?, ?, ?, ?)",
+                    "INSERT INTO app_users(username, password_hash, display_name, role, apartment_id) VALUES (?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS)) {
                 insert.setString(1, username);
                 insert.setString(2, passwordHash);
                 insert.setString(3, displayName);
                 insert.setString(4, role.name());
+                if (apartmentId == null) insert.setNull(5, Types.BIGINT);
+                else insert.setLong(5, apartmentId);
                 insert.executeUpdate();
                 try (ResultSet keys = insert.getGeneratedKeys()) {
                     if (!keys.next()) throw new SQLException("Không tạo được tài khoản.");
@@ -1242,11 +1250,26 @@ public final class AppRepository {
     }
 
     public DashboardSummary dashboard() throws SQLException {
+        return dashboard(null);
+    }
+
+    public DashboardSummary dashboard(AppUser user) throws SQLException {
         List<BillingPeriod> periods = listBillingPeriods();
         if (periods.isEmpty()) return new DashboardSummary("Chưa phát hành", BigDecimal.ZERO,
                 BigDecimal.ZERO, BigDecimal.ZERO, 0, 0, 0);
         BillingPeriod current = periods.getFirst();
         List<ChargeSummary> charges = listCharges(current.id(), "");
+        if (user != null && user.role() == Role.RESIDENT) {
+            if (user.apartmentId() == null) {
+                charges = List.of();
+            }
+        }
+        if (user != null && user.role() == Role.RESIDENT && user.apartmentId() != null) {
+            String apartmentCode = listApartments().stream()
+                    .filter(apartment -> apartment.id().equals(user.apartmentId()))
+                    .map(Apartment::code).findFirst().orElse("");
+            charges = charges.stream().filter(charge -> apartmentCode.equals(charge.apartmentCode())).toList();
+        }
         BigDecimal total = charges.stream().map(ChargeSummary::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal paid = charges.stream().map(ChargeSummary::paid).reduce(BigDecimal.ZERO, BigDecimal::add);
         long paidCount = charges.stream().filter(c -> c.status() == ChargeStatus.PAID).count();
