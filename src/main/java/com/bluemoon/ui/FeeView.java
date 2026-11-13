@@ -15,6 +15,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -37,22 +38,10 @@ final class FeeView extends VBox {
         getStyleClass().add("page");
         var add = Ui.button("Thêm khoản thu", true);
         add.setOnAction(event -> createFee());
-        var addRate = Ui.button("Cập nhật đơn giá", false);
-        addRate.setDisable(true);
-        addRate.setOnAction(event -> addRate());
-        var toggleStatus = Ui.button("Ngừng áp dụng", false);
-        toggleStatus.setDisable(true);
-        toggleStatus.setOnAction(event -> toggleStatus());
         var refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
-        getChildren().addAll(Ui.pageHeader("Khoản thu", "Đơn giá mới chỉ áp dụng cho kỳ được phát hành sau ngày hiệu lực."),
-                Ui.toolbar(Ui.label("Khoản đã phát hành luôn giữ nguyên diện tích và đơn giá tại thời điểm tạo.", "muted"),
-                        refresh, toggleStatus, addRate, add), table);
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldFee, fee) -> {
-            toggleStatus.setDisable(fee == null);
-            toggleStatus.setText(fee != null && fee.active() ? "Ngừng áp dụng" : "Áp dụng lại");
-            addRate.setDisable(fee == null || !fee.required() || !fee.active());
-        });
+        getChildren().addAll(Ui.pageHeader("Khoản thu", ""),
+                Ui.toolbar(refresh, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -77,6 +66,15 @@ final class FeeView extends VBox {
                 ? "Chưa có đơn giá hiện hành" : Ui.money(fee.unitPrice())));
         table.getColumns().add(column("Hiệu lực từ", fee -> Ui.date(fee.effectiveFrom())));
         table.getColumns().add(column("Trạng thái", fee -> fee.active() ? "Đang áp dụng" : "Ngừng áp dụng"));
+        table.getColumns().add(Ui.actionColumn("Thao tác", fee -> {
+            Button addRate = Ui.button("Đơn giá", false);
+            addRate.setDisable(!fee.required() || !fee.active());
+            addRate.setOnAction(event -> addRate(fee));
+            Button toggleStatus = Ui.button(fee.active() ? "Ngừng" : "Áp dụng", false);
+            toggleStatus.setOnAction(event -> toggleStatus(fee));
+            return new HBox(8, addRate, toggleStatus);
+        }));
+        table.setSelectionModel(null);
     }
 
     private void load() {
@@ -157,12 +155,7 @@ final class FeeView extends VBox {
         load();
     }
 
-    private void addRate() {
-        FeeType fee = table.getSelectionModel().getSelectedItem();
-        if (fee == null) {
-            Ui.info("Chọn khoản thu", "Chọn khoản thu cần cập nhật đơn giá.");
-            return;
-        }
+    private void addRate(FeeType fee) {
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.setTitle("Cập nhật đơn giá");
         dialog.setHeaderText(fee.name());
@@ -190,9 +183,7 @@ final class FeeView extends VBox {
         load();
     }
 
-    private void toggleStatus() {
-        FeeType fee = table.getSelectionModel().getSelectedItem();
-        if (fee == null) return;
+    private void toggleStatus(FeeType fee) {
         try {
             services.fees().setActive(user, fee.id(), !fee.active());
             load();

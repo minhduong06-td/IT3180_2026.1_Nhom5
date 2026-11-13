@@ -46,24 +46,13 @@ final class UtilityView extends VBox {
         getStyleClass().add("page");
         Button add = Ui.button("Nhập hóa đơn", true);
         add.setOnAction(event -> edit(null));
-        Button change = Ui.button("Sửa hóa đơn", false);
-        change.setDisable(true);
-        change.setOnAction(event -> editSelected());
-        Button remove = Ui.button("Xóa hóa đơn", false);
-        remove.setDisable(true);
-        remove.setOnAction(event -> deleteSelected());
         Button refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
         exportCsv.setDisable(true);
         exportCsv.setOnAction(event -> exportVisibleRows());
         search.setOnAction(event -> load());
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldBill, bill) -> {
-            change.setDisable(bill == null || bill.issued());
-            remove.setDisable(bill == null || bill.issued());
-        });
-        getChildren().addAll(Ui.pageHeader("Điện, nước và internet",
-                        "Nhập số tiền theo hóa đơn nhà cung cấp trước khi phát hành kỳ thu."),
-                Ui.toolbar(search, refresh, change, remove, exportCsv, add), table);
+        getChildren().addAll(Ui.pageHeader("Điện nước internet", ""),
+                Ui.toolbar(search, refresh, exportCsv, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -79,13 +68,17 @@ final class UtilityView extends VBox {
         table.getColumns().add(column("Số tiền", bill -> Ui.money(bill.amount())));
         table.getColumns().add(column("Mã đối chiếu", bill -> bill.reference() == null ? "—" : bill.reference()));
         table.getColumns().add(column("Trạng thái", bill -> bill.issued() ? "Đã phát hành" : "Chưa phát hành"));
-        table.setRowFactory(view -> {
-            var row = new javafx.scene.control.TableRow<UtilityBill>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty() && !row.getItem().issued()) edit(row.getItem());
-            });
-            return row;
-        });
+        table.getColumns().add(Ui.actionColumn("Thao tác", bill -> {
+            Button change = Ui.button("Sửa", false);
+            Button remove = Ui.button("Xóa", false);
+            boolean locked = bill.issued();
+            change.setDisable(locked);
+            remove.setDisable(locked);
+            change.setOnAction(event -> edit(bill));
+            remove.setOnAction(event -> delete(bill));
+            return new HBox(8, change, remove);
+        }));
+        table.setSelectionModel(null);
     }
 
     private void load() {
@@ -111,11 +104,6 @@ final class UtilityView extends VBox {
                 bill.issued() ? "Đã phát hành" : "Chưa phát hành")).toList();
         CsvExporter.save(getScene().getWindow(), "Xuất hóa đơn tiện ích", "hoa-don-tien-ich.csv",
                 List.of("Kỳ", "Căn hộ", "Dịch vụ", "Nhà cung cấp", "Số tiền (VND)", "Mã đối chiếu", "Trạng thái"), rows);
-    }
-
-    private void editSelected() {
-        UtilityBill bill = table.getSelectionModel().getSelectedItem();
-        if (bill != null && !bill.issued()) edit(bill);
     }
 
     private void edit(UtilityBill current) {
@@ -217,9 +205,8 @@ final class UtilityView extends VBox {
         load();
     }
 
-    private void deleteSelected() {
-        UtilityBill bill = table.getSelectionModel().getSelectedItem();
-        if (bill == null || bill.issued()) return;
+    private void delete(UtilityBill bill) {
+        if (bill.issued()) return;
         Alert confirmation = new Alert(Alert.AlertType.CONFIRMATION,
                 "Xóa hóa đơn " + typeName(bill.type()) + " của căn hộ " + bill.apartmentCode() + "?",
                 ButtonType.OK, ButtonType.CANCEL);

@@ -57,6 +57,7 @@ final class DebtView extends VBox {
         for (var node : summaries.getChildren()) HBox.setHgrow(node, Priority.ALWAYS);
         getChildren().addAll(Ui.pageHeader("Công nợ", ""),
                 Ui.toolbar(periodFilter, statusFilter, floorFrom, floorTo, filter), summaries, table, footer);
+        table.setSelectionModel(null);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         loadPeriods();

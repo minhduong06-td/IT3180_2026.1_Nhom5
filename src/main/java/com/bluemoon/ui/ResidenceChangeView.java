@@ -44,6 +44,7 @@ final class ResidenceChangeView extends VBox {
         add.setOnAction(event -> addChange());
         getChildren().addAll(Ui.pageHeader("Biến động cư trú", ""),
                 Ui.toolbar(refresh, add), table);
+        table.setSelectionModel(null);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();

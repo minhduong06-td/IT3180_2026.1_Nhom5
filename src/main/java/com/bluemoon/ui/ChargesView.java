@@ -18,9 +18,9 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -58,31 +58,15 @@ final class ChargesView extends VBox {
         var refresh = Ui.button("Tìm kiếm", true);
         refresh.setOnAction(event -> load());
         search.setOnAction(event -> load());
-        var statement = Ui.button("Bảng kê căn hộ", false);
-        statement.setDisable(true);
-        statement.setOnAction(event -> showStatement());
-        var printNotice = Ui.button("In thông báo", false);
-        printNotice.setDisable(true);
-        printNotice.setOnAction(event -> printSelectedNotice());
         printAll.setDisable(true);
         printAll.setOnAction(event -> printAllNotices());
         exportCsv.setDisable(true);
         exportCsv.setOnAction(event -> exportVisibleRows());
-        var pay = Ui.button("Thu tiền", true);
-        pay.setDisable(true);
-        pay.setVisible(user.role() == Role.ACCOUNTANT);
-        pay.setManaged(user.role() == Role.ACCOUNTANT);
-        pay.setOnAction(event -> recordPayment());
         table.setPlaceholder(new Label("Không có khoản phải thu phù hợp."));
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldRow, row) -> {
-            statement.setDisable(row == null);
-            printNotice.setDisable(row == null);
-            pay.setDisable(row == null || row.status() == ChargeStatus.PAID);
-        });
         periodFilter.valueProperty().addListener((observable, oldValue, value) ->
                 printAll.setDisable(value == null || periodIds.get(value) == null));
         getChildren().addAll(Ui.pageHeader("Bảng kê phải thu", ""),
-                Ui.toolbar(periodFilter, search, refresh, statement, printNotice, printAll, exportCsv, pay), table);
+                Ui.toolbar(periodFilter, search, refresh, printAll, exportCsv), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         loadPeriods();
@@ -115,13 +99,18 @@ final class ChargesView extends VBox {
         });
         table.getColumns().add(status);
         table.getColumns().add(column("Hạn nộp", charge -> Ui.date(charge.dueDate())));
-        table.setRowFactory(view -> {
-            TableRow<ChargeSummary> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) showStatement(row.getItem());
-            });
-            return row;
-        });
+        table.getColumns().add(Ui.actionColumn("Thao tác", charge -> {
+            Button statement = Ui.button("Bảng kê", false);
+            statement.setOnAction(event -> showStatement(charge));
+            Button printNotice = Ui.button("In", false);
+            printNotice.setOnAction(event -> printNotice(charge));
+            if (user.role() != Role.ACCOUNTANT) return new HBox(8, statement, printNotice);
+            Button pay = Ui.button("Thu", true);
+            pay.setDisable(charge.status() == ChargeStatus.PAID);
+            pay.setOnAction(event -> recordPayment(charge));
+            return new HBox(8, statement, printNotice, pay);
+        }));
+        table.setSelectionModel(null);
     }
 
     private void loadPeriods() {
@@ -168,11 +157,6 @@ final class ChargesView extends VBox {
                         "Phải thu (VND)", "Đã thanh toán (VND)", "Còn nợ (VND)", "Trạng thái", "Hạn nộp"), rows);
     }
 
-    private void showStatement() {
-        ChargeSummary selected = table.getSelectionModel().getSelectedItem();
-        if (selected != null) showStatement(selected);
-    }
-
     private void showStatement(ChargeSummary selected) {
         try {
             List<ChargeSummary> items = services.collections().charges(user, selected.periodId(), selected.apartmentCode())
@@ -187,6 +171,7 @@ final class ChargesView extends VBox {
             statement.getColumns().add(column("Đã thanh toán", charge -> Ui.money(charge.paid())));
             statement.getColumns().add(column("Còn nợ", charge -> Ui.money(charge.balance())));
             statement.getItems().setAll(items);
+            statement.setSelectionModel(null);
             BigDecimal total = items.stream().map(ChargeSummary::amount).reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal paid = items.stream().map(ChargeSummary::paid).reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal balance = items.stream().map(ChargeSummary::balance).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -216,9 +201,7 @@ final class ChargesView extends VBox {
         }
     }
 
-    private void printSelectedNotice() {
-        ChargeSummary selected = table.getSelectionModel().getSelectedItem();
-        if (selected == null) return;
+    private void printNotice(ChargeSummary selected) {
         try {
             List<ChargeSummary> items = services.collections().charges(user, selected.periodId(), selected.apartmentCode())
                     .stream().filter(charge -> charge.apartmentCode().equals(selected.apartmentCode())).toList();
@@ -245,9 +228,7 @@ final class ChargesView extends VBox {
         }
     }
 
-    private void recordPayment() {
-        ChargeSummary charge = table.getSelectionModel().getSelectedItem();
-        if (charge == null) return;
+    private void recordPayment(ChargeSummary charge) {
         if (charge.status() == ChargeStatus.PAID) {
             Ui.info("Đã thanh toán đủ", "Khoản này không còn công nợ.");
             return;

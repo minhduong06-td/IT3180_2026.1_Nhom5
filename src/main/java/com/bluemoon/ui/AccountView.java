@@ -38,11 +38,11 @@ final class AccountView extends VBox {
         var refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
         getChildren().addAll(Ui.pageHeader("Tài khoản", ""),
-                Ui.toolbar(Ui.label("Tài khoản kế toán được phép ghi nhận và tra cứu các khoản thu.", "muted"),
-                        refresh, create), table);
+                Ui.toolbar(refresh, create), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         table.setPlaceholder(new Label("Chưa có tài khoản."));
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        table.setSelectionModel(null);
         table.getColumns().add(column("Tên hiển thị", UserAccount::displayName));
         table.getColumns().add(column("Tên đăng nhập", UserAccount::username));
         table.getColumns().add(column("Vai trò", account -> roleName(account.role())));

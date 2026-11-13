@@ -15,8 +15,8 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
@@ -52,7 +52,7 @@ final class ApartmentView extends VBox {
             load();
         });
         getChildren().addAll(Ui.pageHeader("Căn hộ", ""),
-                Ui.toolbar(search, find, Ui.label("Diện tích mới áp dụng cho kỳ sau.", "muted"), refresh, add), table);
+                Ui.toolbar(search, find, refresh, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -68,13 +68,14 @@ final class ApartmentView extends VBox {
         table.getColumns().add(column("Người liên hệ", Apartment::householdName));
         table.getColumns().add(column("Số điện thoại", Apartment::contactPhone));
         table.getColumns().add(column("Tình trạng", apartment -> statusName(apartment.occupancyStatus())));
-        table.setRowFactory(view -> {
-            TableRow<Apartment> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (user.role() == Role.ADMIN && event.getClickCount() == 2 && !row.isEmpty()) edit(row.getItem());
-            });
-            return row;
-        });
+        if (user.role() == Role.ADMIN) {
+            table.getColumns().add(Ui.actionColumn("Thao tác", apartment -> {
+                Button edit = Ui.button("Sửa", false);
+                edit.setOnAction(event -> edit(apartment));
+                return new HBox(edit);
+            }));
+        }
+        table.setSelectionModel(null);
     }
 
     private void load() {

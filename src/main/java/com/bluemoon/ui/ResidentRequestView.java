@@ -20,6 +20,7 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 
@@ -63,17 +64,10 @@ final class ResidentRequestView extends VBox {
         });
         Button refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
-        Button edit = Ui.button("Cập nhật yêu cầu", false);
-        edit.setVisible(user.role() == Role.ADMIN);
-        edit.setManaged(user.role() == Role.ADMIN);
-        edit.setDisable(true);
-        edit.setOnAction(event -> editSelected());
         Button add = Ui.button(user.role() == Role.RESIDENT ? "Gửi yêu cầu" : "Tiếp nhận yêu cầu", true);
         add.setOnAction(event -> edit(null));
-        table.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, value) ->
-                edit.setDisable(value == null));
         getChildren().addAll(Ui.pageHeader("Yêu cầu cư dân", ""),
-                Ui.toolbar(search, find, clear, statusFilter, refresh, edit, add), table);
+                Ui.toolbar(search, find, clear, statusFilter, refresh, add), table);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
@@ -89,13 +83,14 @@ final class ResidentRequestView extends VBox {
         table.getColumns().add(column("Nhóm", request -> categoryName(request.category())));
         table.getColumns().add(column("Trạng thái", request -> statusName(request.status())));
         table.getColumns().add(column("Cập nhật gần nhất", request -> dateTime(request.updatedAt())));
-        table.setRowFactory(view -> {
-            var row = new javafx.scene.control.TableRow<ResidentRequest>();
-            row.setOnMouseClicked(event -> {
-                if (user.role() == Role.ADMIN && event.getClickCount() == 2 && !row.isEmpty()) edit(row.getItem());
-            });
-            return row;
-        });
+        if (user.role() == Role.ADMIN) {
+            table.getColumns().add(Ui.actionColumn("Thao tác", request -> {
+                Button update = Ui.button("Cập nhật", false);
+                update.setOnAction(event -> edit(request));
+                return new HBox(update);
+            }));
+        }
+        table.setSelectionModel(null);
     }
 
     private void load() {
@@ -112,11 +107,6 @@ final class ResidentRequestView extends VBox {
         } catch (SQLException exception) {
             Ui.error("Không tải được yêu cầu cư dân", exception);
         }
-    }
-
-    private void editSelected() {
-        ResidentRequest selected = table.getSelectionModel().getSelectedItem();
-        if (selected != null) edit(selected);
     }
 
     private void edit(ResidentRequest current) {

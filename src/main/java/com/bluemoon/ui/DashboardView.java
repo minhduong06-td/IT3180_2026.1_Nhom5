@@ -81,6 +81,7 @@ final class DashboardView extends VBox {
         table.getColumns().add(column("Kỳ", PaymentRecord::period));
         table.getColumns().add(column("Số tiền", row -> Ui.money(row.amount())));
         table.getItems().setAll(rows);
+        table.setSelectionModel(null);
         return table;
     }
 

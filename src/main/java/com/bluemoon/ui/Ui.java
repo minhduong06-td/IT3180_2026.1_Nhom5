@@ -5,6 +5,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.TableCell;
+import javafx.scene.control.TableColumn;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
@@ -18,6 +20,7 @@ import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
+import java.util.function.Function;
 
 final class Ui {
     private static final NumberFormat CURRENCY = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("vi-VN"));
@@ -53,6 +56,21 @@ final class Ui {
         button.getStyleClass().add(primary ? "button-primary" : "button-secondary");
         button.setFocusTraversable(true);
         return button;
+    }
+
+    static <T> TableColumn<T, Void> actionColumn(String title, Function<T, Node> content) {
+        TableColumn<T, Void> column = new TableColumn<>(title);
+        column.setSortable(false);
+        column.setMinWidth(116);
+        column.setCellFactory(ignored -> new TableCell<>() {
+            @Override protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                setGraphic(null);
+                if (empty || getIndex() < 0 || getIndex() >= getTableView().getItems().size()) return;
+                setGraphic(content.apply(getTableView().getItems().get(getIndex())));
+            }
+        });
+        return column;
     }
 
     static TextField textField(String prompt) {

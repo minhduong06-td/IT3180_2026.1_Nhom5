@@ -37,6 +37,7 @@ final class TransactionsView extends VBox {
         table.setPlaceholder(new Label("Chưa có giao dịch phù hợp."));
         getChildren().addAll(Ui.pageHeader("Lịch sử thu", ""),
                 Ui.toolbar(search, find, exportCsv), table);
+        table.setSelectionModel(null);
         VBox.setVgrow(table, Priority.ALWAYS);
         configureTable();
         load();
