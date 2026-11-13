@@ -6,6 +6,7 @@ import com.bluemoon.model.Domain.ResidentRequest;
 import com.bluemoon.model.Domain.ResidentRequestInput;
 import com.bluemoon.model.Domain.RequestCategory;
 import com.bluemoon.model.Domain.RequestStatus;
+import com.bluemoon.model.Domain.Role;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -63,9 +64,11 @@ final class ResidentRequestView extends VBox {
         Button refresh = Ui.button("Làm mới", false);
         refresh.setOnAction(event -> load());
         Button edit = Ui.button("Cập nhật yêu cầu", false);
+        edit.setVisible(user.role() == Role.ADMIN);
+        edit.setManaged(user.role() == Role.ADMIN);
         edit.setDisable(true);
         edit.setOnAction(event -> editSelected());
-        Button add = Ui.button("Tiếp nhận yêu cầu", true);
+        Button add = Ui.button(user.role() == Role.RESIDENT ? "Gửi yêu cầu" : "Tiếp nhận yêu cầu", true);
         add.setOnAction(event -> edit(null));
         table.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, value) ->
                 edit.setDisable(value == null));
@@ -89,7 +92,7 @@ final class ResidentRequestView extends VBox {
         table.setRowFactory(view -> {
             var row = new javafx.scene.control.TableRow<ResidentRequest>();
             row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) edit(row.getItem());
+                if (user.role() == Role.ADMIN && event.getClickCount() == 2 && !row.isEmpty()) edit(row.getItem());
             });
             return row;
         });
@@ -150,6 +153,7 @@ final class ResidentRequestView extends VBox {
             @Override public Apartment fromString(String value) { return null; }
         });
         apartment.getStyleClass().add("form-field");
+        apartment.setDisable(user.role() == Role.RESIDENT);
         TextField reporter = Ui.textField("Tên cư dân hoặc người liên hệ");
         ComboBox<RequestCategory> category = new ComboBox<>();
         category.getItems().setAll(RequestCategory.values());
@@ -176,6 +180,10 @@ final class ResidentRequestView extends VBox {
         handlingNote.setWrapText(true);
         handlingNote.setPrefRowCount(2);
         handlingNote.getStyleClass().add("form-field");
+        if (user.role() == Role.RESIDENT) {
+            handlingNote.setVisible(false);
+            handlingNote.setManaged(false);
+        }
         if (current == null) {
             category.setValue(RequestCategory.MAINTENANCE);
             status.setValue(RequestStatus.RECEIVED);

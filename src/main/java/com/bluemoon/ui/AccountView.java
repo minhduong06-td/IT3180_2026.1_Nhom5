@@ -1,8 +1,10 @@
 package com.bluemoon.ui;
 
 import com.bluemoon.model.Domain.AppUser;
+import com.bluemoon.model.Domain.Apartment;
 import com.bluemoon.model.Domain.Role;
 import com.bluemoon.model.Domain.UserAccount;
+import com.bluemoon.model.RoleLabels;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -67,13 +69,35 @@ final class AccountView extends VBox {
         var displayName = Ui.textField("Họ và tên");
         var username = Ui.textField("Tên đăng nhập");
         var role = new ComboBox<Role>();
-        role.getItems().setAll(Role.ADMIN, Role.ACCOUNTANT);
+        role.getItems().setAll(Role.ADMIN, Role.ACCOUNTANT, Role.RESIDENT);
         role.setValue(Role.ACCOUNTANT);
         role.setConverter(new javafx.util.StringConverter<>() {
             @Override public String toString(Role value) { return roleName(value); }
             @Override public Role fromString(String value) { return Role.ACCOUNTANT; }
         });
         role.getStyleClass().add("form-field");
+        ComboBox<Apartment> apartment = new ComboBox<>();
+        apartment.getStyleClass().add("form-field");
+        apartment.setPromptText("Chọn căn hộ của người dùng");
+        apartment.setConverter(new javafx.util.StringConverter<>() {
+            @Override public String toString(Apartment value) {
+                return value == null ? "" : value.code() + " · " + value.householdName();
+            }
+            @Override public Apartment fromString(String value) { return null; }
+        });
+        try {
+            apartment.getItems().setAll(services.apartments().list(user).stream().filter(Apartment::active).toList());
+        } catch (Exception exception) {
+            Ui.error("Không tải được danh sách căn hộ", exception);
+        }
+        Runnable updateApartmentVisibility = () -> {
+            boolean resident = role.getValue() == Role.RESIDENT;
+            apartment.setVisible(resident);
+            apartment.setManaged(resident);
+            if (!resident) apartment.getSelectionModel().clearSelection();
+        };
+        role.valueProperty().addListener((observable, oldValue, newValue) -> updateApartmentVisibility.run());
+        updateApartmentVisibility.run();
         var password = new PasswordField();
         password.setPromptText("Ít nhất 8 ký tự, tối đa 72 byte UTF-8");
         password.getStyleClass().add("form-field");
@@ -87,15 +111,17 @@ final class AccountView extends VBox {
         addRow(form, 0, "Tên hiển thị", displayName);
         addRow(form, 1, "Tên đăng nhập", username);
         addRow(form, 2, "Vai trò", role);
-        addRow(form, 3, "Mật khẩu", password);
-        addRow(form, 4, "Xác nhận mật khẩu", confirmation);
+        addRow(form, 3, "Căn hộ", apartment);
+        addRow(form, 4, "Mật khẩu", password);
+        addRow(form, 5, "Xác nhận mật khẩu", confirmation);
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().setMinWidth(500);
         Button saveButton = (Button) dialog.getDialogPane().lookupButton(save);
         saveButton.addEventFilter(javafx.event.ActionEvent.ACTION, event -> {
             try {
                 services.accounts().create(user, username.getText(), displayName.getText(), role.getValue(),
-                        password.getText(), confirmation.getText());
+                        apartment.getValue() == null ? null : apartment.getValue().id(), password.getText(),
+                        confirmation.getText());
             } catch (Exception exception) {
                 event.consume();
                 Ui.error("Không tạo được tài khoản", exception);
@@ -106,7 +132,7 @@ final class AccountView extends VBox {
     }
 
     private static String roleName(Role role) {
-        return role == Role.ADMIN ? "Ban quản trị" : "Kế toán";
+        return role == null ? "" : RoleLabels.displayName(role);
     }
 
     private static void addRow(GridPane form, int row, String title, javafx.scene.Node field) {

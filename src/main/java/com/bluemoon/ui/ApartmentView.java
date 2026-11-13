@@ -3,6 +3,7 @@ package com.bluemoon.ui;
 import com.bluemoon.model.Domain.Apartment;
 import com.bluemoon.model.Domain.AppUser;
 import com.bluemoon.model.Domain.OccupancyStatus;
+import com.bluemoon.model.Domain.Role;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
@@ -39,6 +40,8 @@ final class ApartmentView extends VBox {
         setPadding(new Insets(28, 32, 32, 32));
         getStyleClass().add("page");
         var add = Ui.button("Thêm căn hộ", true);
+        add.setVisible(user.role() == Role.ADMIN);
+        add.setManaged(user.role() == Role.ADMIN);
         add.setOnAction(event -> edit(null));
         var find = Ui.button("Tìm kiếm", true);
         find.setOnAction(event -> load());
@@ -68,7 +71,7 @@ final class ApartmentView extends VBox {
         table.setRowFactory(view -> {
             TableRow<Apartment> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == 2 && !row.isEmpty()) edit(row.getItem());
+                if (user.role() == Role.ADMIN && event.getClickCount() == 2 && !row.isEmpty()) edit(row.getItem());
             });
             return row;
         });
