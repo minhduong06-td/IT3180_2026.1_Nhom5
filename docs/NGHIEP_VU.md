@@ -37,7 +37,7 @@ Quyền được kiểm tra tại service, đồng thời giao diện chỉ hi�
 | Giao dịch | Người nộp 1-50 ký tự, ngày thu không ở tương lai, số tiền nguyên VND dương, hình thức tiền mặt/chuyển khoản, mã giao dịch tùy chọn tối đa 120 ký tự, ghi chú tối đa 500 ký tự và người ghi nhận. |
 | Đóng góp | Lưu từng lần nhận tiền nguyên VND dương, ngày không ở tương lai, căn hộ và loại đóng góp đang hoạt động. Không tạo khoản phải thu. |
 | CSV | Xuất các dòng của bảng đang hiển thị. Tệp UTF-8 có BOM và dòng `sep=,` để hỗ trợ Excel; số tiền lưu dạng số không kèm ký hiệu tiền. Có xác nhận trước khi ghi đè. |
-| Tài khoản | Tên đăng nhập 3-64 ký tự, được chuyển về chữ thường; tên hiển thị 2-120 ký tự. Mật khẩu ít nhất 8 ký tự và không quá 72 byte UTF-8; lưu bằng BCrypt. Đổi mật khẩu cần mật khẩu cũ đúng, xác nhận khớp và mật khẩu mới khác mật khẩu cũ. |
+| Tài khoản | Tên tài khoản nội bộ 3-64 ký tự, tên hiển thị 2-120 ký tự; tài khoản mới phải có email hoặc số điện thoại duy nhất để đăng nhập và khôi phục. Email được chuẩn hóa chữ thường, số điện thoại Việt Nam được chuẩn hóa về dạng 10 số. Mật khẩu ít nhất 8 ký tự và không quá 72 byte UTF-8; lưu bằng BCrypt. Đổi mật khẩu cần mật khẩu cũ đúng, xác nhận khớp và mật khẩu mới khác mật khẩu cũ; quên mật khẩu chỉ tra cứu bằng email/số điện thoại đã đăng ký. |
 
 Tên ở trường `apartments.household_name` được nhập dưới nhãn Người liên hệ nhưng cũng xuất hiện dưới nhãn Chủ hộ trên các bảng tài chính. Khi lưu nhân khẩu là chủ hộ, hệ thống ghi tên này sang căn hộ; sửa căn hộ độc lập có thể làm hai nguồn tên lệch nhau. Đây là R-05, cần thống nhất mô hình và nhãn trước khi nghiệm thu.
 

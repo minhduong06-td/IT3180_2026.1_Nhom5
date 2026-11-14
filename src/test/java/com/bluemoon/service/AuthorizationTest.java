@@ -9,8 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class AuthorizationTest {
     private final AppUser admin = new AppUser(1, "admin", "Admin", Role.ADMIN);
-    private final AppUser accountant = new AppUser(2, "accountant", "Accountant", Role.ACCOUNTANT);
-    private final AppUser resident = new AppUser(3, "resident", "Người dùng", Role.RESIDENT);
+    private final AppUser accountant = new AppUser(2, "le.thu.ngan", "Kế toán", Role.ACCOUNTANT);
+    private final AppUser resident = new AppUser(3, "nguyen.minh.an", "Người dùng", Role.RESIDENT);
 
     @Test
     void accountantCannotChangeApartmentOrIssuePeriods() {

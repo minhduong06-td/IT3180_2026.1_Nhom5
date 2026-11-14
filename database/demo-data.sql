@@ -5,22 +5,38 @@
 USE bluemoon;
 SET NAMES utf8mb4;
 
--- Demo accounts: admin/admin123, accountant/accountant123 and resident/resident123.
--- The resident account is linked to apartment A101 after apartments are seeded below.
-INSERT INTO app_users (username, password_hash, display_name, role, apartment_id)
+-- Demo accounts: login with the email or phone shown in README.md.
+-- Passwords: admin123, accountant123 and resident123.
+-- The resident user is linked to apartment A101 after apartments are seeded below.
+UPDATE app_users old_account
+LEFT JOIN app_users renamed_account ON renamed_account.username = 'le.thu.ngan'
+SET old_account.username = 'le.thu.ngan'
+WHERE old_account.username = 'accountant'
+  AND old_account.role = 'ACCOUNTANT'
+  AND renamed_account.id IS NULL;
+
+UPDATE app_users old_account
+LEFT JOIN app_users renamed_account ON renamed_account.username = 'nguyen.minh.an'
+SET old_account.username = 'nguyen.minh.an'
+WHERE old_account.username = 'resident'
+  AND old_account.role = 'RESIDENT'
+  AND renamed_account.id IS NULL;
+INSERT INTO app_users (username, password_hash, display_name, email, phone, role, apartment_id)
 VALUES
-    ('admin', '$2a$10$yy6S51.swB9.1eFqHWOCpukuVPtcBoFJ3Ar3S5gZGeaACz2EekFbC', 'Ban quản trị BlueMoon', 'ADMIN', NULL),
-    ('accountant', '$2a$10$zBuNJQo8bdNgn5A8qZApaexDXi9CxM01bY943w3/ZLy8YAVFZFN7G', 'Lê Thu Ngân', 'ACCOUNTANT', NULL),
-    ('resident', '$2a$10$Vgtp/jmFwlRZsuxvkwO1PepcgQB8LsSa3Ss98bGa47OVEnjoEBpny', 'Nguyễn Minh An', 'RESIDENT', NULL)
+    ('admin', '$2a$10$yy6S51.swB9.1eFqHWOCpukuVPtcBoFJ3Ar3S5gZGeaACz2EekFbC', 'Ban quản trị BlueMoon', 'admin@bluemoon.vn', '0901000001', 'ADMIN', NULL),
+    ('le.thu.ngan', '$2a$10$zBuNJQo8bdNgn5A8qZApaexDXi9CxM01bY943w3/ZLy8YAVFZFN7G', 'Lê Thu Ngân', 'ngan@bluemoon.vn', '0901000002', 'ACCOUNTANT', NULL),
+    ('nguyen.minh.an', '$2a$10$Vgtp/jmFwlRZsuxvkwO1PepcgQB8LsSa3Ss98bGa47OVEnjoEBpny', 'Nguyễn Minh An', 'minhan@gmail.com', '0901000003', 'RESIDENT', NULL)
 ON DUPLICATE KEY UPDATE
     password_hash = VALUES(password_hash),
     display_name = VALUES(display_name),
+    email = VALUES(email),
+    phone = VALUES(phone),
     role = VALUES(role),
     apartment_id = VALUES(apartment_id),
     active = TRUE;
 
 INSERT IGNORE INTO account_login_state (user_id)
-SELECT id FROM app_users WHERE username IN ('admin', 'accountant', 'resident');
+SELECT id FROM app_users WHERE username IN ('admin', 'le.thu.ngan', 'nguyen.minh.an');
 
 -- Apartments span floors 1, 2, 3, 4, 5, 6, 7, 8, 10 and 12.
 -- The floor is intentionally derived from each apartment code by the application.
@@ -49,7 +65,7 @@ ON DUPLICATE KEY UPDATE
 UPDATE app_users u
 JOIN apartments a ON a.code = 'A101'
 SET u.apartment_id = a.id
-WHERE u.username = 'resident' AND u.role = 'RESIDENT';
+WHERE u.username = 'nguyen.minh.an' AND u.role = 'RESIDENT';
 
 -- Households intentionally have different sizes and relationships.
 INSERT INTO residents
@@ -148,22 +164,22 @@ WHERE p.period_year = 2026 AND p.period_month = 11
       WHERE c.billing_period_id = p.id AND c.apartment_id = a.id AND c.fee_type_id = f.id
   );
 
--- Payments demonstrate unpaid, partial, paid and overpaid/credit states.
+-- Payments demonstrate unpaid, partial and paid states with one clear payer per household.
 INSERT INTO payments
     (charge_id, paid_at, payer_name, amount, applied_amount, method, reference, note, recorded_by)
 SELECT c.id, '2026-11-03 09:10:00', 'Nguyễn Minh An', 100000, 100000, 'CASH',
        'BM-SEED-A101-SERVICE-1', 'Nộp một phần tại văn phòng', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'A101' AND f.code = 'SERVICE'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-A101-SERVICE-1');
 
 INSERT INTO payments
     (charge_id, paid_at, payer_name, amount, applied_amount, method, reference, note, recorded_by)
-SELECT c.id, '2026-11-04 14:20:00', 'Phạm Ngọc Mai', c.amount, c.amount, 'BANK_TRANSFER',
+SELECT c.id, '2026-11-04 14:20:00', 'Nguyễn Minh An', c.amount, c.amount, 'BANK_TRANSFER',
        'BM-SEED-A101-MANAGEMENT-1', 'Đã đối soát sao kê', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'A101' AND f.code = 'MANAGEMENT'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-A101-MANAGEMENT-1');
 
@@ -172,7 +188,7 @@ INSERT INTO payments
 SELECT c.id, '2026-11-05 08:35:00', 'Trần Gia Bảo', c.amount, c.amount, 'BANK_TRANSFER',
        'BM-SEED-A204-SERVICE-1', 'Thanh toán đủ phí dịch vụ', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'A204' AND f.code = 'SERVICE'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-A204-SERVICE-1');
 
@@ -181,7 +197,7 @@ INSERT INTO payments
 SELECT c.id, '2026-11-06 16:45:00', 'Lê Thu Hà', c.amount, c.amount, 'CASH',
        'BM-SEED-A305-SERVICE-1', 'Thanh toán tại quầy', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'A305' AND f.code = 'SERVICE'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-A305-SERVICE-1');
 
@@ -190,7 +206,7 @@ INSERT INTO payments
 SELECT c.id, '2026-11-06 16:50:00', 'Lê Thu Hà', c.amount, c.amount, 'CASH',
        'BM-SEED-A305-MANAGEMENT-1', 'Thanh toán cùng đợt', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'A305' AND f.code = 'MANAGEMENT'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-A305-MANAGEMENT-1');
 
@@ -199,7 +215,7 @@ INSERT INTO payments
 SELECT c.id, '2026-11-07 10:05:00', 'Phạm Quốc Huy', 350000, 350000, 'CASH',
        'BM-SEED-A407-SERVICE-1', 'Nộp trước một phần', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'A407' AND f.code = 'SERVICE'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-A407-SERVICE-1');
 
@@ -208,7 +224,7 @@ INSERT INTO payments
 SELECT c.id, '2026-11-08 11:40:00', 'Nguyễn Lan Chi', c.amount, c.amount, 'BANK_TRANSFER',
        'BM-SEED-B703-SERVICE-1', 'Thanh toán tự nguyện qua ngân hàng', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'B703' AND f.code = 'SERVICE'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-B703-SERVICE-1');
 
@@ -217,24 +233,18 @@ INSERT INTO payments
 SELECT c.id, '2026-11-09 15:25:00', 'Bùi Đức Long', c.amount, c.amount, 'BANK_TRANSFER',
        'BM-SEED-B809-MANAGEMENT-1', 'Thanh toán phí quản lý', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'B809' AND f.code = 'MANAGEMENT'
   AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-B809-MANAGEMENT-1');
 
 INSERT INTO payments
     (charge_id, paid_at, payer_name, amount, applied_amount, method, reference, note, recorded_by)
-SELECT c.id, '2026-11-10 09:15:00', 'Hoàng Ngọc Linh', 600000, c.amount, 'BANK_TRANSFER',
-       'BM-SEED-C1002-CREDIT-1', 'Nộp dư, phần dư chuyển thành số dư hộ', u.id
+SELECT c.id, '2026-11-10 09:15:00', 'Hoàng Ngọc Linh', c.amount, c.amount, 'BANK_TRANSFER',
+       'BM-SEED-C1002-SERVICE-1', 'Thanh toán đủ phí dịch vụ', u.id
 FROM charges c JOIN apartments a ON a.id = c.apartment_id JOIN fee_types f ON f.id = c.fee_type_id
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE a.code = 'C1002' AND f.code = 'SERVICE'
-  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-C1002-CREDIT-1');
-
-INSERT INTO apartment_credits (apartment_id, source_payment_id, amount, remaining_amount)
-SELECT a.id, p.id, p.amount - p.applied_amount, p.amount - p.applied_amount
-FROM payments p JOIN charges c ON c.id = p.charge_id JOIN apartments a ON a.id = c.apartment_id
-WHERE p.reference = 'BM-SEED-C1002-CREDIT-1'
-  AND NOT EXISTS (SELECT 1 FROM apartment_credits x WHERE x.source_payment_id = p.id);
+  AND NOT EXISTS (SELECT 1 FROM payments p WHERE p.reference = 'BM-SEED-C1002-SERVICE-1');
 
 -- Voluntary contributions are recorded separately from mandatory charges.
 INSERT INTO contributions
@@ -242,7 +252,7 @@ INSERT INTO contributions
 SELECT f.id, a.id, x.received_on, x.amount, x.method, x.reference, x.note, u.id
 FROM fee_types f
 JOIN apartments a ON a.code = 'A101'
-JOIN app_users u ON u.username = 'accountant'
+JOIN app_users u ON u.username = 'le.thu.ngan'
 JOIN (SELECT '2026-11-02' AS received_on, 50000 AS amount, 'CASH' AS method, 'BM-SEED-FUND-A101' AS reference, 'Ủng hộ quỹ cộng đồng' AS note) x
 WHERE f.code = 'COMMUNITY_FUND'
   AND NOT EXISTS (SELECT 1 FROM contributions c WHERE c.reference = x.reference);
@@ -250,14 +260,14 @@ WHERE f.code = 'COMMUNITY_FUND'
 INSERT INTO contributions
     (fee_type_id, apartment_id, received_on, amount, method, reference, note, recorded_by)
 SELECT f.id, a.id, '2026-11-03', 200000, 'BANK_TRANSFER', 'BM-SEED-FUND-A305', 'Đóng góp tự nguyện', u.id
-FROM fee_types f JOIN apartments a ON a.code = 'A305' JOIN app_users u ON u.username = 'accountant'
+FROM fee_types f JOIN apartments a ON a.code = 'A305' JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE f.code = 'COMMUNITY_FUND'
   AND NOT EXISTS (SELECT 1 FROM contributions c WHERE c.reference = 'BM-SEED-FUND-A305');
 
 INSERT INTO contributions
     (fee_type_id, apartment_id, received_on, amount, method, reference, note, recorded_by)
 SELECT f.id, a.id, '2026-11-05', 100000, 'CASH', 'BM-SEED-FUND-B703', 'Đóng góp cho hoạt động thiếu nhi', u.id
-FROM fee_types f JOIN apartments a ON a.code = 'B703' JOIN app_users u ON u.username = 'accountant'
+FROM fee_types f JOIN apartments a ON a.code = 'B703' JOIN app_users u ON u.username = 'le.thu.ngan'
 WHERE f.code = 'COMMUNITY_FUND'
   AND NOT EXISTS (SELECT 1 FROM contributions c WHERE c.reference = 'BM-SEED-FUND-B703');
 
@@ -282,7 +292,7 @@ WHERE a.code = 'C1002' AND NOT EXISTS (SELECT 1 FROM vehicles v WHERE v.license_
 INSERT INTO utility_bills
     (period_year, period_month, apartment_id, utility_type, amount, provider, reference, recorded_by)
 SELECT 2026, 11, a.id, x.utility_type, x.amount, x.provider, x.reference, u.id
-FROM apartments a JOIN app_users u ON u.username = 'accountant'
+FROM apartments a JOIN app_users u ON u.username = 'le.thu.ngan'
 JOIN (SELECT 'A101' AS code, 'ELECTRICITY' AS utility_type, 356000 AS amount, 'EVN Hanoi' AS provider, 'EVN-2611-A101' AS reference
       UNION ALL SELECT 'A101', 'WATER', 182000, 'BlueMoon Water', 'WATER-2611-A101'
       UNION ALL SELECT 'A204', 'ELECTRICITY', 428000, 'EVN Hanoi', 'EVN-2611-A204'

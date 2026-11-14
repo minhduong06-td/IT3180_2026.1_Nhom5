@@ -86,8 +86,9 @@ Các case có ghi “chưa đáp ứng trong code” vẫn giữ expected nghi�
 
 | Mã | Bộ | Bước kiểm tra | Expected / lưu ý hiện tại |
 |---|---|---|---|
-| AUTH-01 | B | Đăng nhập đúng/sai; username viết hoa | Đúng mới vào shell, username được chuẩn hóa chữ thường. |
-| AUTH-02 | B | Đổi mật khẩu: sai mật khẩu cũ, xác nhận lệch, mật khẩu dưới 8 ký tự hoặc trên 72 byte; thử hợp lệ | Lỗi không đổi hash; hợp lệ dùng mật khẩu mới được, mật khẩu cũ bị từ chối. |
+| AUTH-01 | B | Đăng nhập đúng/sai bằng email, số điện thoại và username tương thích; email viết hoa, số điện thoại có khoảng trắng hoặc dạng +84 | Đúng mới vào shell; email không phân biệt hoa thường, số điện thoại được chuẩn hóa; thông tin sai không tiết lộ tài khoản. |
+| AUTH-02 | B | Đổi mật khẩu: sai mật khẩu cũ, xác nhận lệch, mật khẩu quá ngắn/quá dài; thử hợp lệ | Lỗi không đổi hash; dialog vẫn mở để sửa; hợp lệ dùng mật khẩu mới được, mật khẩu cũ bị từ chối. |
+| AUTH-05 | B | Từ màn hình ngoài chọn Quên mật khẩu; nhập username, contact không tồn tại, email/số điện thoại hợp lệ, mật khẩu xác nhận lệch rồi hợp lệ | Username không được dùng để khôi phục; contact sai không đổi dữ liệu; contact đúng đổi được mật khẩu và đăng nhập lại được bằng email/số điện thoại. |
 | AUTH-03 | B | Thực hiện TC-01, gồm hết hạn khóa | Ghi số lần sai, thời điểm khóa và kết quả sau 5 phút. |
 | AUTH-04 | B | Kiểm tra đủ ma trận quyền trong NGHIEP_VU | Chặn thao tác trái quyền tại service; admin không ghi phiếu thu bắt buộc, cả hai role được ghi đóng góp. |
 | APT-01 | B | Tạo P0508, HK-QA0508, 80,25 m², ngày hợp lệ | Tạo thành công; tầng 5; không dùng A101 đã tồn tại. |

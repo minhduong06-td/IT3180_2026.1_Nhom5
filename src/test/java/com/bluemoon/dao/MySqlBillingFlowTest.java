@@ -86,7 +86,7 @@ class MySqlBillingFlowTest {
         assertTrue(repository.hasUsers());
         assertThrows(IllegalStateException.class, () -> accounts.createInitialAdmin(
                 "second-admin", "Tài khoản khác", "password123", "password123"));
-        accounts.create(initialAdmin, "accountant", "Kế toán BlueMoon", Role.ACCOUNTANT,
+        accounts.create(initialAdmin, "le.thu.ngan", "Kế toán BlueMoon", Role.ACCOUNTANT,
                 "accountant123", "accountant123");
         var emptySummary = new DashboardService(repository).summary(initialAdmin);
         assertEquals("Chưa phát hành", emptySummary.period());
@@ -98,7 +98,7 @@ class MySqlBillingFlowTest {
         assertEquals(8, repository.listApartments().size());
         assertEquals(18, residentCount(repository));
         long adminId = userId(database, "admin");
-        long accountantId = userId(database, "accountant");
+        long accountantId = userId(database, "le.thu.ngan");
         long serviceFeeId = feeId(database, "SERVICE");
         String contributionCode = "FUND_IT_CHECK";
         removeFee(database, contributionCode);
@@ -213,7 +213,7 @@ class MySqlBillingFlowTest {
             assertEquals("01/2098", dashboard.period());
             assertEquals(new BigDecimal("11889154"), dashboard.totalAmount());
             assertEquals(8, dashboard.apartmentCount());
-            AppUser accountant = new AppUser(accountantId, "accountant", "Kế toán", Role.ACCOUNTANT);
+            AppUser accountant = new AppUser(accountantId, "le.thu.ngan", "Kế toán", Role.ACCOUNTANT);
             simulateLegacyPayment(database, serviceCharge.id(), LocalDate.now().minusDays(1),
                     new BigDecimal("100000"), accountantId);
             assertTrue(hasCheckConstraint(database, "payments", "chk_payment_applied"));
@@ -508,24 +508,40 @@ class MySqlBillingFlowTest {
     private static void verifyAccountManagement(Database database, AppRepository repository,
                                                 AuthService auth, AppUser admin) throws Exception {
         String username = "account-check-" + System.currentTimeMillis();
+        String email = username + "@gmail.com";
+        String phone = "090" + String.valueOf(System.currentTimeMillis()).substring(7) + "1";
+        String residentUsername = username + "-resident";
+        String residentEmail = residentUsername + "@gmail.com";
+        String residentPhone = "091" + String.valueOf(System.currentTimeMillis()).substring(7) + "1";
         AccountService accounts = new AccountService(repository);
         try {
             assertThrows(IllegalArgumentException.class, () -> accounts.create(admin, username,
                     "Tài khoản kiểm tra", Role.ACCOUNTANT, "x".repeat(73), "x".repeat(73)));
             accounts.create(admin, username, "Tài khoản kiểm tra", Role.ACCOUNTANT,
-                    "BlueMoon123", "BlueMoon123");
-            AppUser account = auth.login(username, "BlueMoon123");
+                    null, email, phone, "BlueMoon123", "BlueMoon123");
+            AppUser account = auth.login(email, "BlueMoon123");
             assertNotNull(account);
+            assertNotNull(auth.login(phone, "BlueMoon123"));
             assertNotNull(auth.login(username.toUpperCase(java.util.Locale.ROOT), "BlueMoon123"));
             accounts.changePassword(account, "BlueMoon123", "NewMoon123", "NewMoon123");
-            assertNotNull(auth.login(username, "NewMoon123"));
+            assertNotNull(auth.login(email, "NewMoon123"));
+            accounts.resetPassword(phone, "Recovered123", "Recovered123");
+            assertNotNull(auth.login(email, "Recovered123"));
+            accounts.create(admin, residentUsername, "Người dùng kiểm tra", Role.RESIDENT,
+                    repository.listApartments().getFirst().id(), residentEmail, residentPhone,
+                    "Resident123", "Resident123");
+            AppUser resident = auth.login(residentEmail, "Resident123");
+            assertNotNull(resident);
+            assertEquals(Role.RESIDENT, resident.role());
+            assertEquals(repository.listApartments().getFirst().id(), resident.apartmentId());
             for (int attempt = 0; attempt < 4; attempt++) assertNull(auth.login(username, "wrong-password"));
             assertThrows(AccountLockedException.class, () -> auth.login(username, "wrong-password"));
             assertThrows(AccountLockedException.class, () -> auth.login(username, "NewMoon123"));
         } finally {
             try (Connection connection = database.openConnection();
-                 PreparedStatement delete = connection.prepareStatement("DELETE FROM app_users WHERE username = ?")) {
+                 PreparedStatement delete = connection.prepareStatement("DELETE FROM app_users WHERE username IN (?, ?)")) {
                 delete.setString(1, username);
+                delete.setString(2, residentUsername);
                 delete.executeUpdate();
             }
         }
