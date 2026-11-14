@@ -18,6 +18,8 @@ final class InitialAdminView extends StackPane {
     private final Consumer<AppUser> onCreated;
     private final TextField username = Ui.textField("Tên đăng nhập");
     private final TextField displayName = Ui.textField("Tên hiển thị");
+    private final TextField email = Ui.textField("Email");
+    private final TextField phone = Ui.textField("Số điện thoại");
     private final PasswordField password = new PasswordField();
     private final PasswordField confirmation = new PasswordField();
     private final Label error = new Label();
@@ -32,7 +34,7 @@ final class InitialAdminView extends StackPane {
         Label title = new Label("Tạo tài khoản quản trị");
         title.getStyleClass().add("page-title");
 
-        password.setPromptText("Ít nhất 8 ký tự, tối đa 72 byte UTF-8");
+        password.setPromptText("Mật khẩu");
         password.getStyleClass().add("form-field");
         confirmation.setPromptText("Nhập lại mật khẩu");
         confirmation.getStyleClass().add("form-field");
@@ -47,6 +49,7 @@ final class InitialAdminView extends StackPane {
 
         VBox panel = new VBox(16, brand, title,
                 field("Tên đăng nhập", username), field("Tên hiển thị", displayName),
+                field("Email", email), field("Số điện thoại", phone),
                 field("Mật khẩu", password), field("Xác nhận mật khẩu", confirmation), error, create);
         panel.setPadding(new Insets(40));
         panel.setMaxWidth(440);
@@ -66,7 +69,7 @@ final class InitialAdminView extends StackPane {
     private void createAccount() {
         try {
             AppUser user = accounts.createInitialAdmin(username.getText(), displayName.getText(),
-                    password.getText(), confirmation.getText());
+                    email.getText(), phone.getText(), password.getText(), confirmation.getText());
             onCreated.accept(user);
         } catch (Exception exception) {
             error.setText(exception.getMessage() == null ? "Không tạo được tài khoản quản trị." : exception.getMessage());
