@@ -34,6 +34,11 @@ public final class AppRepository {
     }
 
     public AppUser createInitialAdmin(String username, String passwordHash, String displayName) throws SQLException {
+        return createInitialAdmin(username, passwordHash, displayName, null, null);
+    }
+
+    public AppUser createInitialAdmin(String username, String passwordHash, String displayName,
+                                      String email, String phone) throws SQLException {
         try (Connection connection = database.openConnection()) {
             try (PreparedStatement lock = connection.prepareStatement("SELECT GET_LOCK('bluemoon-first-admin', 10)")) {
                 try (ResultSet result = lock.executeQuery()) {
@@ -47,11 +52,13 @@ public final class AppRepository {
                 if (hasUsers(connection)) throw new IllegalStateException("Database đã có tài khoản. Hãy đăng nhập.");
                 long userId;
                 try (PreparedStatement insert = connection.prepareStatement(
-                        "INSERT INTO app_users(username, password_hash, display_name, role) VALUES (?, ?, ?, 'ADMIN')",
+                        "INSERT INTO app_users(username, password_hash, display_name, email, phone, role) VALUES (?, ?, ?, ?, ?, 'ADMIN')",
                         Statement.RETURN_GENERATED_KEYS)) {
                     insert.setString(1, username);
                     insert.setString(2, passwordHash);
                     insert.setString(3, displayName);
+                    insert.setString(4, email);
+                    insert.setString(5, phone);
                     insert.executeUpdate();
                     try (ResultSet keys = insert.getGeneratedKeys()) {
                         if (!keys.next()) throw new SQLException("Không tạo được tài khoản quản trị.");
@@ -64,7 +71,7 @@ public final class AppRepository {
                     state.executeUpdate();
                 }
                 connection.commit();
-                return new AppUser(userId, username, displayName, Role.ADMIN);
+                return new AppUser(userId, username, displayName, Role.ADMIN, null, email, phone);
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
@@ -79,20 +86,42 @@ public final class AppRepository {
         }
     }
 
-    public LoginCredential findLoginCredential(String username) throws SQLException {
+    public LoginCredential findLoginCredential(String identifier) throws SQLException {
         String sql = """
-                SELECT u.id, u.username, u.display_name, u.role, u.apartment_id, u.password_hash,
+                SELECT u.id, u.username, u.display_name, u.email, u.phone, u.role, u.apartment_id, u.password_hash,
                        COALESCE(s.locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked
                 FROM app_users u LEFT JOIN account_login_state s ON s.user_id = u.id
-                WHERE u.username = ? AND u.active = TRUE
+                WHERE (u.username = ? OR LOWER(u.email) = LOWER(?) OR u.phone = ?) AND u.active = TRUE
                 """;
         try (Connection connection = database.openConnection(); PreparedStatement query = connection.prepareStatement(sql)) {
-            query.setString(1, username);
+            query.setString(1, identifier);
+            query.setString(2, identifier);
+            query.setString(3, identifier);
             try (ResultSet result = query.executeQuery()) {
                 if (!result.next()) return null;
                 AppUser user = new AppUser(result.getLong("id"), result.getString("username"),
                         result.getString("display_name"), Role.valueOf(result.getString("role")),
-                        (Long) result.getObject("apartment_id"));
+                        (Long) result.getObject("apartment_id"), result.getString("email"), result.getString("phone"));
+                return new LoginCredential(user, result.getString("password_hash"), result.getBoolean("login_locked"));
+            }
+        }
+    }
+
+    public LoginCredential findLoginCredentialByContact(String contact) throws SQLException {
+        String sql = """
+                SELECT u.id, u.username, u.display_name, u.email, u.phone, u.role, u.apartment_id, u.password_hash,
+                       COALESCE(s.locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked
+                FROM app_users u LEFT JOIN account_login_state s ON s.user_id = u.id
+                WHERE (LOWER(u.email) = LOWER(?) OR u.phone = ?) AND u.active = TRUE
+                """;
+        try (Connection connection = database.openConnection(); PreparedStatement query = connection.prepareStatement(sql)) {
+            query.setString(1, contact);
+            query.setString(2, contact);
+            try (ResultSet result = query.executeQuery()) {
+                if (!result.next()) return null;
+                AppUser user = new AppUser(result.getLong("id"), result.getString("username"),
+                        result.getString("display_name"), Role.valueOf(result.getString("role")),
+                        (Long) result.getObject("apartment_id"), result.getString("email"), result.getString("phone"));
                 return new LoginCredential(user, result.getString("password_hash"), result.getBoolean("login_locked"));
             }
         }
@@ -100,7 +129,7 @@ public final class AppRepository {
 
     public List<UserAccount> listUserAccounts() throws SQLException {
         String sql = """
-                SELECT u.id, u.username, u.display_name, u.role, u.active,
+                SELECT u.id, u.username, u.display_name, u.email, u.phone, u.role, u.active,
                        COALESCE(s.locked_until > CURRENT_TIMESTAMP, FALSE) AS login_locked
                 FROM app_users u LEFT JOIN account_login_state s ON s.user_id = u.id
                 ORDER BY u.display_name, u.username
@@ -110,28 +139,36 @@ public final class AppRepository {
              ResultSet result = query.executeQuery(sql)) {
             while (result.next()) users.add(new UserAccount(result.getLong("id"), result.getString("username"),
                     result.getString("display_name"), Role.valueOf(result.getString("role")),
-                    result.getBoolean("active"), result.getBoolean("login_locked")));
+                    result.getBoolean("active"), result.getBoolean("login_locked"),
+                    result.getString("email"), result.getString("phone")));
         }
         return users;
     }
 
     public void createUser(String username, String passwordHash, String displayName, Role role) throws SQLException {
-        createUser(username, passwordHash, displayName, role, null);
+        createUser(username, passwordHash, displayName, role, null, null, null);
     }
 
     public void createUser(String username, String passwordHash, String displayName, Role role,
                            Long apartmentId) throws SQLException {
+        createUser(username, passwordHash, displayName, role, apartmentId, null, null);
+    }
+
+    public void createUser(String username, String passwordHash, String displayName, Role role,
+                           Long apartmentId, String email, String phone) throws SQLException {
         try (Connection connection = database.openConnection()) {
             connection.setAutoCommit(false);
             try (PreparedStatement insert = connection.prepareStatement(
-                    "INSERT INTO app_users(username, password_hash, display_name, role, apartment_id) VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO app_users(username, password_hash, display_name, email, phone, role, apartment_id) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     Statement.RETURN_GENERATED_KEYS)) {
                 insert.setString(1, username);
                 insert.setString(2, passwordHash);
                 insert.setString(3, displayName);
-                insert.setString(4, role.name());
-                if (apartmentId == null) insert.setNull(5, Types.BIGINT);
-                else insert.setLong(5, apartmentId);
+                insert.setString(4, email);
+                insert.setString(5, phone);
+                insert.setString(6, role.name());
+                if (apartmentId == null) insert.setNull(7, Types.BIGINT);
+                else insert.setLong(7, apartmentId);
                 insert.executeUpdate();
                 try (ResultSet keys = insert.getGeneratedKeys()) {
                     if (!keys.next()) throw new SQLException("Không tạo được tài khoản.");

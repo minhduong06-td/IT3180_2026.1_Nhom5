@@ -23,12 +23,22 @@ public final class AccountService {
         String normalizedUsername = normalizeUsername(username);
         validateDisplayName(displayName);
         validatePassword(password, confirmation);
+        return repository.createInitialAdmin(normalizedUsername, BCrypt.hashpw(password, BCrypt.gensalt(10)),
+                displayName.trim());
+    }
+
+    public AppUser createInitialAdmin(String username, String displayName, String email, String phone,
+                                      String password, String confirmation) throws SQLException {
+        String normalizedUsername = normalizeUsername(username);
+        ContactInfo contacts = ContactInfo.normalizeContacts(email, phone);
+        validateDisplayName(displayName);
+        validatePassword(password, confirmation);
         try {
             return repository.createInitialAdmin(normalizedUsername, BCrypt.hashpw(password, BCrypt.gensalt(10)),
-                    displayName.trim());
+                    displayName.trim(), contacts.email(), contacts.phone());
         } catch (SQLException exception) {
             if ("23000".equals(exception.getSQLState())) {
-                throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.", exception);
+                throw new IllegalArgumentException("Tên tài khoản, email hoặc số điện thoại đã được sử dụng.", exception);
             }
             throw exception;
         }
@@ -41,13 +51,29 @@ public final class AccountService {
 
     public void create(AppUser user, String username, String displayName, Role role,
                        String password, String confirmation) throws SQLException {
-        create(user, username, displayName, role, null, password, confirmation);
+        createInternal(user, username, displayName, role, null, null, null,
+                password, confirmation, false);
     }
 
     public void create(AppUser user, String username, String displayName, Role role, Long apartmentId,
                        String password, String confirmation) throws SQLException {
+        createInternal(user, username, displayName, role, apartmentId, null, null,
+                password, confirmation, false);
+    }
+
+    public void create(AppUser user, String username, String displayName, Role role, Long apartmentId,
+                       String email, String phone, String password, String confirmation) throws SQLException {
+        createInternal(user, username, displayName, role, apartmentId, email, phone,
+                password, confirmation, true);
+    }
+
+    private void createInternal(AppUser user, String username, String displayName, Role role, Long apartmentId,
+                                String email, String phone, String password, String confirmation,
+                                boolean requireContact) throws SQLException {
         AccessRules.requireRole(user, Role.ADMIN);
         String normalizedUsername = normalizeUsername(username);
+        ContactInfo contacts = requireContact ? ContactInfo.normalizeContacts(email, phone)
+                : new ContactInfo(null, null);
         validateDisplayName(displayName);
         validatePassword(password, confirmation);
         if (role == null) throw new IllegalArgumentException("Chọn vai trò cho tài khoản.");
@@ -57,10 +83,10 @@ public final class AccountService {
         if (role != Role.RESIDENT) apartmentId = null;
         try {
             repository.createUser(normalizedUsername, BCrypt.hashpw(password, BCrypt.gensalt(10)), displayName.trim(), role,
-                    apartmentId);
+                    apartmentId, contacts.email(), contacts.phone());
         } catch (SQLException exception) {
             if ("23000".equals(exception.getSQLState())) {
-                throw new IllegalArgumentException("Tên đăng nhập đã được sử dụng.", exception);
+                throw new IllegalArgumentException("Tên tài khoản, email hoặc số điện thoại đã được sử dụng.", exception);
             }
             throw exception;
         }
@@ -94,12 +120,22 @@ public final class AccountService {
         repository.updatePassword(user.id(), BCrypt.hashpw(newPassword, BCrypt.gensalt(10)));
     }
 
+    public void resetPassword(String contact, String newPassword, String confirmation) throws SQLException {
+        String normalizedContact = ContactInfo.normalizeRecoveryIdentifier(contact);
+        var credential = repository.findLoginCredentialByContact(normalizedContact);
+        if (credential == null) {
+            throw new IllegalArgumentException("Không tìm thấy tài khoản với email hoặc số điện thoại này.");
+        }
+        validatePassword(newPassword, confirmation);
+        repository.updatePassword(credential.user().id(), BCrypt.hashpw(newPassword, BCrypt.gensalt(10)));
+    }
+
     private static void validatePassword(String password, String confirmation) {
         if (password == null || password.length() < 8) {
-            throw new IllegalArgumentException("Mật khẩu cần có ít nhất 8 ký tự.");
+            throw new IllegalArgumentException("Mật khẩu quá ngắn. Vui lòng chọn mật khẩu dài hơn.");
         }
         if (password.getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new IllegalArgumentException("Mật khẩu không được vượt quá 72 byte.");
+            throw new IllegalArgumentException("Mật khẩu quá dài. Vui lòng chọn mật khẩu ngắn hơn.");
         }
         if (!password.equals(confirmation)) {
             throw new IllegalArgumentException("Mật khẩu xác nhận chưa khớp.");

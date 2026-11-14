@@ -5,8 +5,6 @@ import com.bluemoon.model.Domain.AppUser;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.SQLException;
-import java.util.Locale;
-
 public final class AuthService {
     private final AppRepository repository;
 
@@ -14,9 +12,9 @@ public final class AuthService {
         this.repository = repository;
     }
 
-    public AppUser login(String username, String password) throws SQLException {
-        if (username == null || username.isBlank() || password == null || password.isEmpty()) return null;
-        var credential = repository.findLoginCredential(username.trim().toLowerCase(Locale.ROOT));
+    public AppUser login(String identifier, String password) throws SQLException {
+        if (identifier == null || identifier.isBlank() || password == null || password.isEmpty()) return null;
+        var credential = repository.findLoginCredential(ContactInfo.normalizeLoginIdentifier(identifier));
         if (credential == null) return null;
         if (credential.loginLocked()) throw new AccountLockedException();
         if (!BCrypt.checkpw(password, credential.passwordHash())) {

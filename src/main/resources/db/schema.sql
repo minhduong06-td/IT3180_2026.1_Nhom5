@@ -3,10 +3,14 @@ CREATE TABLE IF NOT EXISTS app_users (
     username VARCHAR(64) NOT NULL UNIQUE,
     password_hash VARCHAR(100) NOT NULL,
     display_name VARCHAR(120) NOT NULL,
+    email VARCHAR(254) NULL,
+    phone VARCHAR(20) NULL,
     role ENUM('ADMIN', 'ACCOUNTANT', 'RESIDENT') NOT NULL,
     apartment_id BIGINT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_app_users_email (email),
+    UNIQUE KEY uq_app_users_phone (phone)
 );
 
 CREATE TABLE IF NOT EXISTS account_login_state (
