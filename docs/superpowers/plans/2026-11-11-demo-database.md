@@ -54,3 +54,4 @@
 
 - [ ] Run focused tests, full Maven tests, package build, and Docker Compose validation.
 - [ ] On a clean volume, verify counts, floor distribution, statuses, resident diversity, and both demo logins.
+

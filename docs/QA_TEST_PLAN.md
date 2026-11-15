@@ -1,6 +1,6 @@
-# Kế hoạch kiểm thử BlueMoon - Sprint 1 và hồi quy
+# Kế hoạch kiểm thử BlueMoon cho Sprint 1 và hồi quy
 
-Kế hoạch kiểm tra luồng căn hộ-nhân khẩu-khoản thu-kỳ thu-thông báo-thanh toán-công nợ. Phương tiện, tiện ích, phản ánh, đóng góp, CSV và biến động cư trú được theo dõi trong nhóm hồi quy mở rộng. Phạm vi Sprint 1 theo bộ tài liệu trong repo; việc đối chiếu với kế hoạch được phê duyệt còn phụ thuộc baseline nêu ở [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md).
+Kế hoạch kiểm tra luồng căn hộ-nhân khẩu-khoản thu-kỳ thu-thông báo-thanh toán-công nợ. Phương tiện, tiện ích, phản ánh, đóng góp, CSV và biến động cư trú được theo dõi trong nhóm hồi quy mở rộng. Phạm vi Sprint 1 và các điểm cần chốt nêu ở [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md).
 
 ## Môi trường và cách chạy
 
@@ -31,11 +31,11 @@ Lệnh test trên giả định đã đặt đủ biến tích hợp nếu muố
 
 | Bộ | Mục đích | Chuẩn bị và giới hạn |
 |---|---|---|
-| A - Fixture đối chiếu | Tính phí, thanh toán, công nợ, in và KPI | Chỉ tạo riêng cho kiểm tra: 8 căn, 18 cư dân, hai phí m² đang bật. Database mới sau bootstrap để trống; không dùng fixture này làm dữ liệu mặc định của ứng dụng. |
-| B - CRUD | Tạo/sửa hồ sơ, giấy tờ, tài khoản, loại phí | Schema riêng sau bootstrap. Dùng căn `P0508`, mã hộ `HK-QA0508`, phí `QA_SERVICE`, user `qa_accountant`, giấy tờ test chưa dùng. Không dùng tổng tiền bộ A sau khi thêm dữ liệu ở bộ B. |
-| C - Mở rộng | Xe, tiện ích, phản ánh, đóng góp, CSV và cư trú | Schema riêng sau bootstrap; chủ động bật phí mở rộng và ghi lại số người/xe/hóa đơn trước phát hành. Không lấy tổng tiền bộ A làm expected cho bộ C. |
-| D - Migration | Nâng cấp cấu trúc/dữ liệu cũ | Schema riêng mới chứa đúng fixture cũ trước bootstrap; mỗi lượt migration dùng schema mới hoặc khôi phục bản sao ban đầu. Không seed trước rồi mới bật chế độ legacy. |
-| E - Case lỗi và thay đổi giá/hồ sơ | R-02, R-03, R-04, R-05 và thao tác cạnh tranh | Bản sao độc lập của bộ A, khôi phục trước mỗi case làm thay đổi giá, hồ sơ hoặc thanh toán. |
+| A. Fixture đối chiếu | Tính phí, thanh toán, công nợ, in và KPI | Chỉ tạo riêng cho kiểm tra: 8 căn, 18 cư dân, hai phí m² đang bật. Database mới sau bootstrap để trống; không dùng fixture này làm dữ liệu mặc định của ứng dụng. |
+| B. CRUD | Tạo/sửa hồ sơ, giấy tờ, tài khoản, loại phí | Schema riêng sau bootstrap. Dùng căn `P0508`, mã hộ `HK-QA0508`, phí `QA_SERVICE`, user `qa_accountant`, giấy tờ test chưa dùng. Không dùng tổng tiền bộ A sau khi thêm dữ liệu ở bộ B. |
+| C. Mở rộng | Xe, tiện ích, phản ánh, đóng góp, CSV và cư trú | Schema riêng sau bootstrap; chủ động bật phí mở rộng và ghi lại số người/xe/hóa đơn trước phát hành. Không lấy tổng tiền bộ A làm expected cho bộ C. |
+| D. Migration | Nâng cấp cấu trúc/dữ liệu cũ | Schema riêng mới chứa đúng fixture cũ trước bootstrap; mỗi lượt migration dùng schema mới hoặc khôi phục bản sao ban đầu. Không seed trước rồi mới bật chế độ legacy. |
+| E. Case lỗi và thay đổi giá/hồ sơ | R-02, R-03, R-04, R-05 và thao tác cạnh tranh | Bản sao độc lập của bộ A, khôi phục trước mỗi case làm thay đổi giá, hồ sơ hoặc thanh toán. |
 
 Fixture A phải được chuẩn bị riêng trước khi chạy các case tính phí; database mới sau bootstrap không có A101 hoặc mã phí mẫu. Các fixture trên dùng cho kiểm thử có kiểm soát, không được tạo tự động khi ứng dụng khởi động. Bộ kiểm tra tích hợp chuẩn bị fixture của nó trên database riêng.
 
@@ -79,7 +79,7 @@ Các case có ghi “chưa đáp ứng trong code” vẫn giữ expected nghi�
 | TC-06 | E, đã phát hành kỳ 10 | Thêm giá dịch vụ hiệu lực 01/11 rồi mở lại kỳ 10 và phát hành kỳ 11 | Kỳ 10 giữ snapshot; kỳ 11 dùng giá đúng đầu kỳ. Case giá giữa tháng kiểm tra riêng ở RATE-01. |
 | TC-07 | A sau TC-05 | Thu dịch vụ A101 100.000 đồng | Dịch vụ còn 380.000, trạng thái PARTIALLY_PAID; tổng nợ hộ A101 còn 716.000; đúng một phiếu. |
 | TC-08 | A, dịch vụ A102 chưa thu | Nhận 600.000 đồng cho dịch vụ A102 | Cấn 525.000, dư 75.000; dịch vụ PAID; quản lý vẫn nợ 367.500. Phát hành tháng 11 thì tổng cấn số dư vào kỳ mới là 75.000. |
-| TC-09 | B, accountant | Gọi `AccountService.list/create`, `ApartmentService.save`, `BillingService.issue` từ test/service | `SecurityException` trước khi ghi dữ liệu; không chỉ kiểm tra menu bị ẩn. Cần bổ sung test tài khoản vì `AuthorizationTest` hiện chưa có case đó. |
+| TC-09 | B, accountant | Gọi `AccountService.list/create`, `ApartmentService.save`, `BillingService.issue` từ test/service | `SecurityException` trước khi ghi dữ liệu; không chỉ kiểm tra menu bị ẩn. Cần bổ sung test tài khoản vào `AuthorizationTest`. |
 | TC-10 | A có kỳ thu, máy in/PDF sẵn sàng | Xem bảng kê, in một hộ và cả kỳ | Nội dung/số tiền đúng, đủ các hộ và chi tiết, không cắt chữ; theo dõi phản hồi UI và lưu bản in. |
 
 ## Ma trận chi tiết và hồi quy
@@ -131,9 +131,9 @@ Các mã trong ma trận là kế hoạch kiểm thử, không có nghĩa đã t
 
 ## Luồng liên kết dữ liệu
 
-- **E2E-01 - Sprint 1:** bộ A → BILL-01 → PAY-01 → PAY-02 → PAY-03 → DEBT-01 → DASH-01 → phát hành tháng 11 → DEBT-02. Giữ log/CSV để theo được cùng căn, kỳ và khoản từ đầu đến cuối.
-- **E2E-02 - Mở rộng:** bộ C → VEH-01/02 + UTIL-01 → phát hành → UTIL-02 → REQ-01 + CONTRIB-01 + EXP-01. Không sửa expected của bộ A để dùng cho bộ C.
-- **E2E-03 - CRUD:** bộ B → APT-01 → RES-01/02 → FEE-01 → phát hành một kỳ chưa có, kiểm tra P0508-QA_SERVICE xuất hiện đúng. Expected được tính từ bộ B thực tế, gồm cả các khoản seed còn bật; không áp tổng 16 charge của bộ A.
+- **E2E-01 (Sprint 1):** bộ A → BILL-01 → PAY-01 → PAY-02 → PAY-03 → DEBT-01 → DASH-01 → phát hành tháng 11 → DEBT-02. Giữ log/CSV để theo được cùng căn, kỳ và khoản từ đầu đến cuối.
+- **E2E-02 (Mở rộng):** bộ C → VEH-01/02 + UTIL-01 → phát hành → UTIL-02 → REQ-01 + CONTRIB-01 + EXP-01. Không sửa expected của bộ A để dùng cho bộ C.
+- **E2E-03 (CRUD):** bộ B → APT-01 → RES-01/02 → FEE-01 → phát hành một kỳ chưa có, kiểm tra P0508-QA_SERVICE xuất hiện đúng. Expected được tính từ bộ B thực tế, gồm cả các khoản seed còn bật; không áp tổng 16 charge của bộ A.
 
 ## Truy vấn đối chiếu
 
