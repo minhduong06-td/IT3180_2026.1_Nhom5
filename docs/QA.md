@@ -70,11 +70,11 @@ Dùng một database riêng khác với database vừa chạy integration test. 
 
 Case nhận tiền phải kiểm tra số dòng trong `payments`, giá trị `applied_amount`, số dư và các charge liên quan. Ảnh toast thành công không đủ chứng minh số liệu đúng.
 
-Phương tiện, tiện ích, yêu cầu cư dân, đóng góp và cư trú có case riêng trong [ma trận QA](QA_TEST_PLAN.md). Hóa đơn tiện ích phải bị chặn sửa/xóa sau khi đã phát hành; đóng góp không tạo công nợ; biển số đang hoạt động không được trùng.
+Phương tiện, tiện ích, yêu cầu cư dân, đóng góp và cư trú có case riêng trong [test case chức năng](QA_TEST_CASE_FUNCTIONAL.md). Hóa đơn tiện ích phải bị chặn sửa/xóa sau khi đã phát hành; đóng góp không tạo công nợ; biển số đang hoạt động không được trùng.
 
 ## 14 test đạt có nghĩa là gì?
 
-[Biên bản đã ghi nhận](QA_TEST_REPORT.md) có các lượt JDK 25 + MySQL 8.4 với 14 test đạt trên schema mới và legacy. Ở mã nguồn của lượt đó có 13 test không cần MySQL và một test tích hợp gồm nhiều assertion. Main hiện bổ sung hai test đọc nội dung file SQL, nâng tổng hiện tại lên 16 test. Hai chế độ chạy nhánh khác nhau; 14 test đạt ở legacy không có nghĩa toàn bộ luồng billing đã chạy lần nữa.
+[Biên bản kiểm thử](QA_TEST_REPORT.md) ghi các đợt chạy JDK 25 + MySQL 8.4 trên schema mới và schema cũ. Ở mã nguồn của lượt đó có 13 test không cần MySQL và một test tích hợp gồm nhiều assertion. Main hiện bổ sung hai test đọc nội dung file SQL, nâng tổng hiện tại lên 16 test. Hai chế độ chạy nhánh khác nhau; 14 test đạt ở legacy không có nghĩa toàn bộ luồng billing đã chạy lần nữa.
 
 Lượt JDK 21 trước đó dừng khi compile nên không có kết quả test. Lượt khởi động JavaFX với database rỗng chỉ xác nhận khởi động không exception, chưa chứng minh mọi thao tác UI hoặc in đạt.
 
