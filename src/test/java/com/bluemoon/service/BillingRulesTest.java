@@ -5,12 +5,19 @@ import com.bluemoon.model.Domain.ChargeStatus;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class BillingRulesTest {
+    @Test
+    void feeRateUsesFirstDayOfBillingPeriod() {
+        assertEquals(LocalDate.of(2026, 10, 1), BillingRules.rateDate(2026, 10));
+        assertEquals(LocalDate.of(2027, 1, 1), BillingRules.rateDate(2027, 1));
+    }
+
     @Test
     void calculatesAreaBasedFeeAndRoundsToWholeDong() {
         assertEquals(new BigDecimal("131250"), BillingRules.calculate(
