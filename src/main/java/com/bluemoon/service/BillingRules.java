@@ -5,9 +5,14 @@ import com.bluemoon.model.Domain.ChargeStatus;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 
 public final class BillingRules {
     private BillingRules() {}
+
+    public static LocalDate rateDate(int year, int month) {
+        return LocalDate.of(year, month, 1);
+    }
 
     public static BigDecimal calculate(CalculationBasis basis, BigDecimal areaM2, BigDecimal unitPrice) {
         return calculate(basis, areaM2, unitPrice, 0);
