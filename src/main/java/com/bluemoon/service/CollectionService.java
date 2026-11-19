@@ -60,13 +60,14 @@ public final class CollectionService {
             throw new IllegalArgumentException("Ngày thu không được ở tương lai.");
         }
         if (method == null) throw new IllegalArgumentException("Cần chọn hình thức thanh toán.");
-        if (reference != null && reference.length() > 120) {
-            throw new IllegalArgumentException("Mã giao dịch không được quá 120 ký tự.");
+        String paymentReference = reference == null ? "" : reference.strip();
+        if (paymentReference.isEmpty() || paymentReference.length() > 120) {
+            throw new IllegalArgumentException("Mã giao dịch phải có từ 1 đến 120 ký tự.");
         }
         if (note != null && note.length() > 500) {
             throw new IllegalArgumentException("Ghi chú không được quá 500 ký tự.");
         }
-        return repository.recordPayment(chargeId, amount, payer, paidOn, method, reference, note, user.id());
+        return repository.recordPayment(chargeId, amount, payer, paidOn, method, paymentReference, note, user.id());
     }
 
     public List<PaymentRecord> payments(AppUser user, String search) throws SQLException {

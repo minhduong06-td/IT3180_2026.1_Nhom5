@@ -55,6 +55,93 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MySqlBillingFlowTest {
     @Test
+    void existingDatabaseRateAndDuplicatePaymentRegression() throws Exception {
+        String url = System.getenv("BLUEMOON_IT_DB_URL");
+        Assumptions.assumeTrue("true".equals(System.getenv("BLUEMOON_IT_EXISTING_DB")) && url != null,
+                "Explicit opt-in required for the existing database regression.");
+        Database database = new Database(url, System.getenv("BLUEMOON_IT_DB_USER"), System.getenv("BLUEMOON_IT_DB_PASSWORD"));
+        AppRepository repository = new AppRepository(database);
+        long admin = userId(database, "admin");
+        long accountantId = userId(database, "le.thu.ngan");
+        long fee = feeId(database, "SERVICE");
+        LocalDate midmonth = LocalDate.of(2099, 3, 15);
+        String reference = "QA-REGRESSION-209903-A101";
+        try (Connection connection = database.openConnection(); Statement statement = connection.createStatement()) {
+            for (String sql : List.of(
+                    "SELECT COUNT(*) FROM billing_periods WHERE period_year=2099 AND period_month=3",
+                    "SELECT COUNT(*) FROM fee_rates WHERE fee_type_id=" + fee + " AND effective_from='2099-03-15'",
+                    "SELECT COUNT(*) FROM apartment_credits WHERE remaining_amount > 0",
+                    "SELECT COUNT(*) FROM utility_bills WHERE period_year=2099 AND period_month=3",
+                    "SELECT COUNT(*) FROM payments WHERE reference='" + reference + "'")) {
+                try (ResultSet result = statement.executeQuery(sql)) {
+                    result.next();
+                    if (result.getInt(1) != 0) throw new IllegalStateException("Test precondition failed: " + sql);
+                }
+            }
+        }
+        boolean rateAdded = false;
+        Long periodId = null;
+        try {
+            addRate(database, fee, new BigDecimal("12000"), midmonth, admin);
+            rateAdded = true;
+            var period = repository.issuePeriod(2099, 3, LocalDate.of(2099, 3, 20), LocalDate.of(2099, 3, 31), admin);
+            periodId = period.id();
+            var charge = repository.listCharges(period.id(), "A101").stream()
+                    .filter(item -> item.apartmentCode().equals("A101") && item.feeName().equals("Phí dịch vụ"))
+                    .findFirst().orElseThrow();
+            assertEquals(0, charge.unitPrice().compareTo(new BigDecimal("10000")));
+            assertEquals(new BigDecimal("480000"), charge.amount());
+            AppUser accountant = new AppUser(accountantId, "le.thu.ngan", "Kế toán", Role.ACCOUNTANT);
+            CollectionService service = new CollectionService(repository);
+            var pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+            var ready = new java.util.concurrent.CountDownLatch(1);
+            try {
+                java.util.concurrent.Callable<Boolean> request = () -> {
+                    ready.await();
+                    try {
+                        service.recordPayment(accountant, charge.id(), new BigDecimal("100000"), "QA",
+                                LocalDate.now(), PaymentMethod.BANK_TRANSFER, reference, null);
+                        return true;
+                    } catch (IllegalArgumentException | SQLException expectedDuplicate) {
+                        return false;
+                    }
+                };
+                var first = pool.submit(request);
+                var second = pool.submit(request);
+                ready.countDown();
+                assertEquals(1, (first.get() ? 1 : 0) + (second.get() ? 1 : 0));
+                assertEquals(1, repository.listPayments(reference).size());
+                IllegalArgumentException duplicate = assertThrows(IllegalArgumentException.class, () ->
+                        service.recordPayment(accountant, charge.id(), new BigDecimal("100000"), "QA",
+                                LocalDate.now(), PaymentMethod.BANK_TRANSFER, reference, null));
+                assertTrue(duplicate.getMessage().contains("đã được ghi nhận"));
+                assertThrows(IllegalArgumentException.class, () -> service.recordPayment(accountant, charge.id(),
+                        new BigDecimal("100000"), "QA", LocalDate.now(), PaymentMethod.CASH, " ", null));
+            } finally {
+                pool.shutdownNow();
+            }
+        } finally {
+            try (Connection connection = database.openConnection()) {
+                try (PreparedStatement delete = connection.prepareStatement("DELETE FROM payments WHERE reference = ?")) {
+                    delete.setString(1, reference);
+                    delete.executeUpdate();
+                }
+                if (periodId != null) {
+                    try (PreparedStatement delete = connection.prepareStatement("DELETE FROM charges WHERE billing_period_id = ?")) {
+                        delete.setLong(1, periodId);
+                        delete.executeUpdate();
+                    }
+                    try (PreparedStatement delete = connection.prepareStatement("DELETE FROM billing_periods WHERE id = ?")) {
+                        delete.setLong(1, periodId);
+                        delete.executeUpdate();
+                    }
+                }
+            }
+            if (rateAdded) removeRate(database, fee, midmonth);
+        }
+    }
+
+    @Test
     void migratesPaymentReceiptsAndAppliesHouseholdCredits() throws Exception {
         String url = System.getenv("BLUEMOON_IT_DB_URL");
         Assumptions.assumeTrue(url != null && !url.isBlank(), "Set BLUEMOON_IT_DB_URL to run MySQL integration checks.");
@@ -167,7 +254,7 @@ class MySqlBillingFlowTest {
             var period = repository.issuePeriod(2098, 1, LocalDate.of(2098, 1, 20),
                     LocalDate.of(2098, 1, 31), adminId);
             assertEquals(41, period.chargeCount());
-            assertEquals(new BigDecimal("11889154"), period.totalAmount());
+            assertEquals(new BigDecimal("11889750"), period.totalAmount());
             assertTrue(utilities.list(admin).stream().anyMatch(bill -> bill.id() == savedBill.id() && bill.issued()));
             assertThrows(SQLException.class, () -> utilities.save(admin, new UtilityBillInput(savedBill.id(),
                     savedBill.year(), savedBill.month(), savedBill.apartmentId(), savedBill.type(),
@@ -178,7 +265,7 @@ class MySqlBillingFlowTest {
                     .findFirst().orElseThrow();
             assertEquals(1, firstDebt.floor());
             assertEquals(3, firstDebt.residentCount());
-            assertEquals(new BigDecimal("2453952"), firstDebt.totalDue());
+            assertEquals(new BigDecimal("2454000"), firstDebt.totalDue());
             assertEquals("UNPAID", firstDebt.status().name());
             CollectionService collections = new CollectionService(repository);
             assertEquals(8, collections.debts(admin, period.id(), 1, 1, null).size());
@@ -189,7 +276,8 @@ class MySqlBillingFlowTest {
 
             ChargeSummary serviceCharge = repository.listCharges(period.id(), "A101").stream()
                     .filter(charge -> "Phí dịch vụ".equals(charge.feeName())).findFirst().orElseThrow();
-            assertEquals(new BigDecimal("479952"), serviceCharge.amount());
+            assertEquals(new BigDecimal("10000.00"), serviceCharge.unitPrice());
+            assertEquals(new BigDecimal("480000"), serviceCharge.amount());
             ChargeSummary sanitationCharge = repository.listCharges(period.id(), "A102").stream()
                     .filter(charge -> "Phí vệ sinh".equals(charge.feeName())).findFirst().orElseThrow();
             assertEquals(new BigDecimal("12000"), sanitationCharge.amount());
@@ -211,7 +299,7 @@ class MySqlBillingFlowTest {
                     .filter(charge -> "Phí gửi xe máy".equals(charge.feeName())).findFirst().orElseThrow().amount());
             var dashboard = new DashboardService(repository).summary(admin);
             assertEquals("01/2098", dashboard.period());
-            assertEquals(new BigDecimal("11889154"), dashboard.totalAmount());
+            assertEquals(new BigDecimal("11889750"), dashboard.totalAmount());
             assertEquals(8, dashboard.apartmentCount());
             AppUser accountant = new AppUser(accountantId, "le.thu.ngan", "Kế toán", Role.ACCOUNTANT);
             simulateLegacyPayment(database, serviceCharge.id(), LocalDate.now().minusDays(1),
@@ -223,20 +311,20 @@ class MySqlBillingFlowTest {
             assertEquals(LocalDate.now().minusDays(1), migratedReceipt.paidAt().toLocalDate());
             ChargeSummary updated = repository.listCharges(period.id(), "A101").stream()
                     .filter(charge -> charge.id() == serviceCharge.id()).findFirst().orElseThrow();
-            assertEquals(new BigDecimal("379952"), updated.balance());
+            assertEquals(new BigDecimal("380000"), updated.balance());
             assertEquals("PARTIALLY_PAID", updated.status().name());
             var updatedDebt = repository.listHouseholdDebts(period.id()).stream()
                     .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
             assertEquals(new BigDecimal("100000"), updatedDebt.paid());
-            assertEquals(new BigDecimal("2353952"), updatedDebt.balance());
+            assertEquals(new BigDecimal("2354000"), updatedDebt.balance());
             assertEquals("PARTIALLY_PAID", updatedDebt.status().name());
             assertNotNull(updatedDebt.lastPaidAt());
             PaymentReceipt receipt = collections.recordPayment(accountant, serviceCharge.id(),
                     new BigDecimal("600000"), "Nguyễn An", LocalDate.now(), PaymentMethod.BANK_TRANSFER,
                     "BM-2098-A101", null);
             assertEquals(new BigDecimal("600000"), receipt.received());
-            assertEquals(new BigDecimal("379952"), receipt.applied());
-            assertEquals(new BigDecimal("220048"), receipt.credit());
+            assertEquals(new BigDecimal("380000"), receipt.applied());
+            assertEquals(new BigDecimal("220000"), receipt.credit());
             assertThrows(IllegalArgumentException.class, () -> collections.recordPayment(accountant,
                     serviceCharge.id(), BigDecimal.ONE, "Nguyễn An", LocalDate.now().plusDays(1),
                     PaymentMethod.CASH, null, null));
@@ -246,18 +334,18 @@ class MySqlBillingFlowTest {
             assertEquals("PAID", paid.status().name());
             var currentDebt = repository.listHouseholdDebts(period.id()).stream()
                     .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
-            assertEquals(new BigDecimal("479952"), currentDebt.paid());
-            assertEquals(new BigDecimal("220048"), currentDebt.creditBalance());
+            assertEquals(new BigDecimal("480000"), currentDebt.paid());
+            assertEquals(new BigDecimal("220000"), currentDebt.creditBalance());
             var receipts = repository.listPayments("A101");
             assertEquals(2, receipts.size());
             assertEquals("Nguyễn An", receipts.getFirst().payerName());
             assertEquals(new BigDecimal("600000"), receipts.getFirst().amount());
-            assertEquals(new BigDecimal("379952"), receipts.getFirst().appliedAmount());
+            assertEquals(new BigDecimal("380000"), receipts.getFirst().appliedAmount());
             assertEquals(LocalDate.now(), receipts.getFirst().paidAt().toLocalDate());
             assertEquals("Chưa ghi nhận", receipts.getLast().payerName());
             var paidDashboard = new DashboardService(repository).summary(admin);
-            assertEquals(new BigDecimal("479952"), paidDashboard.paidAmount());
-            assertEquals(new BigDecimal("11409202"), paidDashboard.balance());
+            assertEquals(new BigDecimal("480000"), paidDashboard.paidAmount());
+            assertEquals(new BigDecimal("11409750"), paidDashboard.balance());
 
             var previousPeriod = repository.issuePeriod(2097, 12, LocalDate.of(2097, 12, 20),
                     LocalDate.of(2097, 12, 31), adminId);
@@ -265,14 +353,14 @@ class MySqlBillingFlowTest {
                     .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
             assertEquals(BigDecimal.ZERO, previousDebt.paid());
             assertEquals(previousDebt.totalDue(), previousDebt.balance());
-            assertEquals(new BigDecimal("220048"), previousDebt.creditBalance());
+            assertEquals(new BigDecimal("220000"), previousDebt.creditBalance());
 
             var followingPeriod = repository.issuePeriod(2098, 2, LocalDate.of(2098, 2, 20),
                     LocalDate.of(2098, 2, 28), adminId);
             var followingDebt = repository.listHouseholdDebts(followingPeriod.id()).stream()
                     .filter(debt -> debt.apartmentCode().equals("A101")).findFirst().orElseThrow();
-            assertEquals(new BigDecimal("220048"), followingDebt.paid());
-            assertEquals(followingDebt.totalDue().subtract(new BigDecimal("220048")), followingDebt.balance());
+            assertEquals(new BigDecimal("220000"), followingDebt.paid());
+            assertEquals(followingDebt.totalDue().subtract(new BigDecimal("220000")), followingDebt.balance());
             assertEquals(BigDecimal.ZERO, followingDebt.creditBalance());
         } finally {
             removePeriod(database, 2097, 12);

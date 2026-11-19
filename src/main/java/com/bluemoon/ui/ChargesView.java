@@ -181,7 +181,9 @@ final class ChargesView extends VBox {
                     .map(charge -> charge.quantity().stripTrailingZeros().toPlainString()).findFirst().orElse("—");
             Label title = Ui.label(selected.apartmentCode() + "  ·  " + selected.householdName(), "section-title");
             Label due = Ui.label("Kỳ " + selected.period() + "  ·  Hạn nộp " + Ui.date(selected.dueDate()), "muted");
-            Label profile = Ui.label("Diện tích " + area + " m²  ·  Nhân khẩu " + residents, "muted");
+            String profileText = "Diện tích tính phí " + area + " m²";
+            if (!residents.equals("—")) profileText += "  ·  Nhân khẩu tính phí " + residents;
+            Label profile = Ui.label(profileText, "muted");
             Label totals = Ui.label("Tổng phải nộp " + Ui.money(total) + "  ·  Đã thanh toán " + Ui.money(paid)
                     + "  ·  Còn phải nộp " + Ui.money(balance), "section-title");
             Label bank = Ui.label(FeeNoticePrinter.bankInformation(), "muted");
@@ -254,7 +256,8 @@ final class ChargesView extends VBox {
             @Override public PaymentMethod fromString(String value) { return PaymentMethod.CASH; }
         });
         method.getStyleClass().add("form-field");
-        var reference = Ui.textField("Mã giao dịch (không bắt buộc)");
+        var reference = Ui.textField("Mã giao dịch");
+        reference.setText("BM-" + java.util.UUID.randomUUID());
         var note = Ui.textField("Ghi chú (không bắt buộc)");
         GridPane form = new GridPane();
         form.setHgap(14);
@@ -267,6 +270,9 @@ final class ChargesView extends VBox {
         addRow(form, 4, "Hình thức", method);
         addRow(form, 5, "Mã giao dịch", reference);
         addRow(form, 6, "Ghi chú", note);
+        Label referenceHelp = Ui.label("Mã mặc định dùng cho phiếu thu; với chuyển khoản, nhập mã giao dịch ngân hàng.", "muted");
+        referenceHelp.setWrapText(true);
+        form.add(referenceHelp, 1, 7);
         dialog.getDialogPane().setContent(form);
         dialog.getDialogPane().setMinWidth(560);
         var receipt = new java.util.concurrent.atomic.AtomicReference<com.bluemoon.model.Domain.PaymentReceipt>();

@@ -860,7 +860,7 @@ public final class AppRepository {
 
                 List<ChargeInput> inputs = new ArrayList<>();
                 try (PreparedStatement query = connection.prepareStatement(loadInputs)) {
-                    query.setDate(1, Date.valueOf(issueDate));
+                    query.setDate(1, Date.valueOf(BillingRules.rateDate(year, month)));
                     try (ResultSet result = query.executeQuery()) {
                         while (result.next()) {
                             inputs.add(new ChargeInput(result.getLong("apartment_id"), result.getBigDecimal("area_m2"),
@@ -1136,9 +1136,26 @@ public final class AppRepository {
 
     public PaymentReceipt recordPayment(long chargeId, BigDecimal amount, String payerName, LocalDate paidOn,
                                         PaymentMethod method, String reference, String note, long userId) throws SQLException {
+        String paymentReference = reference == null ? "" : reference.strip();
+        if (paymentReference.isEmpty() || paymentReference.length() > 120) {
+            throw new IllegalArgumentException("Mã giao dịch phải có từ 1 đến 120 ký tự.");
+        }
         try (Connection connection = database.openConnection()) {
+            try (Statement lock = connection.createStatement();
+                 ResultSet result = lock.executeQuery("SELECT GET_LOCK('bluemoon-payment-reference', 10)")) {
+                if (!result.next() || result.getInt(1) != 1) {
+                    throw new SQLException("Không thể khóa kiểm tra mã giao dịch; vui lòng thử lại.");
+                }
+            }
             connection.setAutoCommit(false);
             try {
+                try (PreparedStatement query = connection.prepareStatement(
+                        "SELECT 1 FROM payments WHERE TRIM(reference) = ? LIMIT 1")) {
+                    query.setString(1, paymentReference);
+                    try (ResultSet result = query.executeQuery()) {
+                        if (result.next()) throw new IllegalArgumentException("Mã giao dịch đã được ghi nhận.");
+                    }
+                }
                 long apartmentId;
                 BigDecimal chargeAmount;
                 try (PreparedStatement lock = connection.prepareStatement(
@@ -1175,7 +1192,7 @@ public final class AppRepository {
                     insert.setBigDecimal(4, amount);
                     insert.setBigDecimal(5, applied);
                     insert.setString(6, method.name());
-                    insert.setString(7, blankToNull(reference));
+                    insert.setString(7, paymentReference);
                     insert.setString(8, blankToNull(note));
                     insert.setLong(9, userId);
                     insert.executeUpdate();
@@ -1199,6 +1216,12 @@ public final class AppRepository {
             } catch (SQLException | RuntimeException exception) {
                 connection.rollback();
                 throw exception;
+            } finally {
+                try (Statement unlock = connection.createStatement()) {
+                    unlock.executeQuery("SELECT RELEASE_LOCK('bluemoon-payment-reference')").close();
+                } catch (SQLException ignored) {
+                    // Closing the connection also releases MySQL advisory locks.
+                }
             }
         }
     }
