@@ -69,7 +69,7 @@ class DemoDataSqlTest {
 
     @Test
     void demoPaymentsDoNotAddSyntheticCreditOrConflictingHouseholdPayers() throws IOException {
-        String sql = Files.readString(DEMO_DATA);
+        String sql = Files.readString(DEMO_DATA).replace("\r\n", "\n");
 
         assertTrue(sql.contains("'Nguyễn Minh An', c.amount, c.amount, 'BANK_TRANSFER',\n       'BM-SEED-A101-MANAGEMENT-1'"),
                 "Các khoản thu của A101 phải ghi nhận theo chủ hộ thống nhất");
