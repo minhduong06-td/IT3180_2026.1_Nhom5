@@ -24,10 +24,10 @@ Nguồn đối chiếu:
 | Tài khoản/quyền | `AccountService`, `AccountView`, `AccessRules` | Có tạo tài khoản, xem trạng thái và tự đổi mật khẩu; chưa có quản trị khóa/mở tài khoản hoặc đổi role sau tạo. Các test quyền chưa bao phủ toàn bộ service. |
 | Căn hộ/hộ | `ApartmentService`, `ApartmentView`, `apartments` | Có tạo/sửa, mã duy nhất, diện tích, ngày và cờ tính phí. Cần thống nhất tên liên hệ/chủ hộ (R-05). |
 | Nhân khẩu | `ResidentService`, `ResidentView`, `residents` | Có quan hệ, giấy tờ, tra cứu không dấu và thay chủ hộ có xác nhận; database mới không thêm cư dân mẫu. |
-| Loại phí/đơn giá | `FeeService`, `FeeView`, `fee_types`, `fee_rates` | Có lịch sử giá và trạng thái áp dụng; mốc chọn giá chưa đúng yêu cầu đầu kỳ (R-03). |
+| Loại phí/đơn giá | `FeeService`, `FeeView`, `fee_types`, `fee_rates` | Có lịch sử giá; chọn giá theo đầu kỳ, đã kiểm tra trường hợp đổi giá giữa tháng trên MySQL ngày 25/11. |
 | Kỳ thu | `BillingService`, `AppRepository.issuePeriod`, `charges` | Có transaction, unique kỳ và snapshot số lượng/giá/tiền; cần hồi quy R-03 và kiểm tra thiếu đơn giá. |
 | Bảng kê/thông báo | `ChargesView`, `FeeNoticePrinter` | Có xem bảng kê, in riêng/in cả kỳ. Test tự động chỉ kiểm tra chuỗi chuyển khoản; cần thử bố cục/in thật và giữ đúng thông tin lịch sử (R-04). |
-| Thanh toán | `CollectionService`, `payments` | Có thu một phần/nhiều lần, tiền mặt/chuyển khoản và nộp dư; thiếu chống ghi trùng cùng một yêu cầu (R-02). |
+| Thanh toán | `CollectionService`, `payments` | Có thu một phần/nhiều lần, tiền mặt/chuyển khoản và nộp dư; mã giao dịch trùng bị từ chối khi ghi qua repository. |
 | Công nợ/số dư | `DebtView`, `apartment_credits`, `credit_applications` | Có tổng hợp theo kỳ, lọc trạng thái/tầng và cấn số dư khi phát hành kỳ sau; số dư hiển thị là số dư hiện tại. |
 | Tra cứu/tổng quan | `ResidentService.search`, `DashboardView` | Có tìm kiếm hồ sơ và KPI kỳ mới nhất theo tháng/năm. Cần đối chiếu tiền cấn trừ, không cộng toàn bộ tiền nhận vào KPI đã thanh toán. |
 | Phản hồi giao diện | Các handler `load`, đăng nhập, lưu và phát hành | Bootstrap và gửi trang in có luồng nền; nhiều truy vấn/lưu dữ liệu khác vẫn chạy trên JavaFX Application Thread (R-06). |
@@ -50,11 +50,11 @@ Các mục dưới đây xác định qua đối chiếu source; trạng thái c
 
 | Mã | Ưu tiên | Hiện trạng và hướng xử lý | Kiểm tra lại |
 |---|---|---|---|
-| R-02 | Cao | `recordPayment()` luôn tạo phiếu mới, `reference` không có unique/check trùng. Thêm mã yêu cầu duy nhất có ràng buộc DB và trả lại kết quả khi gửi lại; chốt quy tắc mã giao dịch ngân hàng. Khóa hàng chỉ giải quyết cạnh tranh cập nhật, không thay cho chống gửi trùng. | PAY-04, PAY-05 |
-| R-03 | Cao | Truy vấn giá lấy `issueDate`, khác yêu cầu ngày đầu kỳ. Dùng ngày đầu tháng để chọn giá và cập nhật expected test; không đổi yêu cầu chỉ để khớp test cũ. | RATE-01, RATE-02 |
+| R-02 | Cao | Đã yêu cầu mã giao dịch và dùng khóa MySQL để từ chối mã đã tồn tại trong các lượt ghi qua repository. Ghi SQL trực tiếp hoặc dùng hai mã khác nhau không được cơ chế này phát hiện. | Test MySQL ngày 25/11: hai yêu cầu đồng thời cùng mã chỉ tạo một phiếu; gửi lại tuần tự bị từ chối. |
+| R-03 | Cao | Đã chọn đơn giá có hiệu lực tại ngày đầu tháng kỳ thu. | Test MySQL ngày 25/11: đổi giá giữa tháng, phát hành sau ngày đổi vẫn lấy giá đầu kỳ. |
 | R-04 | Trung bình | `listCharges()` và `listPayments()` join mã căn/tên hộ hiện tại. Cần snapshot thông tin nhận diện chứng từ hoặc liên kết hồ sơ hộ có phiên bản; xác định rõ dữ liệu lịch sử và thông tin liên hệ hiện tại. | HIST-01 |
 | R-05 | Trung bình | `household_name` vừa là tên liên hệ vừa được dùng như chủ hộ; lưu HEAD có cập nhật sang căn hộ nhưng sửa căn hộ có thể ghi khác. Chốt một nguồn chủ hộ hoặc tách trường liên hệ và sửa nhãn. | RES-04 |
-| R-06 | Trung bình | Handler đăng nhập, tải dữ liệu, lưu phiếu và phát hành kỳ gọi JDBC đồng bộ. Chuyển sang `Task`/executor, hiển thị tiến trình, chặn thao tác lặp trong khi chạy và cập nhật UI trên đúng luồng. | UI-01, UI-02 |
+| R-06 | Trung bình | Handler đăng nhập, tải dữ liệu, lưu phiếu và phát hành kỳ gọi JDBC đồng bộ. Chuyển sang `Task`/executor, hiển thị tiến trình, chặn thao tác lặp trong khi chạy và cập nhật UI trên đúng luồng. | Cần bổ sung case độ trễ; UI-02 chỉ kiểm tra hiển thị bảng kê. |
 
 R-04/R-05 cần chốt thêm mô hình dữ liệu và cách trình bày; hành vi hiện tại chưa bảo đảm đối soát lịch sử theo thông tin hộ lúc phát hành.
 
@@ -72,7 +72,7 @@ Các chức năng này có thể kiểm thử hồi quy riêng. Menu hiển th�
 ## Điều kiện chốt nghiệm thu
 
 1. Chốt phạm vi Sprint 1 và các yêu cầu còn chưa rõ với PM.
-2. Xử lý R-02 và R-03; chạy lại các case liên quan và hồi quy luồng thu phí.
+2. Tiếp tục hồi quy luồng thu phí sau sửa R-02/R-03; xác nhận quy trình sử dụng mã giao dịch khi thử lại.
 3. Chốt chính sách R-04/R-05, kiểm tra chứng từ cũ sau khi đổi hồ sơ; xử lý hoặc ghi nhận quyết định chấp nhận có giới hạn cho các mục trung bình còn mở.
 4. Chạy với JDK 25 và MySQL 8.4 trên database kiểm thử riêng; báo cáo rõ đạt/lỗi/bỏ qua. Test tích hợp bị skip không tính là đã xác minh MySQL.
 5. Có bằng chứng thủ công cho UI, phân quyền tại service và in thực tế; lưu log, ảnh/CSV, SQL đối chiếu theo kế hoạch QA.

@@ -34,7 +34,7 @@ Quyền được kiểm tra tại service, đồng thời giao diện chỉ hi�
 | Kỳ thu | Tháng/năm duy nhất; ngày phát hành thuộc tháng của kỳ; hạn nộp cùng ngày hoặc sau ngày phát hành. |
 | Bảng kê | Lưu cách tính, số lượng tính phí, đơn giá và số tiền tại thời điểm phát hành. Số đã thanh toán thay đổi khi thu tiền/cấn trừ; thông tin nhận diện căn/hộ hiện còn lấy từ hồ sơ hiện tại (R-04). |
 | Công nợ | Tổng hợp khoản phải thu, đã cấn trừ và còn nợ theo hộ trong kỳ; lọc trạng thái và khoảng tầng. Diện tích, nhân khẩu và số dư nộp trước hiển thị ở đây là dữ liệu hiện tại, không phải toàn bộ snapshot lịch sử. |
-| Giao dịch | Người nộp 1-50 ký tự, ngày thu không ở tương lai, số tiền nguyên VND dương, hình thức tiền mặt/chuyển khoản, mã giao dịch tùy chọn tối đa 120 ký tự, ghi chú tối đa 500 ký tự và người ghi nhận. |
+| Giao dịch | Người nộp 1-50 ký tự, ngày thu không ở tương lai, số tiền nguyên VND dương, hình thức tiền mặt/chuyển khoản, mã giao dịch bắt buộc tối đa 120 ký tự, ghi chú tối đa 500 ký tự và người ghi nhận. |
 | Đóng góp | Lưu từng lần nhận tiền nguyên VND dương, ngày không ở tương lai, căn hộ và loại đóng góp đang hoạt động. Không tạo khoản phải thu. |
 | CSV | Xuất các dòng của bảng đang hiển thị. Tệp UTF-8 có BOM và dòng `sep=,` để hỗ trợ Excel; số tiền lưu dạng số không kèm ký hiệu tiền. Có xác nhận trước khi ghi đè. |
 | Tài khoản | Tên tài khoản nội bộ 3-64 ký tự, tên hiển thị 2-120 ký tự; tài khoản mới phải có email hoặc số điện thoại duy nhất để đăng nhập và khôi phục. Email được chuẩn hóa chữ thường, số điện thoại Việt Nam được chuẩn hóa về dạng 10 số. Mật khẩu ít nhất 8 ký tự và không quá 72 byte UTF-8; lưu bằng BCrypt. Đổi mật khẩu cần mật khẩu cũ đúng, xác nhận khớp và mật khẩu mới khác mật khẩu cũ; quên mật khẩu chỉ tra cứu bằng email/số điện thoại đã đăng ký. |
@@ -69,7 +69,7 @@ Mốc chọn giá nằm trong `AppRepository.issuePeriod()`. Ví dụ phí dịc
 | Theo yêu cầu ngày đầu kỳ | 480.000 đồng |
 | Nếu lấy theo ngày phát hành | 576.000 đồng |
 
-Không lấy kết quả theo ngày phát hành làm kết quả đạt cho quy tắc đầu kỳ. Truy vấn chọn giá và expected của test tích hợp phải sửa cùng lúc. Bộ dữ liệu không có thay đổi giá giữa tháng sẽ không phát hiện được điểm lệch này.
+Truy vấn hiện dùng ngày đầu kỳ. Case MySQL ngày 25/11 đã kiểm tra ngày phát hành sau ngày đổi giá; bộ dữ liệu không có thay đổi giá giữa tháng sẽ không phát hiện được điểm lệch này.
 
 ### Dữ liệu được giữ sau phát hành
 
@@ -88,7 +88,7 @@ Cách tính, số lượng, đơn giá và số tiền của từng khoản khô
 
 Ví dụ A102 có phí dịch vụ 525.000 đồng, kế toán nhận 600.000 đồng: cấn 525.000 đồng, lưu dư 75.000 đồng. Phần dư không tự thanh toán khoản phí quản lý cùng kỳ; nó được dùng khi phát hành kỳ sau theo điều kiện trên.
 
-**Chống ghi trùng (R-02):** mã giao dịch là thông tin đối chiếu, không phải khóa duy nhất. Gửi lại cùng một khoản thu một phần có thể tạo thêm phiếu. Yêu cầu cần đạt là mỗi yêu cầu thu tiền có mã định danh duy nhất và việc gửi lại không làm tăng tổng đã thu. Mã giao dịch ngân hàng cần có quy tắc duy nhất phù hợp trước khi thêm ràng buộc.
+**Chống ghi trùng (R-02):** mỗi phiếu cần mã giao dịch. Màn hình tạo sẵn mã mới; với chuyển khoản, kế toán thay bằng mã ngân hàng để đối chiếu. Khi lưu, ứng dụng dùng khóa MySQL và từ chối mã đã tồn tại, kể cả hai yêu cầu đồng thời. Giữ nguyên mã khi thử lại một yêu cầu. Hai mã khác nhau không được nhận diện là cùng giao dịch; ghi SQL trực tiếp không qua ứng dụng không được khóa này bảo vệ.
 
 ## Quy trình sử dụng
 
@@ -116,9 +116,9 @@ Các bước và số liệu kiểm tra cụ thể nằm trong [hướng dẫn Q
 | Nhóm | Điều kiện cần kiểm tra |
 |---|---|
 | Hồ sơ | Mã duy nhất, dữ liệu hợp lệ; mỗi hộ có cư dân có đúng một chủ hộ; việc thay chủ hộ có xác nhận. |
-| Phát hành | Mỗi tháng một kỳ; đúng khoản và đúng công thức; thiếu giá phải rollback; ngày chọn giá đáp ứng quy tắc đầu kỳ sau khi sửa R-03. |
+| Phát hành | Mỗi tháng một kỳ; đúng khoản và đúng công thức; thiếu giá phải rollback; ngày chọn giá theo đầu kỳ. |
 | Chứng từ | Số tiền và thông tin hộ đúng với thời điểm cần đối soát; cần sửa/chốt chính sách R-04, R-05. Kiểm tra bản in thực tế. |
-| Thu tiền | Đúng số nhận/cấn/dư, có lịch sử; gửi lại một yêu cầu không tạo phiếu mới sau khi sửa R-02. |
+| Thu tiền | Đúng số nhận/cấn/dư, có lịch sử; mã giao dịch đã tồn tại bị từ chối. |
 | Quyền và tài khoản | Service từ chối thao tác sai vai trò, khóa sau 5 lần sai và mở lại sau 5 phút; mật khẩu mới tuân thủ quy tắc. |
 | Nâng cấp và giao diện | Bootstrap không phụ thuộc dữ liệu mẫu trên database mới hoặc cũ; giao diện có phản hồi khi database chậm (R-06). |
 
