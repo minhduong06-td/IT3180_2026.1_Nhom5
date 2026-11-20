@@ -54,13 +54,22 @@ Cột ưu tiên: 1 là bắt buộc phải đạt trước nghiệm thu, 2 là n
 | FUN-25 | 1 | Bộ dữ liệu A sau khi thu tiền | Mở màn hình công nợ, lọc theo trạng thái và tầng | Tổng phải thu, đã thu và còn nợ khớp với bảng kê |
 | FUN-26 | 2 | Bộ dữ liệu A | Mở tổng quan | Số đã thanh toán tính theo tiền cấn, không cộng toàn bộ tiền nhận |
 
+### Case bổ sung cần thực thi
+
+| Mã | Ưu tiên | Tiền điều kiện và dữ liệu | Thao tác | Kết quả mong đợi / trạng thái |
+|---|---:|---|---|---|
+| FUN-29 | 1 | Kỳ 10/2026; giá dịch vụ 10.000 đồng/m² có hiệu lực từ 01/10, giá 12.000 từ 15/10; ngày phát hành 20/10 | Phát hành kỳ và kiểm tra snapshot giá, tiền của căn A101 | Theo yêu cầu R-03, dùng giá đầu kỳ: 10.000 đồng/m², tiền 480.000 đồng. Test tương đương dùng kỳ 03/2099 đã đạt trên MySQL ngày 25/11. |
+| FUN-30 | 1 | Khoản còn nợ ít nhất 200.000 đồng; chuẩn bị mã giao dịch duy nhất | Gửi đồng thời hai yêu cầu thu 100.000 đồng có cùng mã; đối chiếu phiếu và công nợ | Chỉ một lần thu được ghi nhận. Test MySQL đồng thời ngày 25/11 đạt với cùng mã. |
+
+Kết quả test tương đương và phạm vi kiểm tra được ghi trong biên bản; các kết quả đó chưa đồng nghĩa sản phẩm đã được nghiệm thu.
+
 ## Nhóm in thông báo
 
 | Mã | Ưu tiên | Dữ liệu đầu vào | Thao tác | Kết quả mong đợi |
 |---|---|---|---|---|
 | FUN-13 | 1 | Kỳ thu 10/2026 đã phát hành | Xem trước thông báo căn A101 | Tên hộ, mã căn, danh sách khoản, tổng tiền và hạn nộp khớp bảng kê |
 | FUN-27 | 2 | Kỳ thu có nhiều hộ | In cả kỳ ra PDF | Đủ số trang theo số hộ, giao diện không treo |
-| FUN-28 | 3 | Kỳ thu đã phát hành | Đổi tên hộ rồi in lại thông báo cũ | Ghi nhận thông tin nhận diện lấy theo hồ sơ hiện tại |
+| FUN-28 | 3 | Kỳ thu đã phát hành | Đổi tên hộ rồi in lại thông báo cũ | Ghi lại kết quả thực tế; chưa kết luận đạt đến khi chốt yêu cầu về thông tin lịch sử (R-04) |
 
 ## Quy ước ghi kết quả
 

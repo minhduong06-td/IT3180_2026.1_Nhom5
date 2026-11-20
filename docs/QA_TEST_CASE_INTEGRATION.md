@@ -1,8 +1,8 @@
 # Test case tích hợp
 
-Test case tích hợp kiểm tra các lớp làm việc cùng nhau: giao diện gọi service, service gọi kho dữ liệu, kho dữ liệu chạy trên MySQL thật. Nhóm này bắt được lỗi mà test đơn vị không thấy, ví dụ sai transaction hoặc sai kiểu dữ liệu khi ghi xuống cơ sở dữ liệu.
+Test case tích hợp kiểm tra service và kho dữ liệu trên MySQL thật. Các thao tác giao diện được kiểm tra riêng qua test case UI và kịch bản thủ công.
 
-Mỗi case chạy trên schema riêng, tạo dữ liệu bằng chính ứng dụng chứ không chèn tay.
+Dữ liệu được chuẩn bị tùy theo case; test tự động tạo fixture bằng mã kiểm thử. Các test có ghi và thay đổi schema chỉ được chạy trên schema kiểm thử trống.
 
 ## Điều kiện chạy
 
