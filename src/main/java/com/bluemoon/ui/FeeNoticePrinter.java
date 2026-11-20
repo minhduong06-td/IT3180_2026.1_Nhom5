@@ -97,7 +97,9 @@ final class FeeNoticePrinter {
         title.setAlignment(Pos.CENTER);
         title.setMaxWidth(Double.MAX_VALUE);
         Label household = label("Căn hộ " + first.apartmentCode() + "    Chủ hộ: " + first.householdName(), "notice-heading");
-        Label details = label("Diện tích tính phí: " + area + " m²    Nhân khẩu: " + residents + " người", "notice-body");
+        String detailsText = "Diện tích tính phí: " + area + " m²";
+        if (!residents.equals("—")) detailsText += "    Nhân khẩu tính phí: " + residents + " người";
+        Label details = label(detailsText, "notice-body");
 
         GridPane rows = new GridPane();
         rows.setHgap(10);

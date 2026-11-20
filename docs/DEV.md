@@ -35,7 +35,7 @@ Snapshot chưa gồm mã căn và tên hộ; các trường này còn join hồ 
 
 Phát hành kỳ gồm tạo kỳ, charge và phân bổ số dư. Thu tiền gồm lưu phiếu và phần dư. Nếu chỉ một phần được ghi thành công, tổng nợ và lịch sử có thể lệch nhau. Repository cần commit cả thao tác hoặc rollback khi thất bại; constraint và khóa dữ liệu bảo vệ những trường hợp cạnh tranh mà validation ở Java không đủ xử lý.
 
-Khóa một bản ghi không tự chống gửi lại yêu cầu. R-02 cần mã yêu cầu duy nhất, lưu và trả lại kết quả cũ khi nhận lại cùng yêu cầu, cùng kiểm tra cạnh tranh.
+Thu tiền yêu cầu mã giao dịch; repository lấy MySQL advisory lock chung, kiểm tra mã đã có và ghi trong transaction trước khi nhả khóa. Gửi lại cùng mã bị từ chối. Khóa này bảo vệ các lượt ghi qua repository, không ngăn SQL trực tiếp và không phát hiện hai mã khác nhau cho cùng giao dịch.
 
 ## Phân biệt tiền nhận, tiền cấn và số dư
 

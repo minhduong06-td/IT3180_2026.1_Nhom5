@@ -53,8 +53,8 @@ Các điểm cần quyết định trước khi nghiệm thu:
 
 | Điểm | Ý nghĩa với PM |
 |---|---|
-| R-02: gửi lại thao tác thu có thể tạo thêm phiếu | Cần cơ chế chống ghi trùng và kiểm tra đồng thời trước khi tin cậy việc thu tiền thực tế. |
-| R-03: chọn giá theo ngày phát hành | Yêu cầu chọn giá đầu kỳ chưa đạt; cần sửa code và expected tương ứng. |
+| R-02: gửi lại thao tác thu | Mã giao dịch trùng được từ chối qua repository; đã thử đồng thời trên MySQL. Cần giữ cùng mã khi thử lại và tiếp tục kiểm tra các cách ghi ngoài ứng dụng. |
+| R-03: chọn giá theo ngày đầu kỳ | Đã kiểm tra trường hợp đổi giá giữa tháng trên MySQL; cần tiếp tục hồi quy khi thay đổi chức năng tính phí. |
 | R-04: mã căn/tên hộ lịch sử lấy từ hồ sơ hiện tại | Cần chốt thông tin nào phải giữ nguyên trên chứng từ và bổ sung snapshot. |
 | R-05: tên liên hệ có thể lệch tên chủ hộ | Cần thống nhất ý nghĩa trường và nguồn dữ liệu. |
 | R-06: nhiều truy vấn chạy trên luồng UI | Cần kiểm tra độ trễ, thao tác lặp và khả năng phản hồi. |
