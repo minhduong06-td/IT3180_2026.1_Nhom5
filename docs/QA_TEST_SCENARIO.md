@@ -9,8 +9,8 @@ Kịch bản mô tả một chuỗi thao tác có đầu có cuối, giống nh�
 | SC-01 | Chốt kỳ thu tháng đầu tiên | Ban quản trị lập kỳ thu 10/2026 cho toàn bộ căn hộ và kiểm tra bảng kê | FUN-05, FUN-07, FUN-13, UI-02 |
 | SC-02 | Thu tiền tại quầy | Kế toán thu tiền của hai hộ, một hộ trả thiếu một hộ trả dư | FUN-08, FUN-09, FUN-10, UI-03 |
 | SC-03 | Xử lý nộp dư sang kỳ sau | Kỳ sau tự động trừ số dư còn lại của hộ | FUN-11, FUN-12, INT-03 |
-| SC-04 | In và gửi thông báo | In thông báo từng hộ và in cả kỳ, kiểm tra nội dung khớp bảng kê | FUN-13, FUN-27, UI-04, UI-05 |
-| SC-05 | Kiểm tra phân quyền | Kế toán không được sửa hồ sơ hay phát hành kỳ, ban quản trị không được thu tiền | FUN-14, INT-08, UI-06 |
+| SC-04 | Xem và in thông báo | In thông báo từng hộ và in cả kỳ, kiểm tra nội dung khớp bảng kê | FUN-13, FUN-27, UI-04, UI-05 |
+| SC-05 | Kiểm tra phân quyền | Kế toán không được sửa hồ sơ hay phát hành kỳ, ban quản trị không được thu tiền | INT-08, UI-06 |
 | SC-06 | Tiếp nhận hồ sơ mới | Thêm một căn hộ và một hộ mới, phát hành kỳ tiếp theo | FUN-01, FUN-02, FUN-03, FUN-04 |
 | SC-07 | Chạy lại sau khi sửa lỗi | Chạy lại kịch bản SC-01 đến SC-03 trên dữ liệu sạch | INT-01, INT-02, INT-04 |
 
@@ -55,7 +55,7 @@ Kịch bản mô tả một chuỗi thao tác có đầu có cuối, giống nh�
 
 **Kết quả mong đợi:** số dư chỉ dùng cho kỳ sau kỳ phát sinh, không cấn ngược kỳ cũ.
 
-## SC-04: In và gửi thông báo
+## SC-04: Xem và in thông báo
 
 **Người thực hiện:** ban quản trị. **Thời gian dự kiến:** 15 phút.
 

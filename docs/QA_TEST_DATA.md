@@ -116,7 +116,7 @@ Mỗi case biên dùng một bản sao độc lập của bộ A, khôi phục l
 |---|---|---|---|
 | Ban quản trị | admin@bluemoon.vn | 0901000001 | admin123 |
 | Kế toán | ngan@bluemoon.vn | 0901000002 | accountant123 |
-| Cư dân | an@bluemoon.vn | 0901000101 | resident123 |
+| Cư dân | minhan@gmail.com | 0901000003 | resident123 |
 
 Đổi mật khẩu sau lần đăng nhập đầu tiên khi chạy trên môi trường dùng chung.
 
@@ -124,13 +124,9 @@ Mỗi case biên dùng một bản sao độc lập của bộ A, khôi phục l
 
 Khi tạo volume mới, Docker tự nạp `src/main/resources/db/schema.sql` và `database/demo-data.sql`. Dữ liệu này dùng cho demo, không dùng cho kiểm thử đối chiếu vì số liệu đã có sẵn.
 
-Để tạo bộ A cho kiểm thử, dùng schema trống rồi thao tác qua ứng dụng theo kịch bản SC-06 trong [kịch bản kiểm thử](QA_TEST_SCENARIO.md), hoặc để bộ test tích hợp tự tạo fixture của nó.
+Bộ A là bộ đối chiếu nghiệp vụ; SC-06 chỉ tạo một căn P0508 và không tạo đủ bộ A. Test tích hợp tự tạo fixture trên schema trống như hướng dẫn trong [QA.md](QA.md). Fixture này không được tự động nạp vào database ứng dụng. Để chạy thủ công, cần chuẩn bị đủ 8 căn, nhân khẩu và loại phí như bảng trên rồi đối chiếu số liệu trước khi chạy.
 
-```powershell
-docker compose down -v
-docker compose up -d
-.\mvnw.cmd javafx:run
-```
+Không dùng `docker compose down -v` để chuẩn bị kiểm thử, vì lệnh đó xóa volume dữ liệu dự án. Các truy vấn chỉ đọc có thể thực hiện trên database ứng dụng hiện có; ghi lại trạng thái ban đầu và dữ liệu thực tế thay vì áp số chuẩn bộ A cho dữ liệu khác.
 
 ## Câu truy vấn đối chiếu
 
