@@ -10,13 +10,24 @@ Với mỗi case, ghi: commit, môi trường, trạng thái dữ liệu ban đ�
 
 Cần JDK 25, Docker Desktop và một database riêng. Không kiểm tra phá dữ liệu trên database đang sử dụng. Ghi phiên bản từ `.\mvnw.cmd -version`, `docker version` và commit từ `git rev-parse HEAD`.
 
+Đợt 25/11 cũng có một test hồi quy được bật riêng trên database demo hiện có: `MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression`. Test yêu cầu tài khoản và dữ liệu demo tương ứng, kỳ 03/2099 và mã kiểm thử chưa tồn tại, không có số dư nộp trước, không có hóa đơn tiện ích trong kỳ thử. Test tạo và dọn bản ghi của mình; nếu điều kiện không đúng thì dừng. Chỉ chạy khi đã xác nhận database phù hợp và không có người khác sử dụng đồng thời; không bật trên dữ liệu vận hành.
+
+```powershell
+$env:BLUEMOON_IT_DB_URL = 'jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh'
+$env:BLUEMOON_IT_DB_USER = 'bluemoon_app'
+$env:BLUEMOON_IT_DB_PASSWORD = 'bluemoon_dev'
+$env:BLUEMOON_IT_EXISTING_DB = 'true'
+.\mvnw.cmd '-Dtest=MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression' test
+Remove-Item Env:BLUEMOON_IT_EXISTING_DB, Env:BLUEMOON_IT_DB_URL, Env:BLUEMOON_IT_DB_USER, Env:BLUEMOON_IT_DB_PASSWORD
+```
+
 Kiểm tra không cần MySQL:
 
 ```powershell
 .\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
 ```
 
-Nhóm này có 15 phương thức test: quyền, công thức tiền, validation cư trú, CSV, nội dung chuyển khoản và hai kiểm tra nội dung file SQL khởi tạo. Hai kiểm tra SQL chỉ đọc file, không xác minh việc thực thi trên MySQL.
+Lệnh trên chỉ chạy các lớp được chọn. `DemoDataSqlTest` kiểm tra nội dung file SQL, không xác minh việc thực thi SQL trên MySQL. Xem số lượng thực tế trong báo cáo Surefire của từng lần chạy.
 
 ### Chạy tích hợp với MySQL rỗng
 
@@ -42,7 +53,7 @@ Remove-Item Env:BLUEMOON_IT_DB_LEGACY -ErrorAction SilentlyContinue
 .\mvnw.cmd clean test
 ```
 
-Mong đợi 16 test chạy, 0 lỗi, 0 bỏ qua. Sao chép `target/surefire-reports` trước lần chạy tiếp theo. Test tích hợp tạo fixture, thay schema và dọn một phần dữ liệu; mỗi lượt phải dùng schema mới hoàn toàn.
+Suite có 28 test tại lần kiểm tra ngày 25/11/2026; xác nhận số lượng và kết quả thực tế trong output, không tính test bị bỏ qua là đạt. Sao chép `target/surefire-reports` trước lần chạy tiếp theo. Test tích hợp tạo fixture, thay schema và dọn một phần dữ liệu; mỗi lượt phải dùng schema mới hoàn toàn.
 
 Để chạy nhánh legacy, tạo container khác với database rỗng theo cách trên, dùng cổng khác và đổi URL tương ứng; đặt `$env:BLUEMOON_IT_DB_LEGACY = 'true'` rồi chạy test. Nhánh này tạo schema căn hộ cũ có ba căn và kiểm tra nâng cấp, không chạy toàn bộ phần billing của test tích hợp.
 
@@ -74,7 +85,7 @@ Phương tiện, tiện ích, yêu cầu cư dân, đóng góp và cư trú có 
 
 ## 14 test đạt có nghĩa là gì?
 
-[Biên bản kiểm thử](QA_TEST_REPORT.md) ghi các đợt chạy JDK 25 + MySQL 8.4 trên schema mới và schema cũ. Ở mã nguồn của lượt đó có 13 test không cần MySQL và một test tích hợp gồm nhiều assertion. Main hiện bổ sung hai test đọc nội dung file SQL, nâng tổng hiện tại lên 16 test. Hai chế độ chạy nhánh khác nhau; 14 test đạt ở legacy không có nghĩa toàn bộ luồng billing đã chạy lần nữa.
+[Biên bản kiểm thử](QA_TEST_REPORT.md) ghi các đợt chạy JDK 25 + MySQL 8.4 trên schema mới và schema cũ. Đây là kết quả lịch sử của bản mã tại thời điểm đó; hai chế độ chạy nhánh khác nhau, nên kết quả legacy không có nghĩa toàn bộ luồng billing đã chạy lần nữa.
 
 Lượt JDK 21 trước đó dừng khi compile nên không có kết quả test. Lượt khởi động JavaFX với database rỗng chỉ xác nhận khởi động không exception, chưa chứng minh mọi thao tác UI hoặc in đạt.
 
@@ -82,8 +93,8 @@ Lượt JDK 21 trước đó dừng khi compile nên không có kết quả test
 
 | Case | Kết luận hiện tại |
 |---|---|
-| Gửi lại cùng yêu cầu thu một phần hoặc gửi đồng thời | R-02 còn mở. Nếu tạo hai phiếu thì Không đạt; cần kiểm tra cả DB. |
-| Giá tăng giữa tháng, phát hành sau ngày tăng | R-03 còn mở. Theo yêu cầu vẫn dùng giá ngày đầu kỳ, không lấy giá ngày phát hành làm expected. |
+| Gửi lại cùng yêu cầu thu một phần hoặc gửi đồng thời | Dùng cùng mã giao dịch; phải chỉ có một phiếu trong DB. Case MySQL ngày 25/11 đạt; hai mã khác nhau không được nhận diện là cùng giao dịch. |
+| Giá tăng giữa tháng, phát hành sau ngày tăng | Theo yêu cầu dùng giá ngày đầu kỳ. Case MySQL ngày 25/11 đạt; cần chạy lại khi thay đổi tính phí. |
 | Đổi mã căn/tên hộ rồi in lại chứng từ cũ | R-04 còn mở; kiểm tra sự thay đổi và đối chiếu chính sách giữ lịch sử. |
 | Sửa tên liên hệ khác với chủ hộ | R-05 còn mở; không tự kết luận hai trường là cùng ý nghĩa. |
 | MySQL chậm, nhấn thao tác nhiều lần, in cả kỳ | R-06 chưa có kết quả đủ để kết luận; cần kiểm tra phản hồi và dữ liệu ghi lặp. |

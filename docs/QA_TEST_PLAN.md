@@ -41,10 +41,10 @@ Mỗi lớp có tài liệu riêng: [kịch bản kiểm thử](QA_TEST_SCENARIO
 | Java | JDK 25, kiểm tra bằng `.\mvnw.cmd -version` |
 | Maven | Maven Wrapper 3.9.16 kèm trong dự án |
 | Cơ sở dữ liệu | MySQL 8.4 chạy bằng Docker, mỗi lượt dùng schema riêng |
-| Dữ liệu mẫu | `database/demo-data.sql` nạp tự động khi tạo volume mới |
+| Dữ liệu mẫu | `database/demo-data.sql` nạp khi tạo volume mới; fixture tích hợp do mã test tạo trên schema trống |
 | Tài khoản thử | Ba tài khoản mẫu trong [dữ liệu kiểm thử](QA_TEST_DATA.md) |
 
-Không chạy kiểm tra tích hợp trên cơ sở dữ liệu đang dùng để demo. Mỗi lượt kiểm tra dùng schema mới hoàn toàn, xong thì xóa.
+Truy vấn chỉ đọc có thể chạy trên database hiện có. Test tích hợp tự động có ghi và thay đổi schema nên phải chạy trên schema kiểm thử trống, không trỏ trực tiếp vào dữ liệu đang dùng.
 
 ## 5. Lịch thực hiện
 
@@ -75,6 +75,8 @@ Dừng kiểm tra và chuyển sang nghiệm thu khi thỏa cả bốn điều k
 Nếu còn lỗi mức trung bình, PM quyết định chấp nhận và ghi rõ lý do trong biên bản.
 
 ## 8. Rủi ro
+
+Các nội dung cần hồi quy trước nghiệm thu gồm: đăng nhập và phân quyền; hồ sơ và chủ hộ; phát hành kỳ và chống trùng; đơn giá giữa tháng (FUN-29); thanh toán, cấn trừ và gửi trùng/đồng thời (FUN-24, FUN-30); in chứng từ và thông tin lịch sử; và các tiêu chí Sprint 2 US-028-031. Ghi kết quả từng case vào biên bản; các case chưa chạy không được tính là đạt.
 
 | Rủi ro | Ảnh hưởng | Cách giảm |
 |---|---|---|
