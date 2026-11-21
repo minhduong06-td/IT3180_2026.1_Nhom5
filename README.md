@@ -38,7 +38,7 @@ Khi tạo volume mới, Docker nạp cấu trúc bảng và dữ liệu khởi t
 |---|---|---|---|
 | Ban quản trị | `admin@bluemoon.vn` | `0901000001` | `admin123` |
 | Kế toán | `ngan@bluemoon.vn` | `0901000002` | `accountant123` |
-| Cư dân | `an@bluemoon.vn` | `0901000101` | `resident123` |
+| Cư dân | `minhan@gmail.com` | `0901000003` | `resident123` |
 
 Màn hình đăng nhập nhận email hoặc số điện thoại. Tên tài khoản nội bộ `admin` được giữ cho Ban quản trị; tài khoản kế toán và cư dân dùng username gắn với tên người, nhưng người dùng thông thường không cần nhập username. Người dùng có thể chọn **Quên mật khẩu?** ở màn hình đăng nhập để đặt mật khẩu mới bằng email hoặc số điện thoại đã đăng ký; khi đã vào ứng dụng, thao tác **Đổi mật khẩu** yêu cầu mật khẩu hiện tại. Bản desktop không gửi OTP qua email hoặc SMS, nên bước xác minh dựa trên thông tin liên hệ lưu trong hệ thống.
 
@@ -55,11 +55,11 @@ Lệnh `down -v` xóa toàn bộ dữ liệu trong volume. Với database cần 
 
 ## Cấu hình kết nối
 
-Ứng dụng đọc cấu hình từ biến môi trường, mặc định trỏ tới MySQL trong Docker tại `localhost:3306`.
+Ứng dụng đọc cấu hình từ biến môi trường, mặc định trỏ tới MySQL trong Docker tại `localhost:3307`.
 
 ```powershell
-$env:BLUEMOON_DB_URL = 'jdbc:mysql://localhost:3306/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh'
-$env:BLUEMOON_DB_USER = 'bluemoon'
+$env:BLUEMOON_DB_URL = 'jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh'
+$env:BLUEMOON_DB_USER = 'bluemoon_app'
 $env:BLUEMOON_DB_PASSWORD = 'mat-khau-cua-ban'
 ```
 
@@ -87,4 +87,4 @@ Test tích hợp cần database riêng, rỗng và có thể xóa. Xem [hướng
 - [Dữ liệu kiểm thử](docs/QA_TEST_DATA.md)
 - [Biên bản kiểm thử](docs/QA_TEST_REPORT.md)
 
-Các điểm còn mở gồm chống ghi trùng thanh toán, ngày chọn đơn giá, thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chi tiết tại [đối chiếu yêu cầu](docs/SPRINT1_COVERAGE_REVIEW.md).
+Các điểm còn mở gồm thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chống gửi trùng dựa vào mã giao dịch; khi thử lại cần dùng cùng mã. Chi tiết tại [đối chiếu yêu cầu](docs/SPRINT1_COVERAGE_REVIEW.md).

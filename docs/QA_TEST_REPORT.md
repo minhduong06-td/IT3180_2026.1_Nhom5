@@ -2,6 +2,35 @@
 
 Biên bản ghi kết quả của từng đợt kiểm thử, danh sách lỗi phát hiện và tình trạng xử lý. Mỗi đợt phải ghi rõ người chạy, ngày chạy, bản dựng và môi trường để người khác chạy lại được.
 
+### Kiểm tra giao diện bổ sung sau Sprint 1
+
+Các bước dưới đây dùng dữ liệu hiện có của dự án. Kết quả chỉ áp dụng cho thao tác và dữ liệu đã quan sát; không thay thế toàn bộ test case, kiểm tra ghi dữ liệu hoặc kiểm tra bảo mật ở lớp service.
+
+| Bước kiểm tra | Kết quả thực tế | Ảnh |
+|---|---|---|
+| Mở ứng dụng, đăng nhập tài khoản ban quản trị | Màn hình đăng nhập hiển thị; đăng nhập thành công và vào Tổng quan. | [Đăng nhập](images/qa-20261125-01-dang-nhap.png), [Tổng quan quản trị](images/qa-20261125-02-tong-quan.png) |
+| Tìm căn hộ A101 | Tìm `A101`, danh sách còn một dòng A101, diện tích 48 m². | [Kết quả tìm kiếm](images/qa-20261125-03-tim-can-ho.png) |
+| Xem công nợ kỳ 11/2026 | Hiển thị phải thu 10.905.500 đồng, đã thanh toán 4.512.000 đồng, còn 6.393.500 đồng; ba số khớp phép trừ và tổng đọc từ database. | [Công nợ](images/qa-20261125-04-cong-no.png) |
+| Xem bảng kê và thông báo A101 | Hai khoản lần lượt 480.000 và 336.000 đồng; đã thanh toán 436.000, còn 380.000 đồng. Khớp dòng A101 trên màn hình công nợ. Chưa in thực tế. | [Bảng kê](images/qa-20261125-05-bang-ke.png), [Chi tiết A101](images/qa-20261125-06-thong-bao.png) |
+| Đăng nhập kế toán và cư dân | Cả hai đăng nhập thành công. Menu kế toán khác menu quản trị; tổng quan cư dân chỉ hiển thị A101 trong dữ liệu đã quan sát. Chưa thử truy cập trái quyền ở service trong lượt UI này. | [Kế toán](images/qa-20261125-07-vai-tro-ke-toan.png), [Cư dân](images/qa-20261125-08-vai-tro-cu-dan.png) |
+
+Điểm cần xem lại: chi tiết bảng kê A101 hiển thị `Nhân khẩu -`, còn màn hình công nợ hiển thị 3 nhân khẩu. Cần xác định đây là cách biểu diễn dữ liệu snapshot hay lỗi hiển thị trước khi kết luận.
+
+### Kiểm tra sau lần chỉnh sửa đầu tiên
+
+- Bảng kê lấy số nhân khẩu từ số lượng được lưu trong khoản thu theo đầu người, không phải số cư dân hiện tại. Nếu kỳ thu không có khoản theo nhân khẩu thì không có snapshot này. Đã sửa nhãn để chỉ hiển thị **nhân khẩu tính phí** khi có số liệu; ảnh ở trên là trước sửa, chưa chụp lại.
+- Truy vấn chọn đơn giá đã được đổi sang ngày đầu kỳ; đã bổ sung test quy tắc ngày đầu kỳ và điều chỉnh expected trong test MySQL. Chưa xác minh lại trường hợp đổi giá giữa tháng trên MySQL sau sửa.
+- `mvnw.cmd test`: 29 test, 28 đạt, 0 lỗi, 1 bỏ qua; test tích hợp MySQL bị bỏ qua do chưa cấu hình schema kiểm thử. Kết quả 28/28 ở phần trên là lần chạy **trước các thay đổi này**, không phải xác nhận bản hiện tại.
+- Tại lần kiểm tra này, R-02 chưa sửa và chưa được kiểm thử lại. Xem kết quả mới hơn bên dưới.
+
+### Hồi quy R-02 và R-03 sau khi chỉnh sửa
+
+Chạy `MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression` với MySQL 8.4.13 trên database hiện có, dùng kỳ 03/2099 và mã riêng để nhận diện dữ liệu kiểm thử. Trước khi sửa R-02, hai yêu cầu đồng thời cùng mã tạo hai phiếu và test thất bại. Sau sửa, chạy lại test: **1 test đạt, 0 lỗi, 0 bỏ qua**; hai yêu cầu đồng thời chỉ tạo một phiếu, lần gửi lại tiếp theo bị từ chối, mã trống bị từ chối.
+
+Trong cùng test, đơn giá SERVICE tăng từ 10.000 lên 12.000 đồng/m² giữa tháng, phát hành ngày 20: A101 48 m² dùng giá đầu kỳ 10.000 đồng/m² và số tiền 480.000 đồng. Đã kiểm tra sau lượt chạy không còn kỳ, đơn giá hoặc phiếu thử; database còn 10 căn, 25 cư dân, 1 kỳ và 9 phiếu như trước.
+
+Bộ `mvnw.cmd test` không cấu hình MySQL sau sửa: 30 test, 28 đạt, 0 lỗi, 2 bỏ qua. Test MySQL mục tiêu ở trên đã chạy riêng với cấu hình database; test MySQL cũ yêu cầu schema rỗng không chạy trên dữ liệu hiện có. Chưa xác nhận toàn bộ luồng thủ công hoặc in PDF trên bản mới.
+
 Quy trình và phạm vi nằm trong [kế hoạch kiểm thử](QA_TEST_PLAN.md). Các case chi tiết nằm trong [test case chức năng](QA_TEST_CASE_FUNCTIONAL.md), [test case giao diện](QA_TEST_CASE_UI.md) và [test case tích hợp](QA_TEST_CASE_INTEGRATION.md).
 
 ## Đợt 1: kiểm tra chức năng luồng thu phí
@@ -136,16 +165,8 @@ Lỗi phát hiện:
 
 | Mã | Mức | Nội dung | Ảnh hưởng | Hướng xử lý |
 |---|---|---|---|---|
-| R-02 | Cao | Chưa chặn gửi trùng một yêu cầu thu tiền, mã giao dịch chưa duy nhất | Có thể tạo hai phiếu cho cùng một lần nộp | Thêm mã yêu cầu duy nhất ở cơ sở dữ liệu |
-| R-03 | Cao | Chọn đơn giá theo ngày phát hành thay vì ngày đầu kỳ | Sai tiền khi đơn giá đổi giữa tháng | Dùng ngày đầu tháng khi chọn giá |
+| R-02 | Cao | Đã kiểm tra trùng mã bằng khóa MySQL khi ghi qua repository | Không phát hiện giao dịch trùng nếu dùng hai mã khác nhau hoặc ghi trực tiếp bằng SQL | Giữ cùng mã khi thử lại; tiếp tục hồi quy và chốt quy tắc đối soát ngân hàng |
+| R-03 | Cao | Đã chọn giá đầu kỳ và kiểm tra tình huống đổi giá giữa tháng trên MySQL | Không thay đổi các kỳ đã phát hành | Tiếp tục hồi quy khi thay đổi tính phí |
 | R-04 | Trung bình | Chứng từ in lại lấy mã căn và tên hộ theo hồ sơ hiện tại | Bản in cũ có thể khác thời điểm phát hành | Lưu thông tin nhận diện vào chứng từ |
 | R-05 | Trung bình | Tên người liên hệ của căn hộ và tên chủ hộ có thể lệch nhau | Nhãn trên báo cáo không thống nhất | Chốt một nguồn tên chủ hộ |
 | R-06 | Trung bình | Nhiều thao tác đọc ghi cơ sở dữ liệu chạy trên luồng giao diện | Giao diện có thể đứng khi mạng chậm | Chuyển sang luồng nền, hiện chỉ báo đang xử lý |
-
-## Điều kiện ghi biên bản
-
-Mỗi đợt cần ghi đủ: người chạy, ngày giờ, bản dựng, môi trường, bộ dữ liệu, danh sách case đã chạy, và vị trí lưu bằng chứng.
-
-Bằng chứng gồm ảnh màn hình, tệp PDF bản in, báo cáo Surefire và câu truy vấn đối chiếu. Lỗi luôn ghi kèm bước tái hiện và số liệu thực tế.
-
-Không tính test bị bỏ qua vào số đạt. Không kết luận đạt cho case chưa chạy trên môi trường thật.
