@@ -2,11 +2,11 @@
 
 Tài liệu mô tả các bộ dữ liệu dùng cho kiểm thử, cách tạo lại và số liệu chuẩn để đối chiếu.
 
-Nguyên tắc chung: chỉ dùng database demo `bluemoon` của project. Docker nạp `src/main/resources/db/schema.sql` rồi `database/demo-data.sql` khi tạo volume lần đầu. Không tạo schema, database hoặc container thứ hai để thay thế dữ liệu này.
+Chỉ dùng database demo `bluemoon` của project. Docker nạp `src/main/resources/db/schema.sql` rồi `database/demo-data.sql` khi tạo volume lần đầu. Không dựng schema, database hay container thứ hai để thay dữ liệu này.
 
 ## Bộ A: dữ liệu đối chiếu tính tiền
 
-Dùng cho các case tính phí, thanh toán, công nợ, in và tổng quan.
+Dùng cho case tính phí, thanh toán, công nợ, in và tổng quan.
 
 ### Căn hộ
 
@@ -21,7 +21,7 @@ Dùng cho các case tính phí, thanh toán, công nợ, in và tổng quan.
 | A107 | HK-000107 | 92,00 | Nguyễn Lan Chi | Đang ở |
 | A108 | HK-000108 | 105,50 | Bùi Đức Long | Đang ở |
 
-Tổng diện tích: 597,75 m². Tổng 18 nhân khẩu, gồm đủ quan hệ chủ hộ, vợ chồng, con, bố mẹ và người thuê.
+Tổng diện tích 597,75 m², 18 nhân khẩu, đủ quan hệ chủ hộ, vợ chồng, con, bố mẹ và người thuê.
 
 ### Khoản thu
 
@@ -33,7 +33,7 @@ Tổng diện tích: 597,75 m². Tổng 18 nhân khẩu, gồm đủ quan hệ c
 | MOTORCYCLE_PARKING | Phí gửi xe máy | Không | Theo xe máy | 70.000 | 01/01/2026 |
 | CAR_PARKING | Phí gửi ô tô | Không | Theo ô tô | 1.200.000 | 01/01/2026 |
 
-Chỉ hai khoản bắt buộc được bật khi phát hành. Ba khoản còn lại để tắt, chỉ bật khi kiểm tra phần mở rộng.
+Lúc phát hành chỉ bật hai khoản bắt buộc. Ba khoản còn lại để tắt, chỉ bật khi kiểm tra phần mở rộng.
 
 ### Số tiền chuẩn kỳ 10/2026
 
@@ -51,7 +51,7 @@ Phát hành ngày 01/10/2026, hạn nộp 15/11/2026.
 | A108 | 105,50 | 1.055.000 | 738.500 | 1.793.500 |
 | Tổng | 597,75 | 5.977.500 | 4.184.250 | 10.161.750 |
 
-Kỳ này sinh 16 khoản phải thu, 8 hộ, tất cả chưa thanh toán.
+Kỳ này sinh 16 khoản phải thu cho 8 hộ, tất cả chưa thanh toán.
 
 ### Kịch bản thu tiền chuẩn
 
@@ -61,11 +61,11 @@ Kỳ này sinh 16 khoản phải thu, 8 hộ, tất cả chưa thanh toán.
 | 2 | A101 | Dịch vụ | 380.000 | 380.000 | 0 | 336.000 |
 | 3 | A102 | Dịch vụ | 600.000 | 525.000 | 75.000 | 367.500 |
 
-Sau ba bước: tổng tiền nhận 1.080.000 đồng, tổng đã cấn 1.005.000 đồng, tổng còn nợ 9.156.750 đồng, số dư của A102 là 75.000 đồng.
+Sau ba bước: tổng nhận 1.080.000 đồng, tổng đã cấn 1.005.000 đồng, tổng còn nợ 9.156.750 đồng, A102 còn số dư 75.000 đồng.
 
 ## Bộ B: dữ liệu cho kiểm tra tạo mới
 
-Dùng cho các case tạo và sửa hồ sơ, kiểm tra trùng lặp và ràng buộc dữ liệu.
+Dùng cho case tạo và sửa hồ sơ, kiểm tra trùng lặp và ràng buộc dữ liệu.
 
 | Loại | Giá trị dùng cho kiểm tra |
 |---|---|
@@ -76,11 +76,11 @@ Dùng cho các case tạo và sửa hồ sơ, kiểm tra trùng lặp và ràng 
 | Mã khoản thu | QA_SERVICE |
 | Số giấy tờ | Chuỗi 12 chữ số chưa dùng trong bộ A |
 
-Bộ này là số liệu tham chiếu trong database demo. Không cộng lại hoặc áp dụng các số liệu này cho một database khác.
+Đây là số liệu tham chiếu trong database demo. Không cộng dồn hay áp các số này cho database khác.
 
 ## Bộ C: dữ liệu cho phần mở rộng
 
-Dùng khi kiểm tra hồi quy các phần ngoài phạm vi nghiệm thu.
+Dùng khi hồi quy các phần nằm ngoài phạm vi nghiệm thu.
 
 | Thành phần | Số lượng | Ghi chú |
 |---|---|---|
@@ -93,11 +93,11 @@ Dùng khi kiểm tra hồi quy các phần ngoài phạm vi nghiệm thu.
 
 ## Bộ D: dữ liệu nâng cấp
 
-Dùng để kiểm tra việc nâng cấp từ phiên bản cũ.
+Dùng để kiểm tra nâng cấp từ phiên bản cũ.
 
 - Schema cũ có ba căn A101 đến A103, chưa có cư dân và tài khoản.
 - Một biến thể có giao dịch thanh toán thiếu trường người nộp và số đã cấn.
-- Không chạy nâng cấp trên database khác để thay thế database demo; ghi rõ trạng thái dữ liệu demo trước mỗi lần kiểm tra.
+- Không chạy nâng cấp trên database khác để thay database demo; ghi lại trạng thái dữ liệu demo trước mỗi lần kiểm tra.
 
 ## Bộ E: dữ liệu cho case biên
 
@@ -108,7 +108,7 @@ Dùng để kiểm tra việc nâng cấp từ phiên bản cũ.
 | E-3 | Gửi trùng yêu cầu thu | Bộ A, gửi hai lần cùng mã tham chiếu |
 | E-4 | Cơ sở dữ liệu chậm | Bộ A, thêm độ trễ khi đọc để kiểm tra phản hồi giao diện |
 
-Mỗi case biên dùng một bản sao độc lập của bộ A, khôi phục lại trước mỗi lần chạy.
+Mỗi case biên dùng một bản sao độc lập của bộ A và khôi phục lại trước mỗi lần chạy.
 
 ## Tài khoản dùng cho kiểm thử
 
@@ -118,15 +118,15 @@ Mỗi case biên dùng một bản sao độc lập của bộ A, khôi phục l
 | Kế toán | ngan@bluemoon.vn | 0901000002 | accountant123 |
 | Cư dân | minhan@gmail.com | 0901000003 | resident123 |
 
-Đổi mật khẩu sau lần đăng nhập đầu tiên khi chạy trên môi trường dùng chung.
+Đổi mật khẩu sau lần đăng nhập đầu tiên nếu chạy trên môi trường dùng chung.
 
 ## Cách tạo lại dữ liệu
 
-Khi tạo volume mới, Docker tự nạp `src/main/resources/db/schema.sql` và `database/demo-data.sql`. Đây là dữ liệu dùng cho demo và cho quy trình QA hiện tại; phải ghi lại trạng thái ban đầu trước khi chạy case có ghi dữ liệu.
+Volume mới thì Docker tự nạp `src/main/resources/db/schema.sql` và `database/demo-data.sql`. Đây là dữ liệu cho demo và cho quy trình QA hiện tại; ghi lại trạng thái ban đầu trước khi chạy case có ghi dữ liệu.
 
-Bộ A là bộ đối chiếu nghiệp vụ; SC-06 chỉ tạo một căn P0508 và không tạo đủ bộ A. Khi chạy trên database demo, chỉ đối chiếu các dòng thực tế đang có và ghi rõ dữ liệu đầu vào; không tự chuyển sang schema trống.
+Bộ A là bộ đối chiếu nghiệp vụ; SC-06 chỉ tạo một căn P0508 chứ không tạo đủ bộ A. Chạy trên database demo thì chỉ đối chiếu các dòng thực tế đang có và ghi rõ dữ liệu đầu vào, đừng tự chuyển sang schema trống.
 
-Không dùng `docker compose down -v` để chuẩn bị kiểm thử, vì lệnh đó xóa volume dữ liệu dự án. Các truy vấn chỉ đọc có thể thực hiện trên database ứng dụng hiện có; ghi lại trạng thái ban đầu và dữ liệu thực tế thay vì áp số chuẩn bộ A cho dữ liệu khác.
+Không dùng `docker compose down -v` để chuẩn bị kiểm thử vì lệnh đó xóa volume dữ liệu dự án. Truy vấn chỉ đọc thì chạy trên database ứng dụng hiện có được; ghi lại trạng thái ban đầu và dữ liệu thực tế thay vì áp số chuẩn bộ A cho dữ liệu khác.
 
 ## Câu truy vấn đối chiếu
 
@@ -158,4 +158,4 @@ JOIN apartments a ON a.id = ac.apartment_id
 GROUP BY a.id, a.code;
 ```
 
-Không join trực tiếp bảng thanh toán với bảng cấn trừ rồi cộng, vì số tiền sẽ bị nhân lên. Tổng đã thanh toán lấy từ số cấn, không lấy từ số tiền nhận.
+Đừng join thẳng bảng thanh toán với bảng cấn trừ rồi cộng, số tiền sẽ bị nhân lên. Tổng đã thanh toán lấy từ số cấn, không lấy từ số tiền nhận.

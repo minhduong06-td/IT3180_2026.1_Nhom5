@@ -1,8 +1,8 @@
 # Test case tích hợp
 
-Test case tích hợp kiểm tra service và kho dữ liệu trên MySQL thật. Các thao tác giao diện được kiểm tra riêng qua test case UI và kịch bản thủ công.
+Test case tích hợp kiểm tra service và phần ghi dữ liệu trên MySQL thật. Thao tác giao diện kiểm tra riêng bằng test case UI và kịch bản thủ công.
 
-Dữ liệu dùng cho lần chạy được lấy từ database demo `bluemoon` của project. Database này được khởi tạo bằng `schema.sql` rồi nạp `database/demo-data.sql`; test chỉ tạo các bản ghi tạm trong phạm vi case và phải dọn chúng sau khi chạy.
+Dữ liệu lấy từ database demo `bluemoon` của project, khởi tạo bằng `schema.sql` rồi nạp `database/demo-data.sql`. Test chỉ tạo bản ghi tạm trong phạm vi case và phải dọn lại sau khi chạy.
 
 ## Điều kiện chạy
 
@@ -13,7 +13,7 @@ Dữ liệu dùng cho lần chạy được lấy từ database demo `bluemoon` 
 | Lệnh chạy | `.\mvnw.cmd clean test` |
 | Báo cáo | `target/surefire-reports/` |
 
-Nếu thiếu biến môi trường, lớp `MySqlBillingFlowTest` tự bỏ qua. Test bị bỏ qua không được tính là đạt.
+Thiếu biến môi trường thì lớp `MySqlBillingFlowTest` tự bỏ qua. Test bị bỏ qua ghi là Chưa chạy.
 
 ## INT-01: Phát hành kỳ thu ghi đúng xuống cơ sở dữ liệu
 
@@ -52,7 +52,7 @@ Nếu thiếu biến môi trường, lớp `MySqlBillingFlowTest` tự bỏ qua.
 | Tiền điều kiện | Kỳ 10/2026 đã phát hành và đã thu dư ở kỳ 11 |
 | Thao tác | Đọc lại số đã thanh toán và số dư của kỳ 10 |
 | Kiểm tra | So sánh trước và sau khi phát hành kỳ 11 |
-| Kết quả mong đợi | Số liệu kỳ 10 không đổi, số dư không được áp vào kỳ cũ |
+| Kết quả mong đợi | Số liệu kỳ 10 không đổi, số dư không áp vào kỳ cũ |
 | Bằng chứng | Báo cáo Surefire có assertion tương ứng |
 
 ## INT-05: Ràng buộc chủ hộ ở mức cơ sở dữ liệu
@@ -110,6 +110,6 @@ Nếu thiếu biến môi trường, lớp `MySqlBillingFlowTest` tự bỏ qua.
 
 ## Quy ước
 
-Không tạo container hoặc database thứ hai để chạy các case này. Không dùng `docker compose down -v`; lệnh đó xóa dữ liệu demo của project. Nếu điều kiện dữ liệu demo không đúng, ghi nhận là Bị chặn thay vì tự chuyển sang database khác.
+Không tạo container hay database thứ hai cho các case dưới đây. Không chạy `docker compose down -v` vì lệnh đó xóa dữ liệu demo của project. Dữ liệu demo không đúng điều kiện thì ghi Bị chặn, đừng tự chuyển sang database khác.
 
-Khi một case không đạt, ghi lại câu lệnh đã chạy, thông báo lỗi và số liệu thực tế trong [biên bản kiểm thử](QA_TEST_REPORT.md).
+Case không đạt thì ghi câu lệnh đã chạy, thông báo lỗi và số liệu thực tế vào [biên bản kiểm thử](QA_TEST_REPORT.md).

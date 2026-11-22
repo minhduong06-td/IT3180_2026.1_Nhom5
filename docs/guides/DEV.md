@@ -15,15 +15,15 @@
 
 Ví dụ phát hành kỳ: `BillingView → BillingService.issue → AppRepository.issuePeriod`. Thu tiền: `ChargesView → CollectionService → repository`. Ẩn menu trên giao diện chỉ để người dùng đỡ nhầm; chặn quyền thật nằm ở service.
 
-## Khởi tạo với database rỗng
+## Khởi tạo với database demo
 
 Bootstrap không tìm căn hộ, cư dân, phí hay quản trị theo mã cố định. Nó tạo bảng rồi kiểm tra đã có user chưa. Chưa có thì màn hình thiết lập gọi `AccountService.createInitialAdmin`, kiểm tra dữ liệu nhập, băm BCrypt và tạo quản trị.
 
 Hai ứng dụng chạy cùng lúc không tạo được hai tài khoản đầu tiên: repository lấy khóa MySQL `GET_LOCK`, kiểm tra lại trong transaction, rồi ghi user và trạng thái đăng nhập trong cùng transaction. Có user rồi thì bước thiết lập trả lỗi.
 
-Database được dùng trong quy trình hiện tại là database demo do Docker Compose khởi tạo. Dữ liệu nghiệp vụ được nạp từ `database/demo-data.sql`; test không được tự chuyển sang database rỗng.
+Quy trình hiện tại chỉ dùng database demo do Docker Compose khởi tạo. Docker nạp `schema.sql` rồi `database/demo-data.sql` khi tạo volume mới, nên đây là nguồn schema và dữ liệu duy nhất cho cả demo lẫn QA. Test không tự chuyển sang database rỗng.
 
-Cấu hình Docker nạp `schema.sql` rồi `database/demo-data.sql` khi tạo volume mới. Đây là nguồn schema và dữ liệu duy nhất trong quy trình demo và QA hiện tại.
+Luồng tạo quản trị ở trên vẫn cần thiết khi ai đó trỏ ứng dụng vào database MySQL rỗng khác: khi đó chưa có căn hộ, đơn giá hay cư dân, người dùng tự thêm. Loại phí tiện ích sinh ra ở lần lưu hóa đơn đầu tiên.
 
 ## Snapshot khi phát hành
 
@@ -33,7 +33,7 @@ Snapshot chưa có mã căn và tên hộ. Hai trường này vẫn join từ h�
 
 ## Transaction và khóa
 
-Phát hành kỳ gồm tạo kỳ, tạo charge và phân bổ số dư; thu tiền gồm ghi phiếu và ghi phần dư. Ghi được một nửa thì tổng nợ và lịch sử lệch nhau. Vì vậy repository commit cả thao tác hoặc rollback. Constraint và khóa dòng xử lý các trường hợp tranh chấp mà validate ở Java không bắt được.
+Phát hành kỳ gồm tạo kỳ, tạo charge và phân bổ số dư; thu tiền gồm ghi phiếu và ghi phần dư. Ghi được một nửa thì tổng nợ và lịch sử lệch nhau, nên repository commit cả thao tác hoặc rollback. Constraint và khóa dòng xử lý các trường hợp tranh chấp mà validate ở Java không bắt được.
 
 Thu tiền bắt buộc có mã giao dịch. Repository lấy advisory lock chung, kiểm tra mã đã tồn tại chưa, ghi trong transaction rồi nhả khóa; gửi lại cùng mã bị từ chối. Khóa này chỉ bảo vệ đường ghi qua repository: SQL chạy trực tiếp thì không, và hai mã khác nhau cho cùng một giao dịch cũng không phát hiện được.
 

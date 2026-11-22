@@ -12,7 +12,7 @@ Mỗi nhánh gom một thay đổi có mục đích rõ. PR cho người review 
 
 Lịch sử nhánh và commit không nói được ai đã review. Cùng một tài khoản vừa code vừa merge thì ghi là tự review, đừng ghi thành phê duyệt độc lập của PM hoặc QA.
 
-## Database demo được khởi tạo như thế nào?
+## Khởi tạo database demo
 
 Bootstrap chỉ tạo và nâng cấp schema; dữ liệu mẫu do Docker nạp từ `database/demo-data.sql` khi tạo volume mới. Tách hai việc này để tránh trường hợp dữ liệu cố định không đủ mã căn mà bước thêm cư dân yêu cầu, làm ứng dụng lỗi ngay lúc khởi động.
 

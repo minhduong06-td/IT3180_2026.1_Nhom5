@@ -32,7 +32,7 @@ Kiểm tra Maven đang dùng Java 25 và chờ MySQL chuyển sang `healthy`, r�
 
 Docker Compose chạy MySQL; cửa sổ desktop được chạy bằng Java trên máy.
 
-Khi tạo volume mới, Docker nạp cấu trúc bảng và dữ liệu khởi tạo từ `database/demo-data.sql`. Ứng dụng mở màn hình đăng nhập với các tài khoản dưới đây; hãy đổi mật khẩu sau lần đăng nhập đầu.
+Khi tạo volume mới, Docker nạp cấu trúc bảng từ `src/main/resources/db/schema.sql` rồi dữ liệu khởi tạo từ `database/demo-data.sql`. Ứng dụng mở màn hình đăng nhập với các tài khoản dưới đây; đổi mật khẩu sau lần đăng nhập đầu.
 
 | Vai trò | Email | Số điện thoại | Mật khẩu ban đầu |
 |---|---|---|---|
@@ -77,16 +77,17 @@ Chạy các test không cần MySQL:
 
 Test tích hợp của quy trình hiện tại dùng database demo `bluemoon` tại `localhost:3307`; xem [hướng dẫn QA](docs/qa/QA.md) trước khi chạy. Không tạo database hoặc container MySQL thứ hai.
 
+Các tài liệu hay dùng:
+
 - [PM: quyết định merge và điều kiện nghiệm thu](docs/guides/PM.md)
 - [QA: cách kiểm tra và căn cứ đạt](docs/qa/QA.md)
 - [Dev: cấu trúc, nghiệp vụ và cách sửa](docs/guides/DEV.md)
 - [Quy tắc nghiệp vụ chi tiết](docs/guides/NGHIEP_VU.md)
-- [Kế hoạch kiểm thử](docs/qa/QA_TEST_PLAN.md)
-- [Kịch bản kiểm thử](docs/qa/QA_TEST_SCENARIO.md)
-- [Test case chức năng](docs/qa/QA_TEST_CASE_FUNCTIONAL.md)
-- [Test case giao diện](docs/qa/QA_TEST_CASE_UI.md)
-- [Test case tích hợp](docs/qa/QA_TEST_CASE_INTEGRATION.md)
-- [Dữ liệu kiểm thử](docs/qa/QA_TEST_DATA.md)
-- [Biên bản kiểm thử](docs/qa/QA_TEST_REPORT.md)
+- [Đặc tả yêu cầu](docs/srs/REQUIREMENTS.md)
+- [Hướng dẫn sử dụng](docs/user-guide/USER_GUIDE.md)
+- [Cài đặt và vận hành](docs/operations/SETUP_AND_OPERATIONS.md)
+- [Từ điển dữ liệu](docs/data/DATA_DICTIONARY.md)
 
-Các điểm còn mở gồm thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chống gửi trùng dựa vào mã giao dịch; khi thử lại cần dùng cùng mã. Chi tiết tại [đối chiếu yêu cầu](docs/qa/SPRINT1_COVERAGE_REVIEW.md).
+Chi tiết từng file nằm trong [mục lục tài liệu](docs/README.md).
+
+Các điểm còn mở gồm thông tin hộ trên chứng từ cũ (R-04), đồng bộ tên chủ hộ (R-05) và độ trễ khi truy cập MySQL (R-06). Chống gửi trùng (R-02) dựa vào mã giao dịch; thử lại thì giữ nguyên mã. Chi tiết tại [đối chiếu yêu cầu](docs/qa/SPRINT1_COVERAGE_REVIEW.md).
