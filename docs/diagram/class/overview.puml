@@ -1,0 +1,179 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+!pragma layout smetana
+skinparam backgroundColor white
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classFontColor black
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+title BlueMoon - Sơ đồ lớp nghiệp vụ
+
+class AppUser {
+  - id : long
+  - username : String
+  - displayName : String
+  - role : Role
+  - apartmentId : Long
+  - email : String
+  - phone : String
+}
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  RESIDENT
+}
+class Apartment {
+  - id : Long
+  - code : String
+  - householdCode : String
+  - areaM2 : BigDecimal
+  - householdName : String
+  - contactPhone : String
+  - moveInDate : LocalDate
+  - occupancyStatus : OccupancyStatus
+  - active : boolean
+  + floor() : int
+}
+enum OccupancyStatus {
+  OCCUPIED
+  VACANT
+  RENTED
+}
+class Resident {
+  - id : Long
+  - apartmentId : long
+  - fullName : String
+  - dateOfBirth : LocalDate
+  - gender : Gender
+  - nationalId : String
+  - relationship : HouseholdRelationship
+  - moveInDate : LocalDate
+}
+class Vehicle {
+  - id : long
+  - apartmentId : long
+  - type : VehicleType
+  - licensePlate : String
+  - active : boolean
+}
+class UtilityBill {
+  - id : long
+  - year : int
+  - month : int
+  - apartmentId : long
+  - type : UtilityType
+  - amount : BigDecimal
+  - provider : String
+  - reference : String
+  - issued : boolean
+}
+class FeeType {
+  - id : long
+  - code : String
+  - name : String
+  - required : boolean
+  - basis : CalculationBasis
+  - unitPrice : BigDecimal
+  - effectiveFrom : LocalDate
+  - active : boolean
+}
+enum CalculationBasis {
+  PER_M2
+  PER_RESIDENT
+  PER_MOTORCYCLE
+  PER_CAR
+  FIXED
+  EXTERNAL_BILL
+  VOLUNTARY
+}
+class BillingPeriod {
+  - id : long
+  - year : int
+  - month : int
+  - issueDate : LocalDate
+  - dueDate : LocalDate
+  - chargeCount : int
+  - totalAmount : BigDecimal
+  + label() : String
+}
+class ChargeSummary {
+  - id : long
+  - periodId : long
+  - apartmentCode : String
+  - householdName : String
+  - feeName : String
+  - period : String
+  - basis : CalculationBasis
+  - quantity : BigDecimal
+  - unitPrice : BigDecimal
+  - amount : BigDecimal
+  - paid : BigDecimal
+  - balance : BigDecimal
+  - status : ChargeStatus
+  - dueDate : LocalDate
+}
+enum ChargeStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+class PaymentRecord {
+  - id : long
+  - apartmentCode : String
+  - feeName : String
+  - period : String
+  - paidAt : LocalDateTime
+  - payerName : String
+  - amount : BigDecimal
+  - appliedAmount : BigDecimal
+  - method : PaymentMethod
+  - reference : String
+  - note : String
+  - recordedBy : String
+}
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+}
+
+AppUser ..> Role
+Apartment ..> OccupancyStatus
+FeeType ..> CalculationBasis
+ChargeSummary ..> ChargeStatus
+PaymentRecord ..> PaymentMethod
+Apartment "0..1" -- "0..*" AppUser : tài khoản
+Apartment "1" -- "0..*" Resident : nhân khẩu
+Apartment "1" -- "0..*" Vehicle : phương tiện
+Apartment "1" -- "0..*" UtilityBill : hóa đơn tiện ích
+Apartment "1" -- "0..*" ChargeSummary : phải đóng
+FeeType "1" -- "0..*" ChargeSummary : loại phí
+BillingPeriod "1" -- "0..*" ChargeSummary : phát hành
+ChargeSummary "1" -- "0..*" PaymentRecord : thanh toán
+@enduml

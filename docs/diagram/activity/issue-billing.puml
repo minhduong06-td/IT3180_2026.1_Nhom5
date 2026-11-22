@@ -1,0 +1,66 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+title Lập kỳ thu phí tháng
+|Ban quản trị|
+start
+:Chọn tháng, năm, ngày phát hành và hạn nộp;
+|Hệ thống BlueMoon|
+:Kiểm tra quyền ADMIN và tính hợp lệ;
+if (Không hợp lệ?) then (có)
+  |Ban quản trị|
+  :Hiển thị lỗi quyền hoặc dữ liệu;
+else (không)
+  |CSDL MySQL|
+  :Bắt đầu transaction và tạo kỳ;
+  :Đọc căn hoạt động, khoản bắt buộc và đơn giá đầu kỳ;
+  |Hệ thống BlueMoon|
+  if (Có đủ căn, khoản thu và đơn giá?) then (có)
+    :Tính phí và tạo snapshot từng khoản;
+    |CSDL MySQL|
+    :Lưu khoản thu và hóa đơn tiện ích;
+    :Cấn số dư từ các kỳ trước;
+    if (Thực hiện thành công?) then (có)
+      :Commit;
+      |Ban quản trị|
+      :Hiển thị kỳ thu và tổng tiền;
+    else (lỗi)
+      |CSDL MySQL|
+      :Rollback;
+      |Ban quản trị|
+      :Hiển thị lỗi phát hành;
+    endif
+  else (không)
+    |CSDL MySQL|
+    :Rollback;
+    |Ban quản trị|
+    :Báo thiếu căn, khoản thu hoặc đơn giá;
+  endif
+endif
+stop
+@enduml

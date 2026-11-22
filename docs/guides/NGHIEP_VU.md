@@ -100,7 +100,7 @@ Ví dụ A102 có phí dịch vụ 525.000 đồng, kế toán nhận 600.000 đ
 6. Kế toán đăng nhập bằng tài khoản được quản trị tạo, ghi nhận tiền nộp cho từng khoản phải thu.
 7. Đối chiếu công nợ, lịch sử thu và số dư. Số dư được xét cấn khi phát hành kỳ sau.
 
-Các bước và số liệu kiểm tra cụ thể nằm trong [hướng dẫn QA](QA.md).
+Các bước và số liệu kiểm tra cụ thể nằm trong [hướng dẫn QA](../qa/QA.md).
 
 ## Phần mở rộng
 
@@ -122,4 +122,4 @@ Các bước và số liệu kiểm tra cụ thể nằm trong [hướng dẫn Q
 | Quyền và tài khoản | Service từ chối thao tác sai vai trò, khóa sau 5 lần sai và mở lại sau 5 phút; mật khẩu mới tuân thủ quy tắc. |
 | Nâng cấp và giao diện | Bootstrap không phụ thuộc dữ liệu mẫu trên database mới hoặc cũ; giao diện có phản hồi khi database chậm (R-06). |
 
-Danh sách mã vấn đề, trạng thái và phạm vi kiểm thử được theo dõi tại [Đối chiếu Sprint 1](SPRINT1_COVERAGE_REVIEW.md) và [Biên bản kiểm thử](QA_TEST_REPORT.md).
+Danh sách mã vấn đề, trạng thái và phạm vi kiểm thử được theo dõi tại [Đối chiếu Sprint 1](../qa/SPRINT1_COVERAGE_REVIEW.md) và [Biên bản kiểm thử](../qa/QA_TEST_REPORT.md).

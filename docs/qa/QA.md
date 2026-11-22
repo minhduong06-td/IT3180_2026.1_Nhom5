@@ -1,10 +1,10 @@
-# Giải trình và hướng dẫn cho QA
+# Hướng dẫn kiểm thử
 
-## QA dựa vào đâu để cho đạt?
+## Tiêu chí đạt
 
-Một case đạt khi kết quả thực tế khớp expected đã xác định từ yêu cầu, có bằng chứng và môi trường tái hiện được. Không cho đạt chỉ vì không thấy lỗi trên màn hình, code có test hoặc Maven báo build thành công.
+Một case đạt khi kết quả thực tế khớp expected xác định từ yêu cầu, có bằng chứng và môi trường tái hiện được. Không cho đạt chỉ vì màn hình không báo lỗi, code có test hay Maven build xanh.
 
-Với mỗi case, ghi: commit, môi trường, trạng thái dữ liệu ban đầu, bước làm, expected, actual, kết luận và bằng chứng. Dùng Đạt, Không đạt, Bị chặn hoặc Chưa chạy. Test bị bỏ qua không được tính là Đạt.
+Mỗi case ghi: commit, môi trường, trạng thái dữ liệu ban đầu, các bước, expected, actual, kết luận, nơi lưu bằng chứng. Kết luận dùng một trong bốn: Đạt, Không đạt, Bị chặn, Chưa chạy. Test bị bỏ qua ghi là Chưa chạy.
 
 ## Chuẩn bị môi trường
 
@@ -27,7 +27,7 @@ Kiểm tra không cần MySQL:
 .\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
 ```
 
-Lệnh trên chỉ chạy các lớp được chọn. `DemoDataSqlTest` kiểm tra nội dung file SQL, không xác minh việc thực thi SQL trên MySQL. Xem số lượng thực tế trong báo cáo Surefire của từng lần chạy.
+Lệnh trên chỉ chạy các lớp được chọn. `DemoDataSqlTest` đọc nội dung file SQL, không chạy SQL đó trên MySQL. Số test thực tế xem trong báo cáo Surefire của từng lượt.
 
 ## Kiểm tra trên database demo
 
@@ -55,30 +55,26 @@ Test này tự tạo và dọn bản ghi thử. Không chạy đồng thời v�
 | In/CSV | Xem thông báo, in hoặc xuất CSV từ dữ liệu demo | Đúng hộ, khoản, kỳ, tiền và thông tin chuyển khoản; lưu bằng chứng. |
 | UI | Tab/Enter, lỗi nhập, bảng rỗng, dữ liệu dài, cửa sổ 1080 × 700 và 1280 × 820 | Nhãn đọc được, focus rõ, menu cuộn tới cuối, không mất nút. |
 
-Case nhận tiền phải kiểm tra số dòng trong `payments`, giá trị `applied_amount`, số dư và các charge liên quan. Ảnh toast thành công không đủ chứng minh số liệu đúng.
+Case nhận tiền phải đối chiếu số dòng trong `payments`, giá trị `applied_amount`, số dư và các charge liên quan. Ảnh toast thành công không đủ để kết luận số liệu đúng.
 
-Phương tiện, tiện ích, yêu cầu cư dân, đóng góp và cư trú có case riêng trong [test case chức năng](QA_TEST_CASE_FUNCTIONAL.md). Hóa đơn tiện ích phải bị chặn sửa/xóa sau khi đã phát hành; đóng góp không tạo công nợ; biển số đang hoạt động không được trùng.
+Phương tiện, tiện ích, yêu cầu cư dân, đóng góp và cư trú có case riêng trong [test case chức năng](QA_TEST_CASE_FUNCTIONAL.md). Hóa đơn tiện ích bị chặn sửa/xóa sau khi phát hành; đóng góp không tạo công nợ; biển số đang hoạt động không trùng nhau.
 
 ## Cách đọc kết quả
 
 [Biên bản kiểm thử](QA_TEST_REPORT.md) có thể còn ghi các lượt chạy lịch sử trên schema riêng. Những số liệu đó không phải kết quả của quy trình hiện tại. Kết quả được chấp nhận hiện tại phải ghi rõ đã chạy trên database demo `bluemoon` và được tạo từ `schema.sql` cùng `demo-data.sql`.
 
-Lượt JDK 21 trước đó dừng khi compile nên không có kết quả test. Lượt khởi động JavaFX với database rỗng chỉ xác nhận khởi động không exception, chưa chứng minh mọi thao tác UI hoặc in đạt.
+Lượt JDK 21 trước đó dừng ở bước compile nên không có kết quả test. Lượt mở JavaFX với database rỗng chỉ cho biết app khởi động không exception.
 
-## Những trường hợp không được cho qua
+## Case chưa được kết luận đạt
 
-| Case | Kết luận hiện tại |
+| Case | Tình trạng |
 |---|---|
-| Gửi lại cùng yêu cầu thu một phần hoặc gửi đồng thời | Dùng cùng mã giao dịch; phải chỉ có một phiếu trong DB. Case MySQL ngày 25/11 đạt; hai mã khác nhau không được nhận diện là cùng giao dịch. |
-| Giá tăng giữa tháng, phát hành sau ngày tăng | Theo yêu cầu dùng giá ngày đầu kỳ. Case MySQL ngày 25/11 đạt; cần chạy lại khi thay đổi tính phí. |
-| Đổi mã căn/tên hộ rồi in lại chứng từ cũ | R-04 còn mở; kiểm tra sự thay đổi và đối chiếu chính sách giữ lịch sử. |
-| Sửa tên liên hệ khác với chủ hộ | R-05 còn mở; không tự kết luận hai trường là cùng ý nghĩa. |
-| MySQL chậm, nhấn thao tác nhiều lần, in cả kỳ | R-06 chưa có kết quả đủ để kết luận; cần kiểm tra phản hồi và dữ liệu ghi lặp. |
+| Gửi lại cùng yêu cầu thu một phần, hoặc gửi đồng thời | Dùng cùng mã giao dịch; phải chỉ có một phiếu trong DB. Case MySQL ngày 25/11 đạt. Hai mã khác nhau cho cùng giao dịch thì chưa nhận diện được. |
+| Giá tăng giữa tháng, phát hành sau ngày tăng | Theo yêu cầu phải dùng giá ngày đầu kỳ. Case MySQL ngày 25/11 đạt, cần chạy lại khi sửa chức năng tính phí. |
+| Đổi mã căn/tên hộ rồi in lại chứng từ cũ | R-04 còn mở; kiểm tra mức thay đổi rồi đối chiếu chính sách giữ lịch sử. |
+| Sửa tên liên hệ khác tên chủ hộ | R-05 còn mở; chưa kết luận hai trường cùng ý nghĩa. |
+| MySQL chậm, bấm thao tác nhiều lần, in cả kỳ | R-06 chưa đủ kết quả; cần kiểm tra độ phản hồi và dữ liệu ghi lặp. |
 
-QA có thể cho đạt từng case đã có bằng chứng. Kết luận toàn bộ bản dựng cần đối chiếu yêu cầu và lỗi chặn còn mở với PM.
+Từng case đã có bằng chứng thì QA cho đạt được. Kết luận cho cả bản dựng thì phải đối chiếu yêu cầu và các lỗi chặn còn mở với PM.
 
-## Trả lời khi được hỏi “vì sao cho pass?”
-
-Nêu mã case, dữ liệu đầu vào, expected tính độc lập, actual đối chiếu và nơi lưu bằng chứng. Ví dụ: “Căn 48 m² × 10.000 đồng = 480.000 đồng; bảng kê và DB đều ghi 480.000 đồng, chỉ có một charge cho căn/phí/kỳ. Case tính phí này đạt. Case giá giữa tháng được theo dõi riêng và chưa đạt.”
-
-Không đưa ví dụ này vào báo cáo như kết quả đã chạy nếu chưa thực hiện trên bản dựng đang kiểm tra.
+Khi bị hỏi vì sao cho đạt một case, trả lời bằng mã case, dữ liệu đầu vào, expected tính độc lập, actual đối chiếu và nơi lưu bằng chứng. Ví dụ: "Căn 48 m² × 10.000 đồng = 480.000 đồng; bảng kê và DB đều ghi 480.000 đồng, chỉ có một charge cho căn/phí/kỳ. Case tính phí đạt. Case giá giữa tháng theo dõi riêng, chưa đạt." Ví dụ này chỉ dùng khi đã chạy thật trên bản dựng đang kiểm tra.

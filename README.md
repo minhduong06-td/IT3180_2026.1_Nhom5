@@ -67,24 +67,26 @@ $env:BLUEMOON_DB_PASSWORD = 'mat-khau-cua-ban'
 
 ## Kiểm tra và tài liệu
 
+Xem [mục lục tài liệu](docs/README.md) để tìm hướng dẫn, kiểm thử và sơ đồ hệ thống.
+
 Chạy các test không cần MySQL:
 
 ```powershell
 .\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
 ```
 
-Test tích hợp của quy trình hiện tại dùng database demo `bluemoon` tại `localhost:3307`; xem [hướng dẫn QA](docs/QA.md) trước khi chạy. Không tạo database hoặc container MySQL thứ hai.
+Test tích hợp của quy trình hiện tại dùng database demo `bluemoon` tại `localhost:3307`; xem [hướng dẫn QA](docs/qa/QA.md) trước khi chạy. Không tạo database hoặc container MySQL thứ hai.
 
-- [PM: quyết định merge và điều kiện nghiệm thu](docs/PM.md)
-- [QA: cách kiểm tra và căn cứ đạt](docs/QA.md)
-- [Dev: cấu trúc, nghiệp vụ và cách sửa](docs/DEV.md)
-- [Quy tắc nghiệp vụ chi tiết](docs/NGHIEP_VU.md)
-- [Kế hoạch kiểm thử](docs/QA_TEST_PLAN.md)
-- [Kịch bản kiểm thử](docs/QA_TEST_SCENARIO.md)
-- [Test case chức năng](docs/QA_TEST_CASE_FUNCTIONAL.md)
-- [Test case giao diện](docs/QA_TEST_CASE_UI.md)
-- [Test case tích hợp](docs/QA_TEST_CASE_INTEGRATION.md)
-- [Dữ liệu kiểm thử](docs/QA_TEST_DATA.md)
-- [Biên bản kiểm thử](docs/QA_TEST_REPORT.md)
+- [PM: quyết định merge và điều kiện nghiệm thu](docs/guides/PM.md)
+- [QA: cách kiểm tra và căn cứ đạt](docs/qa/QA.md)
+- [Dev: cấu trúc, nghiệp vụ và cách sửa](docs/guides/DEV.md)
+- [Quy tắc nghiệp vụ chi tiết](docs/guides/NGHIEP_VU.md)
+- [Kế hoạch kiểm thử](docs/qa/QA_TEST_PLAN.md)
+- [Kịch bản kiểm thử](docs/qa/QA_TEST_SCENARIO.md)
+- [Test case chức năng](docs/qa/QA_TEST_CASE_FUNCTIONAL.md)
+- [Test case giao diện](docs/qa/QA_TEST_CASE_UI.md)
+- [Test case tích hợp](docs/qa/QA_TEST_CASE_INTEGRATION.md)
+- [Dữ liệu kiểm thử](docs/qa/QA_TEST_DATA.md)
+- [Biên bản kiểm thử](docs/qa/QA_TEST_REPORT.md)
 
-Các điểm còn mở gồm thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chống gửi trùng dựa vào mã giao dịch; khi thử lại cần dùng cùng mã. Chi tiết tại [đối chiếu yêu cầu](docs/SPRINT1_COVERAGE_REVIEW.md).
+Các điểm còn mở gồm thông tin hộ trên chứng từ cũ, đồng bộ tên chủ hộ và độ trễ khi truy cập MySQL. Chống gửi trùng dựa vào mã giao dịch; khi thử lại cần dùng cùng mã. Chi tiết tại [đối chiếu yêu cầu](docs/qa/SPRINT1_COVERAGE_REVIEW.md).

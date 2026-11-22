@@ -6,3 +6,5 @@ db.properties
 .tools/
 *.log
 TECH_STACK.md
+/superpowers/
+/.archive/

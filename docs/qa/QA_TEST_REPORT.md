@@ -8,11 +8,11 @@ Các bước dưới đây dùng dữ liệu hiện có của dự án. Kết qu
 
 | Bước kiểm tra | Kết quả thực tế | Ảnh |
 |---|---|---|
-| Mở ứng dụng, đăng nhập tài khoản ban quản trị | Màn hình đăng nhập hiển thị; đăng nhập thành công và vào Tổng quan. | [Đăng nhập](images/qa-20261125-01-dang-nhap.png), [Tổng quan quản trị](images/qa-20261125-02-tong-quan.png) |
-| Tìm căn hộ A101 | Tìm `A101`, danh sách còn một dòng A101, diện tích 48 m². | [Kết quả tìm kiếm](images/qa-20261125-03-tim-can-ho.png) |
-| Xem công nợ kỳ 11/2026 | Hiển thị phải thu 10.905.500 đồng, đã thanh toán 4.512.000 đồng, còn 6.393.500 đồng; ba số khớp phép trừ và tổng đọc từ database. | [Công nợ](images/qa-20261125-04-cong-no.png) |
-| Xem bảng kê và thông báo A101 | Hai khoản lần lượt 480.000 và 336.000 đồng; đã thanh toán 436.000, còn 380.000 đồng. Khớp dòng A101 trên màn hình công nợ. Chưa in thực tế. | [Bảng kê](images/qa-20261125-05-bang-ke.png), [Chi tiết A101](images/qa-20261125-06-thong-bao.png) |
-| Đăng nhập kế toán và cư dân | Cả hai đăng nhập thành công. Menu kế toán khác menu quản trị; tổng quan cư dân chỉ hiển thị A101 trong dữ liệu đã quan sát. Chưa thử truy cập trái quyền ở service trong lượt UI này. | [Kế toán](images/qa-20261125-07-vai-tro-ke-toan.png), [Cư dân](images/qa-20261125-08-vai-tro-cu-dan.png) |
+| Mở ứng dụng, đăng nhập tài khoản ban quản trị | Màn hình đăng nhập hiển thị; đăng nhập thành công và vào Tổng quan. | [Đăng nhập](../images/qa-20261125-01-dang-nhap.png), [Tổng quan quản trị](../images/qa-20261125-02-tong-quan.png) |
+| Tìm căn hộ A101 | Tìm `A101`, danh sách còn một dòng A101, diện tích 48 m². | [Kết quả tìm kiếm](../images/qa-20261125-03-tim-can-ho.png) |
+| Xem công nợ kỳ 11/2026 | Hiển thị phải thu 10.905.500 đồng, đã thanh toán 4.512.000 đồng, còn 6.393.500 đồng; ba số khớp phép trừ và tổng đọc từ database. | [Công nợ](../images/qa-20261125-04-cong-no.png) |
+| Xem bảng kê và thông báo A101 | Hai khoản lần lượt 480.000 và 336.000 đồng; đã thanh toán 436.000, còn 380.000 đồng. Khớp dòng A101 trên màn hình công nợ. Chưa in thực tế. | [Bảng kê](../images/qa-20261125-05-bang-ke.png), [Chi tiết A101](../images/qa-20261125-06-thong-bao.png) |
+| Đăng nhập kế toán và cư dân | Cả hai đăng nhập thành công. Menu kế toán khác menu quản trị; tổng quan cư dân chỉ hiển thị A101 trong dữ liệu đã quan sát. Chưa thử truy cập trái quyền ở service trong lượt UI này. | [Kế toán](../images/qa-20261125-07-vai-tro-ke-toan.png), [Cư dân](../images/qa-20261125-08-vai-tro-cu-dan.png) |
 
 Điểm cần xem lại: chi tiết bảng kê A101 hiển thị `Nhân khẩu -`, còn màn hình công nợ hiển thị 3 nhân khẩu. Cần xác định đây là cách biểu diễn dữ liệu snapshot hay lỗi hiển thị trước khi kết luận.
 

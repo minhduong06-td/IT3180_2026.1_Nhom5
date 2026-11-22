@@ -1,0 +1,58 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+title Đăng nhập
+actor "Người dùng" as User
+participant "ui : LoginView" as View
+participant "auth : AuthService" as Auth
+participant "repo : AppRepository" as Repo
+database "CSDL MySQL" as DB
+participant BCrypt
+User -> View : nhập thông tin đăng nhập
+View -> Auth : login(identifier, password)
+Auth -> Repo : findLoginCredential(identifier)
+Repo -> DB : truy vấn tài khoản
+DB --> Repo : thông tin tài khoản
+Repo --> Auth : LoginCredential
+alt tài khoản không tồn tại hoặc bị khóa
+  Auth --> View : từ chối / AccountLockedException
+else tài khoản hợp lệ
+  Auth -> BCrypt : checkpw(password, passwordHash)
+  BCrypt --> Auth : kết quả
+  alt mật khẩu sai
+    Auth -> Repo : recordLoginFailure(userId)
+    Repo -> DB : cập nhật số lần sai và trạng thái khóa
+    Auth --> View : từ chối / AccountLockedException
+  else mật khẩu đúng
+    Auth -> Repo : resetLoginFailures(userId)
+    Repo -> DB : đặt lại số lần đăng nhập sai
+    Auth --> View : AppUser
+    View --> User : mở giao diện theo vai trò
+  end
+end
+@enduml

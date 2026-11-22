@@ -1,0 +1,67 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+title Phát hành kỳ thu phí tháng
+actor "Quản trị" as Admin
+participant BillingView as View
+participant BillingService as Service
+participant AppRepository as Repo
+participant BillingRules as Rules
+database MySQL as DB
+Admin -> View : nhập tháng, ngày phát hành, hạn nộp
+View -> Service : issue(user, year, month, issueDate, dueDate)
+Service -> Service : kiểm tra ADMIN và ngày hợp lệ
+alt không hợp lệ
+  Service --> View : lỗi quyền / dữ liệu
+else hợp lệ
+  Service -> Repo : issuePeriod(...)
+  Repo -> DB : BEGIN; INSERT billing_period
+  Repo -> DB : đếm căn / phí; đọc giá tại đầu tháng
+  alt thiếu căn, phí hoặc giá
+    Repo -> DB : ROLLBACK
+    Repo --> Service : lỗi
+  else đủ dữ liệu
+    loop mỗi căn và khoản thu bắt buộc
+      Repo -> Rules : calculate(basis, quantity, unitPrice)
+      Rules --> Repo : amount
+      Repo -> DB : lưu charge snapshot
+    end
+    Repo -> DB : thêm charge từ hóa đơn tiện ích
+    Repo -> DB : cấn credit từ kỳ trước
+    alt lỗi SQL / nghiệp vụ
+      Repo -> DB : ROLLBACK
+      Repo --> Service : lỗi
+    else thành công
+      Repo -> DB : COMMIT
+      Repo --> Service : BillingPeriod
+      Service --> View : BillingPeriod
+      View --> Admin : kết quả phát hành
+    end
+  end
+end
+@enduml

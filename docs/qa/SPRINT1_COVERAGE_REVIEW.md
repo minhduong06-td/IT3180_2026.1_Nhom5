@@ -10,9 +10,9 @@ Luồng Sprint 1:
 
 Nguồn đối chiếu:
 
-- [Hướng dẫn nghiệp vụ](NGHIEP_VU.md), [Kế hoạch kiểm thử](QA_TEST_PLAN.md), [Biên bản kiểm thử](QA_TEST_REPORT.md) và [README](../README.md).
-- Các lớp trong [service](../src/main/java/com/bluemoon/service), [UI](../src/main/java/com/bluemoon/ui), [AppRepository](../src/main/java/com/bluemoon/dao/AppRepository.java), [DatabaseBootstrap](../src/main/java/com/bluemoon/config/DatabaseBootstrap.java) và [schema SQL](../src/main/resources/db/schema.sql).
-- Các test trong [src/test/java](../src/test/java).
+- [Hướng dẫn nghiệp vụ](../guides/NGHIEP_VU.md), [Kế hoạch kiểm thử](QA_TEST_PLAN.md), [Biên bản kiểm thử](QA_TEST_REPORT.md) và [README](../../README.md).
+- Các lớp trong [service](../../src/main/java/com/bluemoon/service), [UI](../../src/main/java/com/bluemoon/ui), [AppRepository](../../src/main/java/com/bluemoon/dao/AppRepository.java), [DatabaseBootstrap](../../src/main/java/com/bluemoon/config/DatabaseBootstrap.java) và [schema SQL](../../src/main/resources/db/schema.sql).
+- Các test trong [src/test/java](../../src/test/java).
 
 ## Coverage trong mã nguồn
 

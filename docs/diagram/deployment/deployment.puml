@@ -1,0 +1,50 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+!pragma layout smetana
+title BlueMoon — default local deployment
+node "Desktop machine" as Host {
+  node "Java 25 runtime" {
+    artifact "BlueMoon application\nJavaFX UI + services + repository" as App
+    artifact "MySQL Connector/J\nBCrypt" as Libraries
+  }
+  node "Docker Desktop" {
+    node "MySQL 8.4 container" as Container {
+      database "bluemoon database" as DB
+    }
+    artifact "Persistent Docker volume" as Volume
+    artifact "schema.sql + demo-data.sql\n(first volume initialization)" as Seed
+  }
+}
+actor "Admin / Accountant / Resident" as User
+User --> App : JavaFX desktop UI
+App --> Libraries : uses
+App --> DB : JDBC localhost:3307
+Container --> Volume : stores database files
+Seed ..> DB : initial setup
+@enduml

@@ -94,4 +94,4 @@ Các nội dung cần hồi quy trước nghiệm thu gồm: đăng nhập và p
 - [Test case tích hợp](QA_TEST_CASE_INTEGRATION.md)
 - [Dữ liệu kiểm thử](QA_TEST_DATA.md)
 - [Biên bản kiểm thử](QA_TEST_REPORT.md)
-- [Quy tắc nghiệp vụ](NGHIEP_VU.md)
+- [Quy tắc nghiệp vụ](../guides/NGHIEP_VU.md)

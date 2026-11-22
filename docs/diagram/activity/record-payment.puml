@@ -1,0 +1,69 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+title Ghi nhận thanh toán và lập phiếu thu
+|Kế toán|
+start
+:Chọn khoản phải thu và nhập thông tin thanh toán;
+|Hệ thống BlueMoon|
+:Kiểm tra quyền ACCOUNTANT và thông tin thanh toán;
+if (Không hợp lệ?) then (có)
+  |Kế toán|
+  :Hiển thị lỗi quyền hoặc dữ liệu;
+else (không)
+  |CSDL MySQL|
+  :Lấy khóa kiểm tra mã giao dịch;
+  :Bắt đầu transaction và kiểm tra mã giao dịch;
+  if (Mã đã tồn tại?) then (có)
+    :Rollback và nhả khóa;
+    |Kế toán|
+    :Báo mã giao dịch đã tồn tại;
+  else (không)
+    |CSDL MySQL|
+    :Khóa khoản thu và tính số còn nợ;
+    |Hệ thống BlueMoon|
+    if (Số tiền và số còn nợ hợp lệ?) then (có)
+      :Tính số tiền cấn và tiền nộp dư;
+      |CSDL MySQL|
+      :Lưu phiếu thu;
+      if (Có tiền dư?) then (có)
+        :Lưu số dư nộp trước;
+      endif
+      :Commit và nhả khóa;
+      |Kế toán|
+      :Hiển thị phiếu thu và số dư;
+    else (không)
+      |CSDL MySQL|
+      :Rollback và nhả khóa;
+      |Kế toán|
+      :Hiển thị lỗi số tiền;
+    endif
+  endif
+endif
+stop
+@enduml

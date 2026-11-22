@@ -1,0 +1,54 @@
+@startuml
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontColor black
+skinparam classBackgroundColor #FFFFCC
+skinparam classBorderColor black
+skinparam classAttributeIconSize 0
+skinparam usecaseBackgroundColor #FFFFCC
+skinparam usecaseBorderColor black
+skinparam actorBorderColor black
+skinparam actorBackgroundColor #FFFFCC
+skinparam activityBackgroundColor #FFFFCC
+skinparam activityBorderColor black
+skinparam partitionBackgroundColor #FFFFCC
+skinparam partitionBorderColor black
+skinparam sequenceParticipantBackgroundColor #FFFFCC
+skinparam sequenceParticipantBorderColor black
+skinparam sequenceLifeLineBorderColor black
+skinparam sequenceArrowColor black
+skinparam componentBackgroundColor #FFFFCC
+skinparam componentBorderColor black
+skinparam databaseBackgroundColor #FFFFCC
+skinparam databaseBorderColor black
+skinparam nodeBackgroundColor #FFFFCC
+skinparam nodeBorderColor black
+skinparam artifactBackgroundColor #FFFFCC
+skinparam artifactBorderColor black
+title Đăng nhập
+|Người dùng|
+start
+:Nhập email hoặc số điện thoại và mật khẩu;
+|Hệ thống BlueMoon|
+:Kiểm tra thông tin và tìm tài khoản;
+if (Tài khoản không tồn tại hoặc bị khóa?) then (có)
+  |Người dùng|
+  :Báo thông tin không hợp lệ hoặc tài khoản bị khóa;
+else (không)
+  |Hệ thống BlueMoon|
+  :Kiểm tra mật khẩu BCrypt;
+  if (Mật khẩu đúng?) then (có)
+    |CSDL MySQL|
+    :Đặt lại số lần đăng nhập sai;
+    |Người dùng|
+    :Mở giao diện theo vai trò;
+  else (không)
+    |CSDL MySQL|
+    :Ghi nhận lần đăng nhập sai;
+    |Người dùng|
+    :Báo sai mật khẩu hoặc tài khoản bị khóa;
+  endif
+endif
+stop
+@enduml
