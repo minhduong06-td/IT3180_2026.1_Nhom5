@@ -8,9 +8,9 @@ Với mỗi case, ghi: commit, môi trường, trạng thái dữ liệu ban đ�
 
 ## Chuẩn bị môi trường
 
-Cần JDK 25, Docker Desktop và một database riêng. Không kiểm tra phá dữ liệu trên database đang sử dụng. Ghi phiên bản từ `.\mvnw.cmd -version`, `docker version` và commit từ `git rev-parse HEAD`.
+Cần JDK 25, Docker Desktop và database demo của project. Không tạo thêm database hoặc container MySQL cho quy trình QA này. Ghi phiên bản từ `.\mvnw.cmd -version`, `docker version` và commit từ `git rev-parse HEAD`.
 
-Đợt 25/11 cũng có một test hồi quy được bật riêng trên database demo hiện có: `MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression`. Test yêu cầu tài khoản và dữ liệu demo tương ứng, kỳ 03/2099 và mã kiểm thử chưa tồn tại, không có số dư nộp trước, không có hóa đơn tiện ích trong kỳ thử. Test tạo và dọn bản ghi của mình; nếu điều kiện không đúng thì dừng. Chỉ chạy khi đã xác nhận database phù hợp và không có người khác sử dụng đồng thời; không bật trên dữ liệu vận hành.
+Database QA duy nhất là `bluemoon` do Docker Compose của project quản lý ở cổng `3307`. Khi tạo volume lần đầu, Docker chạy `src/main/resources/db/schema.sql` rồi `database/demo-data.sql`. Các test MySQL phải chạy trên database demo này sau khi đã sao lưu hoặc xác nhận có thể dọn dữ liệu thử.
 
 ```powershell
 $env:BLUEMOON_IT_DB_URL = 'jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh'
@@ -29,63 +29,39 @@ Kiểm tra không cần MySQL:
 
 Lệnh trên chỉ chạy các lớp được chọn. `DemoDataSqlTest` kiểm tra nội dung file SQL, không xác minh việc thực thi SQL trên MySQL. Xem số lượng thực tế trong báo cáo Surefire của từng lần chạy.
 
-### Chạy tích hợp với MySQL rỗng
+## Kiểm tra trên database demo
 
-Tạo container riêng tại cổng 3308. Tên container dưới đây phải chưa tồn tại.
-
-```powershell
-docker run --name bluemoon-qa-mysql -d -p 127.0.0.1:3308:3306 -e MYSQL_DATABASE=bluemoon_qa -e MYSQL_USER=bluemoon_qa -e MYSQL_PASSWORD=bluemoon_qa_dev -e MYSQL_ROOT_PASSWORD=bluemoon_qa_root mysql:8.4
-```
-
-Chờ MySQL sẵn sàng; chạy lại truy vấn sau cho tới khi trả về 1:
+Khởi động đúng database của project và chạy test hồi quy trên dữ liệu demo:
 
 ```powershell
-docker exec bluemoon-qa-mysql mysql -h 127.0.0.1 -u bluemoon_qa -pbluemoon_qa_dev bluemoon_qa -e "SELECT 1;"
+docker compose up -d mysql
+$env:BLUEMOON_IT_DB_URL = 'jdbc:mysql://localhost:3307/bluemoon?connectionTimeZone=Asia/Ho_Chi_Minh'
+$env:BLUEMOON_IT_DB_USER = 'bluemoon_app'
+$env:BLUEMOON_IT_DB_PASSWORD = 'bluemoon_dev'
+$env:BLUEMOON_IT_EXISTING_DB = 'true'
+.\mvnw.cmd '-Dtest=MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression' test
+Remove-Item Env:BLUEMOON_IT_EXISTING_DB, Env:BLUEMOON_IT_DB_URL, Env:BLUEMOON_IT_DB_USER, Env:BLUEMOON_IT_DB_PASSWORD
 ```
 
-Trong cùng cửa sổ PowerShell:
-
-```powershell
-$env:BLUEMOON_IT_DB_URL = 'jdbc:mysql://localhost:3308/bluemoon_qa?connectionTimeZone=Asia/Ho_Chi_Minh'
-$env:BLUEMOON_IT_DB_USER = 'bluemoon_qa'
-$env:BLUEMOON_IT_DB_PASSWORD = 'bluemoon_qa_dev'
-Remove-Item Env:BLUEMOON_IT_DB_LEGACY -ErrorAction SilentlyContinue
-.\mvnw.cmd clean test
-```
-
-Suite có 28 test tại lần kiểm tra ngày 25/11/2026; xác nhận số lượng và kết quả thực tế trong output, không tính test bị bỏ qua là đạt. Sao chép `target/surefire-reports` trước lần chạy tiếp theo. Test tích hợp tạo fixture, thay schema và dọn một phần dữ liệu; mỗi lượt phải dùng schema mới hoàn toàn.
-
-Để chạy nhánh legacy, tạo container khác với database rỗng theo cách trên, dùng cổng khác và đổi URL tương ứng; đặt `$env:BLUEMOON_IT_DB_LEGACY = 'true'` rồi chạy test. Nhánh này tạo schema căn hộ cũ có ba căn và kiểm tra nâng cấp, không chạy toàn bộ phần billing của test tích hợp.
-
-Sau khi giữ bằng chứng, xóa container riêng và volume của nó bằng `docker rm -f -v bluemoon-qa-mysql`. Xóa biến `BLUEMOON_IT_DB_*` hoặc đóng cửa sổ PowerShell khi xong.
-
-## Kiểm tra thủ công từ database rỗng
-
-Dùng một database riêng khác với database vừa chạy integration test. Đặt `BLUEMOON_DB_*` trỏ tới đó trước khi mở app; biến này độc lập với `BLUEMOON_IT_DB_*`.
+Test này tự tạo và dọn bản ghi thử. Không chạy đồng thời với người đang dùng database demo và không dùng `docker compose down -v`, vì lệnh đó xóa volume dữ liệu.
 
 | Bước | Thao tác | Expected và bằng chứng |
 |---|---|---|
-| Khởi tạo | Mở app với schema chưa có bảng | Màn hình tạo quản trị, không có user/căn/phí tự thêm. Kiểm tra bảng và ảnh màn hình. |
-| Tạo quản trị | Thử username sai, mật khẩu ngắn, xác nhận lệch; sau đó nhập hợp lệ | Sai thì không tạo user; đúng thì có một ADMIN và mở app. Đóng/mở lại phải vào đăng nhập. |
-| Đăng nhập/khôi phục | Dùng email và số điện thoại của từng tài khoản mẫu; thử Quên mật khẩu bằng username, contact sai và contact đúng; sau đó đổi mật khẩu trong ứng dụng | Email/số điện thoại đúng vào đúng role; username chỉ còn là tương thích cũ; contact sai không đổi mật khẩu; đổi/khôi phục thành công thì mật khẩu cũ không còn đăng nhập được. |
-| Hồ sơ | Tạo A101, mã hộ riêng, diện tích 48 m², ngày nhận nhà hợp lệ; thêm chủ hộ hợp lệ | Lưu được, mở lại không mất. Mã căn/mã hộ/giấy tờ trùng bị chặn; không tạo thêm dòng. |
-| Khoản thu | Tạo dịch vụ 10.000 đồng/m² và quản lý 7.000 đồng/m², đang áp dụng, giá hiệu lực từ đầu kỳ | Danh mục và lịch sử giá đúng. Giá không dương hoặc trùng ngày hiệu lực bị chặn. |
-| Kỳ thu | Chọn một tháng, ngày phát hành ngày 01, hạn nộp sau đó | Hai charge cho căn, lần lượt 480.000 và 336.000 đồng, tổng 816.000. Phát hành lại cùng tháng bị chặn. |
-| Quyền | Tạo kế toán, đăng nhập kế toán; kiểm tra cả UI và service | Kế toán không sửa hồ sơ/phát hành kỳ. ADMIN không được thu tiền khoản phải thu. |
-| Thu một phần | Kế toán nhận 200.000 cho dịch vụ | Phiếu 200.000, khoản dịch vụ còn 280.000, tổng nợ hộ 616.000. |
-| Thu dư | Nhận tiếp 300.000 cho dịch vụ | Cấn 280.000, dư 20.000, dịch vụ đã đủ, quản lý còn 336.000. |
-| Kỳ sau | Giữ nguyên giá, ADMIN phát hành tháng sau | Tổng khoản mới 816.000, cấn dư 20.000, còn nợ kỳ mới 796.000, số dư còn 0. Không gộp nợ quản lý kỳ cũ vào con số này. |
-| Đối soát | Mở bảng kê, công nợ, tổng quan và lịch sử thu | Tổng phiếu nhận 500.000; cấn từ hai phiếu 480.000; cấn kỳ sau 20.000. Kiểm tra theo từng kỳ và hộ. |
-| In/CSV | Xem thông báo, in hoặc xuất PDF, xuất CSV | Đúng hộ, khoản, kỳ, tiền và thông tin chuyển khoản; chữ không cắt, CSV đủ dòng đang lọc và giữ tiếng Việt. |
-| UI | Tab/Enter, lỗi nhập, bảng rỗng, dữ liệu dài, cửa sổ 1080 × 700 và 1280 × 820 | Nhãn đọc được, focus rõ, menu cuộn tới cuối, không mất nút. Nội dung hướng dẫn không lặp tiêu đề. |
+| Khởi động | `docker compose up -d mysql`, mở app và đăng nhập tài khoản trong `demo-data.sql` | Ứng dụng dùng database `bluemoon`; không tạo database khác. |
+| Đăng nhập và quyền | Kiểm tra lần lượt tài khoản quản trị, kế toán và cư dân mẫu | Mỗi role thấy đúng menu và phạm vi dữ liệu; lưu ảnh màn hình. |
+| Dữ liệu demo | Tìm các căn A101, A204 và các kỳ đã có trong database | Mã căn, khoản thu, thanh toán và công nợ khớp dữ liệu MySQL; lưu truy vấn hoặc ảnh đối chiếu. |
+| Hồi quy thanh toán | Chạy `MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression` | Chỉ một phiếu được ghi khi gửi trùng; đơn giá đầu kỳ được dùng; bản ghi thử được dọn sau test. |
+| Đối soát | Mở bảng kê, công nợ, tổng quan và lịch sử thu | Tổng tiền trên UI khớp truy vấn read-only trên database demo. |
+| In/CSV | Xem thông báo, in hoặc xuất CSV từ dữ liệu demo | Đúng hộ, khoản, kỳ, tiền và thông tin chuyển khoản; lưu bằng chứng. |
+| UI | Tab/Enter, lỗi nhập, bảng rỗng, dữ liệu dài, cửa sổ 1080 × 700 và 1280 × 820 | Nhãn đọc được, focus rõ, menu cuộn tới cuối, không mất nút. |
 
 Case nhận tiền phải kiểm tra số dòng trong `payments`, giá trị `applied_amount`, số dư và các charge liên quan. Ảnh toast thành công không đủ chứng minh số liệu đúng.
 
 Phương tiện, tiện ích, yêu cầu cư dân, đóng góp và cư trú có case riêng trong [test case chức năng](QA_TEST_CASE_FUNCTIONAL.md). Hóa đơn tiện ích phải bị chặn sửa/xóa sau khi đã phát hành; đóng góp không tạo công nợ; biển số đang hoạt động không được trùng.
 
-## 14 test đạt có nghĩa là gì?
+## Cách đọc kết quả
 
-[Biên bản kiểm thử](QA_TEST_REPORT.md) ghi các đợt chạy JDK 25 + MySQL 8.4 trên schema mới và schema cũ. Đây là kết quả lịch sử của bản mã tại thời điểm đó; hai chế độ chạy nhánh khác nhau, nên kết quả legacy không có nghĩa toàn bộ luồng billing đã chạy lần nữa.
+[Biên bản kiểm thử](QA_TEST_REPORT.md) có thể còn ghi các lượt chạy lịch sử trên schema riêng. Những số liệu đó không phải kết quả của quy trình hiện tại. Kết quả được chấp nhận hiện tại phải ghi rõ đã chạy trên database demo `bluemoon` và được tạo từ `schema.sql` cùng `demo-data.sql`.
 
 Lượt JDK 21 trước đó dừng khi compile nên không có kết quả test. Lượt khởi động JavaFX với database rỗng chỉ xác nhận khởi động không exception, chưa chứng minh mọi thao tác UI hoặc in đạt.
 

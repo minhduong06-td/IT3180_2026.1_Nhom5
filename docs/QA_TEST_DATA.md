@@ -2,7 +2,7 @@
 
 Tài liệu mô tả các bộ dữ liệu dùng cho kiểm thử, cách tạo lại và số liệu chuẩn để đối chiếu.
 
-Nguyên tắc chung: mỗi bộ dữ liệu dùng một schema riêng, tạo bằng chính ứng dụng hoặc bằng script có trong dự án, không chèn tay từ công cụ ngoài.
+Nguyên tắc chung: chỉ dùng database demo `bluemoon` của project. Docker nạp `src/main/resources/db/schema.sql` rồi `database/demo-data.sql` khi tạo volume lần đầu. Không tạo schema, database hoặc container thứ hai để thay thế dữ liệu này.
 
 ## Bộ A: dữ liệu đối chiếu tính tiền
 
@@ -76,7 +76,7 @@ Dùng cho các case tạo và sửa hồ sơ, kiểm tra trùng lặp và ràng 
 | Mã khoản thu | QA_SERVICE |
 | Số giấy tờ | Chuỗi 12 chữ số chưa dùng trong bộ A |
 
-Bộ này tạo trên schema riêng. Không dùng tổng tiền của bộ A sau khi đã thêm dữ liệu bộ B.
+Bộ này là số liệu tham chiếu trong database demo. Không cộng lại hoặc áp dụng các số liệu này cho một database khác.
 
 ## Bộ C: dữ liệu cho phần mở rộng
 
@@ -97,7 +97,7 @@ Dùng để kiểm tra việc nâng cấp từ phiên bản cũ.
 
 - Schema cũ có ba căn A101 đến A103, chưa có cư dân và tài khoản.
 - Một biến thể có giao dịch thanh toán thiếu trường người nộp và số đã cấn.
-- Mỗi lần nâng cấp dùng schema mới hoặc khôi phục bản sao lưu ban đầu.
+- Không chạy nâng cấp trên database khác để thay thế database demo; ghi rõ trạng thái dữ liệu demo trước mỗi lần kiểm tra.
 
 ## Bộ E: dữ liệu cho case biên
 
@@ -122,15 +122,15 @@ Mỗi case biên dùng một bản sao độc lập của bộ A, khôi phục l
 
 ## Cách tạo lại dữ liệu
 
-Khi tạo volume mới, Docker tự nạp `src/main/resources/db/schema.sql` và `database/demo-data.sql`. Dữ liệu này dùng cho demo, không dùng cho kiểm thử đối chiếu vì số liệu đã có sẵn.
+Khi tạo volume mới, Docker tự nạp `src/main/resources/db/schema.sql` và `database/demo-data.sql`. Đây là dữ liệu dùng cho demo và cho quy trình QA hiện tại; phải ghi lại trạng thái ban đầu trước khi chạy case có ghi dữ liệu.
 
-Bộ A là bộ đối chiếu nghiệp vụ; SC-06 chỉ tạo một căn P0508 và không tạo đủ bộ A. Test tích hợp tự tạo fixture trên schema trống như hướng dẫn trong [QA.md](QA.md). Fixture này không được tự động nạp vào database ứng dụng. Để chạy thủ công, cần chuẩn bị đủ 8 căn, nhân khẩu và loại phí như bảng trên rồi đối chiếu số liệu trước khi chạy.
+Bộ A là bộ đối chiếu nghiệp vụ; SC-06 chỉ tạo một căn P0508 và không tạo đủ bộ A. Khi chạy trên database demo, chỉ đối chiếu các dòng thực tế đang có và ghi rõ dữ liệu đầu vào; không tự chuyển sang schema trống.
 
 Không dùng `docker compose down -v` để chuẩn bị kiểm thử, vì lệnh đó xóa volume dữ liệu dự án. Các truy vấn chỉ đọc có thể thực hiện trên database ứng dụng hiện có; ghi lại trạng thái ban đầu và dữ liệu thực tế thay vì áp số chuẩn bộ A cho dữ liệu khác.
 
 ## Câu truy vấn đối chiếu
 
-Chạy trong đúng schema kiểm thử, chỉ đọc dữ liệu.
+Chạy trên database demo `bluemoon`, chỉ đọc dữ liệu.
 
 ```sql
 SELECT COUNT(*) AS apartment_count FROM apartments;

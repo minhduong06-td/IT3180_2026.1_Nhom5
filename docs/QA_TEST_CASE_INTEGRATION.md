@@ -2,13 +2,13 @@
 
 Test case tích hợp kiểm tra service và kho dữ liệu trên MySQL thật. Các thao tác giao diện được kiểm tra riêng qua test case UI và kịch bản thủ công.
 
-Dữ liệu được chuẩn bị tùy theo case; test tự động tạo fixture bằng mã kiểm thử. Các test có ghi và thay đổi schema chỉ được chạy trên schema kiểm thử trống.
+Dữ liệu dùng cho lần chạy được lấy từ database demo `bluemoon` của project. Database này được khởi tạo bằng `schema.sql` rồi nạp `database/demo-data.sql`; test chỉ tạo các bản ghi tạm trong phạm vi case và phải dọn chúng sau khi chạy.
 
 ## Điều kiện chạy
 
 | Thành phần | Giá trị |
 |---|---|
-| Cơ sở dữ liệu | MySQL 8.4, container riêng cổng 3308 |
+| Cơ sở dữ liệu | MySQL 8.4 của Docker Compose, database `bluemoon`, cổng 3307 |
 | Biến môi trường | `BLUEMOON_IT_DB_URL`, `BLUEMOON_IT_DB_USER`, `BLUEMOON_IT_DB_PASSWORD` |
 | Lệnh chạy | `.\mvnw.cmd clean test` |
 | Báo cáo | `target/surefire-reports/` |
@@ -110,6 +110,6 @@ Nếu thiếu biến môi trường, lớp `MySqlBillingFlowTest` tự bỏ qua.
 
 ## Quy ước
 
-Test tích hợp thay đổi schema và xóa dữ liệu. Luôn dùng cơ sở dữ liệu riêng, không dùng cơ sở dữ liệu demo. Sau mỗi lượt, xóa container và volume để lượt sau bắt đầu sạch.
+Không tạo container hoặc database thứ hai để chạy các case này. Không dùng `docker compose down -v`; lệnh đó xóa dữ liệu demo của project. Nếu điều kiện dữ liệu demo không đúng, ghi nhận là Bị chặn thay vì tự chuyển sang database khác.
 
 Khi một case không đạt, ghi lại câu lệnh đã chạy, thông báo lỗi và số liệu thực tế trong [biên bản kiểm thử](QA_TEST_REPORT.md).

@@ -5,7 +5,7 @@ Dùng sau khi sửa lỗi hoặc thay đổi bản dựng. Ghi kết quả từn
 ## Chuẩn bị
 
 - [ ] Xác định bản dựng, người chạy, JDK/MySQL và phạm vi đợt kiểm tra.
-- [ ] Dùng database và dữ liệu được phép kiểm thử; xác nhận trước các thao tác tạo, sửa và xóa. Không chạy test tích hợp thay đổi schema trên dữ liệu đang sử dụng.
+- [ ] Dùng đúng database demo `bluemoon` và dữ liệu trong `demo-data.sql`; xác nhận trước các thao tác tạo, sửa và xóa. Không chạy đồng thời với người khác.
 - [ ] Chuẩn bị tài khoản theo vai trò, dữ liệu theo `QA_TEST_DATA.md` và máy in PDF nếu kiểm tra in.
 - [ ] Ghi trạng thái ban đầu của kỳ, khoản thu và phiếu cần đối chiếu; không dùng kết quả kỳ khác làm expected.
 

@@ -74,7 +74,7 @@ Các chức năng này có thể kiểm thử hồi quy riêng. Menu hiển th�
 1. Chốt phạm vi Sprint 1 và các yêu cầu còn chưa rõ với PM.
 2. Tiếp tục hồi quy luồng thu phí sau sửa R-02/R-03; xác nhận quy trình sử dụng mã giao dịch khi thử lại.
 3. Chốt chính sách R-04/R-05, kiểm tra chứng từ cũ sau khi đổi hồ sơ; xử lý hoặc ghi nhận quyết định chấp nhận có giới hạn cho các mục trung bình còn mở.
-4. Chạy với JDK 25 và MySQL 8.4 trên database kiểm thử riêng; báo cáo rõ đạt/lỗi/bỏ qua. Test tích hợp bị skip không tính là đã xác minh MySQL.
+4. Chạy với JDK 25 và MySQL 8.4 trên database demo `bluemoon` được nạp từ `schema.sql` và `demo-data.sql`; báo cáo rõ đạt/lỗi/bỏ qua. Test tích hợp bị skip không tính là đã xác minh MySQL.
 5. Có bằng chứng thủ công cho UI, phân quyền tại service và in thực tế; lưu log, ảnh/CSV, SQL đối chiếu theo kế hoạch QA.
 
 ## Kịch bản demo luồng chính

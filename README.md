@@ -51,7 +51,7 @@ docker compose down -v
 docker compose up -d
 ```
 
-Lệnh `down -v` xóa toàn bộ dữ liệu trong volume. Với database cần giữ dữ liệu, hãy nâng cấp cấu trúc bằng câu lệnh SQL thay vì dùng lệnh trên. Ứng dụng vẫn chạy được với database rỗng: tạo database MySQL riêng và đặt các biến kết nối bên dưới. Java tự tạo bảng và yêu cầu tạo quản trị đầu tiên nếu chưa có tài khoản.
+Lệnh `down -v` xóa toàn bộ dữ liệu trong volume. Không dùng lệnh này trong quy trình QA vì database demo của project nằm trong volume đó. Ứng dụng có thể chạy với database rỗng trong môi trường phát triển, nhưng đó không phải database được dùng cho QA hiện tại.
 
 ## Cấu hình kết nối
 
@@ -73,7 +73,7 @@ Chạy các test không cần MySQL:
 .\mvnw.cmd "-Dtest=AuthorizationTest,BillingRulesTest,ResidenceChangeServiceTest,CsvExporterTest,FeeNoticePrinterTest,DemoDataSqlTest" test
 ```
 
-Test tích hợp cần database riêng, rỗng và có thể xóa. Xem [hướng dẫn QA](docs/QA.md) trước khi chạy; thiếu `BLUEMOON_IT_DB_URL` sẽ làm test tích hợp bị bỏ qua.
+Test tích hợp của quy trình hiện tại dùng database demo `bluemoon` tại `localhost:3307`; xem [hướng dẫn QA](docs/QA.md) trước khi chạy. Không tạo database hoặc container MySQL thứ hai.
 
 - [PM: quyết định merge và điều kiện nghiệm thu](docs/PM.md)
 - [QA: cách kiểm tra và căn cứ đạt](docs/QA.md)

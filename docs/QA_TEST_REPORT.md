@@ -29,7 +29,7 @@ Chạy `MySqlBillingFlowTest#existingDatabaseRateAndDuplicatePaymentRegression` 
 
 Trong cùng test, đơn giá SERVICE tăng từ 10.000 lên 12.000 đồng/m² giữa tháng, phát hành ngày 20: A101 48 m² dùng giá đầu kỳ 10.000 đồng/m² và số tiền 480.000 đồng. Đã kiểm tra sau lượt chạy không còn kỳ, đơn giá hoặc phiếu thử; database còn 10 căn, 25 cư dân, 1 kỳ và 9 phiếu như trước.
 
-Bộ `mvnw.cmd test` không cấu hình MySQL sau sửa: 30 test, 28 đạt, 0 lỗi, 2 bỏ qua. Test MySQL mục tiêu ở trên đã chạy riêng với cấu hình database; test MySQL cũ yêu cầu schema rỗng không chạy trên dữ liệu hiện có. Chưa xác nhận toàn bộ luồng thủ công hoặc in PDF trên bản mới.
+Bộ `mvnw.cmd test` không cấu hình MySQL sau sửa: 30 test, 28 đạt, 0 lỗi, 2 bỏ qua. Đây là số liệu lịch sử; test MySQL mục tiêu ở trên đã chạy riêng với cấu hình database. Quy trình hiện tại dùng database demo `bluemoon` ở cổng 3307 theo [QA](QA.md). Chưa xác nhận toàn bộ luồng thủ công hoặc in PDF trên bản mới.
 
 Quy trình và phạm vi nằm trong [kế hoạch kiểm thử](QA_TEST_PLAN.md). Các case chi tiết nằm trong [test case chức năng](QA_TEST_CASE_FUNCTIONAL.md), [test case giao diện](QA_TEST_CASE_UI.md) và [test case tích hợp](QA_TEST_CASE_INTEGRATION.md).
 
@@ -104,14 +104,16 @@ Lỗi phát hiện:
 | DEF-02 | Trung bình | Nhãn phụ đề lặp lại tiêu đề trang, chiếm chỗ trên cửa sổ nhỏ | Đã sửa, kiểm tra lại đạt |
 | DEF-03 | Thấp | Bảng rỗng hiển thị thông báo mặc định bằng tiếng Anh | Đã sửa, kiểm tra lại đạt |
 
-## Đợt 3: kiểm tra tích hợp và dữ liệu nâng cấp
+## Đợt 3: kiểm tra tích hợp và dữ liệu nâng cấp (lịch sử)
+
+Các lần kiểm tra mới phải dùng database demo `bluemoon` ở cổng 3307 theo [QA](QA.md).
 
 | Mục | Nội dung |
 |---|---|
 | Người chạy | thunganle272 |
 | Ngày chạy | 07/11/2026 |
 | Bản dựng | nhánh main sau khi merge bản sửa migration thanh toán |
-| Môi trường | Windows 11, JDK 25.0.5, MySQL 8.4 container riêng cổng 3308 |
+| Môi trường | Windows 11, JDK 25.0.5, MySQL 8.4 của Docker Compose, database `bluemoon` cổng 3307 |
 | Dữ liệu | bộ A, bộ D; schema mới và schema cũ có ba căn |
 
 | Mã case | Kết quả | Ghi chú |

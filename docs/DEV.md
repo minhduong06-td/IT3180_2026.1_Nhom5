@@ -21,9 +21,9 @@ Bootstrap không tìm căn hộ, cư dân, phí hay quản trị theo mã cố �
 
 Repository dùng khóa MySQL `GET_LOCK` và kiểm tra lại trong transaction để hai ứng dụng không cùng tạo hai tài khoản đầu tiên. User và trạng thái đăng nhập được lưu cùng transaction. Khi đã có user, bước thiết lập bị từ chối.
 
-Khi dùng database rỗng, đơn giá, căn hộ và cư dân do người dùng thêm. Loại phí tiện ích được tạo khi lưu hóa đơn đầu tiên. Dữ liệu phục vụ test nằm trong mã test, không chạy cùng bootstrap.
+Database được dùng trong quy trình hiện tại là database demo do Docker Compose khởi tạo. Dữ liệu nghiệp vụ được nạp từ `database/demo-data.sql`; test không được tự chuyển sang database rỗng.
 
-Cấu hình Docker nạp `schema.sql` và `database/demo-data.sql` khi tạo volume mới. Đây là bước khởi tạo của Docker, tách khỏi Java bootstrap; kết nối tới một database rỗng khác vẫn dùng luồng tạo quản trị như trên.
+Cấu hình Docker nạp `schema.sql` rồi `database/demo-data.sql` khi tạo volume mới. Đây là nguồn schema và dữ liệu duy nhất trong quy trình demo và QA hiện tại.
 
 ## Tại sao lưu snapshot khi phát hành?
 
@@ -68,4 +68,4 @@ Thay chữ hoặc layout phải kiểm tra màn hình đăng nhập, thiết l�
 5. Mở PR với vấn đề, hành vi sau sửa, ảnh hưởng dữ liệu và bằng chứng.
 6. Review diff rồi merge bằng merge commit.
 
-Không commit `.tools`, `target`, thông tin riêng hoặc `TECH_STACK.md`. Không chạy integration test vào database đang dùng. Hướng dẫn dựng schema riêng nằm trong [QA](QA.md).
+Không commit `.tools`, `target`, thông tin riêng hoặc `TECH_STACK.md`. Test tích hợp phải dùng đúng database demo theo [QA](QA.md), không tự tạo database khác.

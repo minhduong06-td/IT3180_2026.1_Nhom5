@@ -12,13 +12,13 @@ Mỗi nhánh gom một thay đổi có mục đích rõ ràng. PR cho người r
 
 Lịch sử nhánh và commit không tự chứng minh có nhiều người review. Khi cùng một tài khoản thực hiện code và merge, cần nói đúng đó là tự review; không ghi thành phê duyệt độc lập của PM hoặc QA.
 
-## Tại sao merge thay đổi khởi động với database rỗng?
+## Database demo được khởi tạo như thế nào?
 
 Bootstrap chỉ tạo và nâng cấp schema. Dữ liệu mẫu do Docker nạp từ `database/demo-data.sql` khi tạo volume mới. Cách tách này tránh trường hợp dữ liệu cố định không đủ mã căn mà bước thêm cư dân yêu cầu, khiến ứng dụng báo lỗi khởi động.
 
 Nếu chưa có user, ứng dụng cho tạo quản trị đầu tiên; nếu đã có user thì đăng nhập. Người clone repo không phải nhập dữ liệu nghiệp vụ có sẵn.
 
-Căn cứ kỹ thuật đã ghi ở [biên bản QA](QA_TEST_REPORT.md): các lượt kiểm tra với JDK 25 và MySQL 8.4 có 14 test đạt trên schema mới và schema cũ có ba căn. Với chế độ legacy, test tích hợp chỉ đi qua nhánh nâng cấp và tạo quản trị, không chạy toàn bộ luồng tính phí. JavaFX khởi động được với database trống; thao tác trực tiếp trên màn hình chưa được xác nhận.
+Các số liệu lịch sử trong [biên bản QA](QA_TEST_REPORT.md) có lượt chạy trên database thử nghiệm riêng và không dùng làm hướng dẫn hiện tại. Quy trình hiện tại chỉ chấp nhận kết quả chạy trên database demo `bluemoon`, được khởi tạo từ `schema.sql` và `database/demo-data.sql`.
 
 Cách khởi tạo mới không đóng các lỗi tài chính còn mở và không đồng nghĩa toàn bộ sản phẩm được nghiệm thu.
 

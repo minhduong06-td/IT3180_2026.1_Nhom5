@@ -27,7 +27,7 @@ Các phần sau có trong mã nguồn nhưng không nằm trong đợt nghiệm 
 Nhóm kiểm tra theo bốn lớp, chạy từ thấp đến cao:
 
 1. Kiểm tra đơn vị: công thức tính tiền và quy tắc dữ liệu, chạy tự động bằng JUnit, không cần cơ sở dữ liệu.
-2. Kiểm tra tích hợp: chạy toàn bộ luồng nghiệp vụ trên MySQL thật, có tạo và xóa dữ liệu riêng.
+2. Kiểm tra tích hợp: chạy luồng nghiệp vụ trên database demo MySQL của project, có tạo và xóa bản ghi tạm của case.
 3. Kiểm tra giao diện: mở ứng dụng thật, thao tác bằng chuột và bàn phím, chụp ảnh màn hình.
 4. Kiểm tra đầu cuối: chạy một kịch bản liên tục từ tạo căn hộ đến xem công nợ, không nhảy bước.
 
@@ -40,11 +40,11 @@ Mỗi lớp có tài liệu riêng: [kịch bản kiểm thử](QA_TEST_SCENARIO
 | Máy chạy giao diện | Windows 10 hoặc 11, màn hình 1920x1080, có máy in PDF |
 | Java | JDK 25, kiểm tra bằng `.\mvnw.cmd -version` |
 | Maven | Maven Wrapper 3.9.16 kèm trong dự án |
-| Cơ sở dữ liệu | MySQL 8.4 chạy bằng Docker, mỗi lượt dùng schema riêng |
-| Dữ liệu mẫu | `database/demo-data.sql` nạp khi tạo volume mới; fixture tích hợp do mã test tạo trên schema trống |
+| Cơ sở dữ liệu | MySQL 8.4 chạy bằng Docker Compose, database `bluemoon`, cổng 3307 |
+| Dữ liệu mẫu | `src/main/resources/db/schema.sql` được nạp trước, sau đó `database/demo-data.sql` nạp dữ liệu demo |
 | Tài khoản thử | Ba tài khoản mẫu trong [dữ liệu kiểm thử](QA_TEST_DATA.md) |
 
-Truy vấn chỉ đọc có thể chạy trên database hiện có. Test tích hợp tự động có ghi và thay đổi schema nên phải chạy trên schema kiểm thử trống, không trỏ trực tiếp vào dữ liệu đang dùng.
+Mọi test MySQL trong kế hoạch này dùng database demo trên cổng 3307. Không tạo database, schema hoặc container riêng; nếu dữ liệu đầu vào không đúng điều kiện case thì dừng và ghi Bị chặn.
 
 ## 5. Lịch thực hiện
 
